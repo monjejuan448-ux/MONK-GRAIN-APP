@@ -13,7 +13,7 @@ from sqlalchemy.orm import configure_mappers
 from app.models import Base
 from app.models.enums import ALLOWED_SUB_ORDER_TRANSITIONS, SubOrderStatus
 
-EXPECTED_TABLE_COUNT = 51
+EXPECTED_TABLE_COUNT = 53
 
 
 @pytest.mark.unit

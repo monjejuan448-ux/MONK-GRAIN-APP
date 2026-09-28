@@ -238,8 +238,13 @@ class CartService:
             is_available = (
                 product.is_purchasable and variant.is_active and available >= item.quantity
             )
-            # El precio pudo cambiar desde que se agregó el ítem.
-            price_changed = variant.price != item.unit_price_snapshot
+            price = item.effective_price
+            # El precio pudo cambiar desde que se agregó el ítem. Una línea con
+            # precio negociado no se avisa nunca: lo acordado no cambia porque el
+            # vendedor mueva su lista, y advertirlo asustaría sin motivo.
+            price_changed = (
+                item.negotiated_price is None and variant.price != item.unit_price_snapshot
+            )
 
             if not is_available or price_changed:
                 has_warnings = True
@@ -261,8 +266,9 @@ class CartService:
                     presentation=variant.presentation,
                     min_qty_kg=variant.min_qty_kg,
                     quantity=item.quantity,
-                    unit_price=variant.price,
-                    line_total=variant.price * item.quantity,
+                    unit_price=price,
+                    line_total=price * item.quantity,
+                    is_negotiated=item.negotiated_price is not None,
                     available_qty=available,
                     price_changed=price_changed,
                     previous_price=item.unit_price_snapshot if price_changed else None,

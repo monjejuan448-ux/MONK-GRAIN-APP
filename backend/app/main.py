@@ -20,6 +20,7 @@ from app.modules.orders.router import router as orders_router
 from app.modules.producers.router import router as producers_router
 from app.modules.returns.router import router as returns_router
 from app.modules.reviews.router import router as reviews_router
+from app.modules.trading.router import router as trading_router
 from app.modules.users.router import router as users_router
 
 logger = get_logger(__name__)
@@ -136,13 +137,15 @@ def register_routers(app: FastAPI) -> None:
     """Monta los routers de los módulos de dominio.
 
     Catálogo, carrito y pedidos se incorporan en la fase 8; los paneles
-    administrativos, en la fase 9.
+    administrativos, en la fase 9; la oferta y demanda, en la fase 3B del pivote
+    a pergamino.
     """
     app.include_router(auth_router, prefix=settings.api_v1_prefix)
     app.include_router(catalog_router, prefix=settings.api_v1_prefix)
     app.include_router(cart_router, prefix=settings.api_v1_prefix)
     app.include_router(orders_router, prefix=settings.api_v1_prefix)
     app.include_router(returns_router, prefix=settings.api_v1_prefix)
+    app.include_router(trading_router, prefix=settings.api_v1_prefix)
     app.include_router(reviews_router, prefix=settings.api_v1_prefix)
     app.include_router(users_router, prefix=settings.api_v1_prefix)
     app.include_router(producers_router, prefix=settings.api_v1_prefix)

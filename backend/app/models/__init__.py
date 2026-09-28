@@ -36,6 +36,7 @@ from app.models.producer import (
     ProducerProfile,
 )
 from app.models.shipment import Return, Shipment, ShipmentEvent
+from app.models.trading import DemandOffer, DemandRequest
 from app.models.user import (
     Address,
     Permission,
@@ -83,6 +84,8 @@ __all__ = [
     "Wishlist",
     "WishlistItem",
     "Coupon",
+    "DemandOffer",
+    "DemandRequest",
     "CouponUsage",
     # Pedidos
     "Order",
