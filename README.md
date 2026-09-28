@@ -1,8 +1,10 @@
 # MONK GRAIN
 
-Marketplace digital de café colombiano que conecta caficultores, fincas y cooperativas con tostadores, distribuidores, cafeterías y consumidores finales.
+Plataforma de compra y venta de **café pergamino seco** en Colombia: el café ya beneficiado y secado que todavía conserva el pergamino y aún no ha pasado por trilla.
 
-Cada café publicado indica su finca, municipio, altitud, variedad, proceso y puntaje de catación: el comprador sabe exactamente de dónde viene lo que compra, y el productor vende sin intermediarios.
+Conecta a los caficultores, fincas y cooperativas del país con quienes compran por volumen —trilladoras, exportadoras, cooperativas, tostadoras— y funciona en los dos sentidos: el vendedor publica sus lotes, y el comprador publica lo que busca para que le respondan.
+
+Cada lote se publica con lo que decide su valor: **factor de rendimiento**, humedad, almendra sana, pasilla, daño por broca y granulometría, además de su origen y su código de lote. Los precios son **por kilogramo** y las cantidades, kilos.
 
 Orientado al mercado colombiano: pesos colombianos, departamentos y municipios con códigos DANE, operadores logísticos nacionales y medios de pago disponibles en el país.
 
@@ -10,6 +12,7 @@ Orientado al mercado colombiano: pesos colombianos, departamentos y municipios c
 
 ## Índice
 
+- [Qué es y qué no es](#qué-es-y-qué-no-es)
 - [Estado del proyecto](#estado-del-proyecto)
 - [Stack tecnológico](#stack-tecnológico)
 - [Instalación](#instalación)
@@ -21,6 +24,17 @@ Orientado al mercado colombiano: pesos colombianos, departamentos y municipios c
 - [Decisiones de diseño destacadas](#decisiones-de-diseño-destacadas)
 - [Integraciones simuladas](#integraciones-simuladas)
 - [Pruebas](#pruebas)
+- [Lo que falta](#lo-que-falta)
+
+---
+
+## Qué es y qué no es
+
+**Es** un mercado de pergamino seco. Un solo producto, en un solo estado, vendido por kilo.
+
+**No es** una tienda de café tostado. No hay nivel de tueste, ni molienda, ni puntaje de catación, ni notas de cata: son atributos de un café que ya pasó por trilla y tostión, y aquí no se vende eso. Lo que describe un lote de pergamino es su análisis físico.
+
+El proyecto **fue** un marketplace minorista de café tostado hasta el pivote del 28 de septiembre de 2026. Las decisiones de ese pivote —qué se retiró, qué se conservó y por qué— están en [docs/14](docs/14-pergamino.md).
 
 ---
 
@@ -32,7 +46,7 @@ Orientado al mercado colombiano: pesos colombianos, departamentos y municipios c
 | 2 | Historias de usuario y criterios de aceptación | ✅ [docs/02](docs/02-historias-usuario.md) |
 | 3 | Arquitectura y base de datos | ✅ [docs/03](docs/03-arquitectura-y-datos.md) |
 | 4 | Estructura del proyecto | ✅ [docs/04](docs/04-estructura-proyecto.md) |
-| 5 | Backend: 48 tablas, migraciones, datos iniciales | ✅ |
+| 5 | Backend: modelos, migraciones, datos iniciales | ✅ |
 | 6 | Frontend: identidad visual y páginas públicas | ✅ [docs/05](docs/05-diseno-visual.md) |
 | 7 | Autenticación y control de acceso por roles | ✅ |
 | 8 | Catálogo, carrito y pedidos | ✅ |
@@ -40,9 +54,11 @@ Orientado al mercado colombiano: pesos colombianos, departamentos y municipios c
 | 10 | Pruebas y documentación | ✅ [docs/06](docs/06-api.md) · [docs/07](docs/07-despliegue.md) |
 | 11 | Seguridad, rendimiento y accesibilidad | ✅ [docs/08](docs/08-auditoria.md) |
 | 12 | Integración continua y despliegue | ✅ [docs/07 §6](docs/07-despliegue.md) |
+| 13 | Desbloqueo de compra y despacho | ✅ [docs/16](docs/16-correcciones.md) |
+| 14 | Pivote del dominio a pergamino | ✅ [docs/14](docs/14-pergamino.md) |
+| 15 | Oferta y demanda entre comprador y vendedor | ✅ [docs/15](docs/15-oferta-demanda.md) |
 
-**Las 12 fases están completas.** 98 pruebas automatizadas, 82 % de cobertura, verificado en
-ejecución contra PostgreSQL real. Auditoría de seguridad, rendimiento y accesibilidad superada.
+**390 pruebas automatizadas, 87 % de cobertura**, verificado en ejecución contra PostgreSQL real.
 
 ---
 
@@ -51,10 +67,11 @@ ejecución contra PostgreSQL real. Auditoría de seguridad, rendimiento y accesi
 | Capa | Tecnología |
 |---|---|
 | Web | Next.js 15, React 19, TypeScript, Tailwind CSS |
-| Móvil (fase posterior) | React Native con Expo |
 | Backend | FastAPI, Python 3.12, SQLAlchemy 2, Pydantic 2, Alembic |
 | Datos | PostgreSQL 16, Redis 7, almacenamiento compatible con S3 |
 | Infraestructura | Docker, Docker Compose, Nginx |
+
+Dimensión: 16.300 líneas de Python, 16.700 de TypeScript, 100 operaciones de API, 41 páginas, 54 tablas.
 
 ---
 
@@ -115,15 +132,16 @@ docker compose exec backend python -m app.db.seed
 
 ## Datos de prueba
 
-Carga 5 productores y 9 cafés colombianos verosímiles para explorar la plataforma:
+Carga 5 vendedores y 9 lotes de pergamino verosímiles para explorar la plataforma:
 
 ```bash
 docker compose exec backend python -m app.db.demo_data
+docker compose exec backend python -m app.db.demo_images
 ```
 
-Incluye una finca del Huila, una cooperativa de Nariño, una hacienda del Quindío, una tostadora del Cauca y un caficultor de Antioquia, con variedades, procesos, altitudes y perfiles sensoriales reales de la caficultura colombiana. Las fincas y personas son ficticias.
+Incluye una finca del Huila, una cooperativa de Nariño, una hacienda del Quindío, un centro de acopio del Cauca y un caficultor de Antioquia, con factores de rendimiento de 86 a 96, humedades de 10,5 % a 11,8 %, análisis físico completo, códigos de lote y precios de 16.800 a 31.000 el kilo. Un lote queda sin existencias a propósito, para poder ver cómo se muestra un lote agotado. Las fincas, las personas y los lotes son ficticios.
 
-**Credenciales de los productores de prueba:**
+**Credenciales de los vendedores de prueba:**
 
 | Correo | Contraseña |
 |---|---|
@@ -138,6 +156,8 @@ Para crear un administrador:
 ```bash
 docker compose exec backend python -m app.db.create_admin
 ```
+
+Los datos de prueba **no incluyen cuentas de comprador**. Para probar el lado de la compra conviene registrar una: el correo de verificación llega a Mailpit, en http://localhost:8025.
 
 ---
 
@@ -154,12 +174,14 @@ docker compose exec backend pytest --cov=app --cov-report=term-missing
 ```
 
 ```bash
-docker compose exec backend ruff check app && docker compose exec backend mypy app
+docker compose exec backend ruff check app tests && docker compose exec backend mypy app
 ```
 
 ```bash
 docker compose exec backend alembic revision --autogenerate -m "descripcion del cambio"
 ```
+
+> Las pruebas usan una base de datos propia (`monkgrain_test`) que se borra y se recrea en cada sesión. **Dos ejecuciones simultáneas de `pytest` se estorban** y producen cientos de errores que no son defectos del producto.
 
 ### Frontend
 
@@ -192,7 +214,7 @@ MONK-GRAIN-APP/
 │   ├── app/
 │   │   ├── core/          Configuración, seguridad, permisos, excepciones
 │   │   ├── db/            Sesión, base declarativa, datos iniciales
-│   │   ├── models/        48 modelos SQLAlchemy por dominio
+│   │   ├── models/        53 modelos SQLAlchemy por dominio
 │   │   ├── schemas/       Schemas Pydantic de entrada y salida
 │   │   ├── modules/       Módulos de dominio (router → service → repository)
 │   │   └── integrations/  Pagos, envíos, almacenamiento, correo
@@ -215,19 +237,19 @@ El detalle de la organización y las convenciones está en [docs/04-estructura-p
 ## Funcionalidades
 
 ### Visitante
-Navegar el catálogo, buscar y filtrar por región, variedad, proceso, tueste, certificación, precio y puntaje de catación; consultar la ficha completa con la trazabilidad del café y los perfiles públicos de los productores.
+Navegar el catálogo de lotes y filtrarlos por región, variedad, proceso, certificación, precio por kilo, **factor de rendimiento máximo**, **humedad máxima** y **kilos disponibles**; consultar la ficha completa con el análisis del pergamino y los perfiles públicos de los vendedores.
 
 ### Comprador
-Registro con verificación de correo, carrito persistente que se conserva al iniciar sesión, checkout con división automática por vendedor, historial de pedidos, seguimiento de envíos, favoritos y reseñas de compras verificadas.
+Registro con verificación de correo, carrito en kilogramos que se conserva al iniciar sesión, checkout con división automática por vendedor, historial de pedidos, seguimiento de envíos, favoritos, reseñas de compras verificadas, y **solicitudes de compra**: publicar lo que busca para que los caficultores le respondan con su precio.
 
 ### Comprador empresarial
-Perfil empresarial verificado, acceso a precios mayoristas, solicitud de muestras y cotizaciones.
+Perfil empresarial verificado, acceso a precios por volumen, solicitud de muestras.
 
-### Productor
-Registro con validación administrativa, perfil de finca, publicación de cafés con ficha técnica completa, control de inventario con alertas de bajo stock, gestión de pedidos recibidos y resumen de liquidaciones.
+### Vendedor
+Registro con validación administrativa, perfil de finca, publicación de lotes con su análisis del pergamino y su trazabilidad, control de inventario en kilos con alertas, **bandeja de pedidos recibidos** con avance de estado y guía de despacho, **posturas** sobre las solicitudes de compra que sus lotes pueden atender, y resumen de liquidaciones.
 
 ### Administrador
-Aprobación de vendedores, métricas de la plataforma, moderación de reseñas, suspensión de cuentas y registro de auditoría inmutable.
+Aprobación de vendedores, métricas de la plataforma, **búsqueda y suspensión de cuentas**, **moderación de reseñas denunciadas** y **registro de auditoría inmutable**.
 
 ---
 
@@ -236,36 +258,45 @@ Aprobación de vendedores, métricas de la plataforma, moderación de reseñas, 
 | Documento | Contenido |
 |---|---|
 | [01 — Análisis del producto](docs/01-analisis-producto.md) | Público objetivo, propuesta de valor, alcance del MVP, requisitos |
-| [02 — Historias de usuario](docs/02-historias-usuario.md) | 47 historias con criterios de aceptación y matriz de trazabilidad |
-| [03 — Arquitectura y datos](docs/03-arquitectura-y-datos.md) | Decisiones de arquitectura, diagramas, modelo de 51 tablas |
+| [02 — Historias de usuario](docs/02-historias-usuario.md) | Historias con criterios de aceptación y matriz de trazabilidad |
+| [03 — Arquitectura y datos](docs/03-arquitectura-y-datos.md) | Decisiones de arquitectura, diagramas, modelo de datos |
 | [04 — Estructura del proyecto](docs/04-estructura-proyecto.md) | Organización de carpetas y convenciones de código |
 | [05 — Diseño visual](docs/05-diseno-visual.md) | Identidad de marca, paleta, decisiones de accesibilidad |
 | [06 — API](docs/06-api.md) | Los endpoints con sus parámetros, respuestas y errores |
 | [07 — Despliegue](docs/07-despliegue.md) | Instalación detallada, producción, CI/CD, respaldos, escalabilidad |
 | [08 — Auditoría](docs/08-auditoria.md) | Seguridad, rendimiento y accesibilidad verificados en ejecución |
-| [09 — Auditoría de QA](docs/09-auditoria-qa.md) | Auditoría independiente de QA, seguridad y confiabilidad, con sus hallazgos y remediación |
-| [10 — Revisión legal](docs/10-revision-legal.md) | Contraste de los documentos legales con la normativa colombiana, riesgos y decisiones de negocio pendientes |
+| [09 — Auditoría de QA](docs/09-auditoria-qa.md) | Auditoría independiente de QA, con sus hallazgos y remediación |
+| [10 — Revisión legal](docs/10-revision-legal.md) | Contraste con la normativa colombiana, riesgos y decisiones pendientes |
 | [11 — Devoluciones](docs/11-devoluciones.md) | Retracto, garantía legal, plazos en días hábiles y reembolso |
 | [12 — Reseñas](docs/12-resenas.md) | Compra verificada, promedios, reporte y moderación |
 | [13 — Comprobante](docs/13-comprobante.md) | Constancia del pedido en PDF, con los datos del artículo 53 |
+| [14 — Pergamino](docs/14-pergamino.md) | **El dominio: factor de rendimiento, análisis, unidades y el pivote** |
+| [15 — Oferta y demanda](docs/15-oferta-demanda.md) | **El mercado de dos lados: solicitudes, posturas y precio acordado** |
+| [16 — Correcciones](docs/16-correcciones.md) | **Los defectos encontrados y corregidos, con su verificación** |
 
 ---
 
 ## Decisiones de diseño destacadas
 
-Las decisiones completas están en [docs/03](docs/03-arquitectura-y-datos.md). Estas son las que más condicionan el comportamiento del sistema:
+**Todo se cuenta en kilogramos.** El precio es por kilo, el inventario son kilos y la cantidad del carrito son kilos. Es lo que hace comparables dos lotes de tamaño distinto de un vistazo. La conversión a cargas de 125 kg se muestra al lado —«1.250 kg (10 cargas)»— porque es la unidad en la que se habla del precio del café en Colombia, pero el sistema no calcula en ella.
 
-**Sub-órdenes por vendedor.** Un pedido con cafés de tres fincas genera tres sub-órdenes con estado, envío, comisión y liquidación independientes, bajo un único número de pedido. Cada productor despacha y cobra por separado.
+**El factor de rendimiento no altera el precio.** Lo pone el vendedor y el factor va al lado, informativo. Automatizar el cálculo exigiría una fuente del precio interno de referencia del día, que no existe en el sistema; la tabla para ello está diseñada pero no implementada.
 
-**El inventario se reserva, no se descuenta.** El checkout retiene las unidades; solo se descuentan cuando el pago se confirma. Un pago rechazado devuelve el stock al catálogo automáticamente.
+**Cada oferta de un lote tiene su mínimo de compra.** Un caficultor no despacha 3 kg: el flete se come la venta. El mínimo se hace cumplir en el servidor al agregar y al editar la línea del carrito, no solo al agregarla, porque bajar la cantidad después sería la forma obvia de esquivarlo.
 
-**Los importes nunca usan punto flotante.** `NUMERIC(14,2)` en PostgreSQL, `Decimal` en Python y cadenas en JSON. Los errores de redondeo son inaceptables en comisiones y liquidaciones.
+**Una postura aceptada se convierte en línea de carrito, no en pedido.** Así el comprador arma su carga con varios vendedores y paga una sola vez, en vez de un envío por cada trato. El precio acordado manda sobre el del catálogo y la base de datos exige que venga acompañado de la postura que lo respalda.
 
-**La ubicación exacta de las fincas no sale del servidor.** Se publica el municipio y una coordenada aproximada. Exponer la coordenada real de una finca rural es un riesgo de seguridad física para el productor, no solo de privacidad.
+**Sub-órdenes por vendedor.** Un pedido con lotes de tres fincas genera tres sub-órdenes con estado, envío, comisión y liquidación independientes, bajo un único número de pedido.
+
+**El inventario se reserva, no se descuenta.** El checkout retiene los kilos; solo se descuentan cuando el pago se confirma. Un pago rechazado, o una cancelación de cualquiera de las dos partes, los devuelve al catálogo.
+
+**Los importes nunca usan punto flotante.** `NUMERIC(14,2)` en PostgreSQL, `Decimal` en Python y cadenas en JSON.
+
+**La ubicación exacta de las fincas no sale del servidor.** Se publica el municipio y una coordenada aproximada. Exponer la coordenada real de una finca rural es un riesgo de seguridad física para el vendedor.
 
 **Ningún endpoint revela qué correos están registrados.** Registro, inicio de sesión y recuperación de contraseña responden igual exista o no la cuenta.
 
-**La auditoría es inmutable.** No existe endpoint para editarla ni borrarla, y el rol de aplicación en PostgreSQL solo tiene permisos de inserción y lectura sobre esa tabla.
+**La auditoría es inmutable.** No existe endpoint para editarla ni borrarla, y el rol de aplicación en PostgreSQL solo tiene permisos de inserción y lectura sobre esa tabla. Hay una prueba que recorre las rutas declaradas para que añadir un endpoint de escritura sobre la auditoría la rompa.
 
 ---
 
@@ -288,11 +319,25 @@ En ningún caso se almacenan datos completos de tarjetas: solo referencias y tok
 docker compose exec backend pytest
 ```
 
-**98 pruebas:** 62 de integración contra PostgreSQL real y 36 unitarias. Cobertura global del 82 %; en los módulos críticos: seguridad 96 %, repositorio de autenticación 98 %, servicio de catálogo 90 %.
+**390 pruebas:** 319 de integración contra PostgreSQL real y 71 unitarias. Cobertura global del **87 %**.
 
 Las pruebas de integración usan PostgreSQL, no SQLite: el esquema depende de tipos específicos (CITEXT, JSONB, ENUM nativos, índices parciales) que SQLite no reproduce, y una prueba que pase contra otro motor daría una falsa sensación de seguridad.
 
-Entre lo que verifican: que el checkout sea atómico, que el stock se reserve y se libere correctamente, que reprocesar un webhook no descuente dos veces, que la coordenada exacta de las fincas nunca aparezca en una respuesta, que los precios mayoristas no lleguen a quien no debe verlos, y que los mensajes de error no permitan averiguar si un correo está registrado.
+Entre lo que verifican: que el checkout sea atómico; que los kilos se reserven y se liberen correctamente, incluso cuando cancela el vendedor; que el mínimo de compra no se pueda esquivar editando la línea del carrito; que el precio acordado en una negociación sea el que se cobra y no el del catálogo; que reprocesar un webhook no descuente dos veces; que la coordenada exacta de las fincas nunca aparezca en una respuesta; que los precios por volumen no lleguen a quien no debe verlos; que un factor de rendimiento imposible lo rechace la base de datos; y que los mensajes de error no permitan averiguar si un correo está registrado.
+
+---
+
+## Lo que falta
+
+Lo que sigue pendiente, sin adornos:
+
+- **El frontend no tiene pruebas.** Vitest y Testing Library están instalados y `npm test` no encuentra ningún archivo. El CI tampoco lo ejecuta.
+- **Los tokens viven en `sessionStorage`**, no en cookies `httpOnly`. Aceptable para el MVP, no para producción: quedan expuestos a cualquier script que se cuele en la página. Migrarlos exige además protección CSRF.
+- **El límite de peticiones solo cubre la autenticación.** `RATE_LIMIT_DEFAULT_PER_MINUTE` está configurado y no se aplica en ningún sitio: la subida de archivos, la búsqueda del catálogo y el checkout no tienen techo.
+- **No hay proceso en segundo plano.** Nada vigila el vencimiento de las certificaciones ni los plazos de las devoluciones, que la revisión legal dejó anotado.
+- **Ocho páginas de contenido sin escribir**, enlazadas desde la navegación: `/regiones`, `/blog`, `/nosotros`, `/trazabilidad`, `/sostenibilidad`, `/ayuda`, `/contacto` y `/envios`.
+- **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino.
+- **El precio no está indexado al precio interno de referencia de la FNC.** Fue una decisión, no un olvido: exigía una fuente del precio diario y decidir quién la mantiene.
 
 ---
 
