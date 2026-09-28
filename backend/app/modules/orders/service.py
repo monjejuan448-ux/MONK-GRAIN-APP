@@ -247,7 +247,12 @@ class OrderService:
 
         for item, variant in pairs:
             self._reserve_stock(variant.id, item.quantity)
-            line_total = variant.price * item.quantity
+            # El precio efectivo: el negociado si la línea viene de una postura
+            # aceptada, y el de catálogo en cualquier otro caso. Tomar aquí el
+            # precio de la variante habría cobrado la lista del vendedor sobre un
+            # trato ya cerrado, y con ella se habría calculado la comisión.
+            unit_price = item.effective_price
+            line_total = unit_price * item.quantity
             sub_subtotal += line_total
 
             self.session.add(
@@ -260,7 +265,7 @@ class OrderService:
                     product_name_snapshot=variant.product.name,
                     variant_label_snapshot=variant.label,
                     quantity=item.quantity,
-                    unit_price=variant.price,
+                    unit_price=unit_price,
                     line_total=line_total,
                 )
             )

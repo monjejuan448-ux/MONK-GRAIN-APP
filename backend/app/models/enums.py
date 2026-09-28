@@ -283,6 +283,40 @@ OPEN_RETURN_STATUSES: frozenset[ReturnStatus] = frozenset(
 
 
 # ------------------------------------------------------------------
+# Oferta y demanda
+# ------------------------------------------------------------------
+class DemandStatus(StrEnum):
+    """Estado de una solicitud de compra publicada por un comprador.
+
+    `PARTIALLY_COVERED` existe porque en pergamino lo normal es que una
+    solicitud grande no la cubra un solo caficultor: quien busca cinco cargas
+    suele armarlas con tres vendedores. Marcarla como cumplida al aceptar la
+    primera postura habría cerrado la solicitud cuando todavía falta café.
+    """
+
+    OPEN = "open"
+    PARTIALLY_COVERED = "partially_covered"
+    FULFILLED = "fulfilled"
+    CLOSED = "closed"
+    CANCELLED = "cancelled"
+
+
+class OfferStatus(StrEnum):
+    """Estado de la postura de un vendedor sobre una solicitud."""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
+# Estados en los que una solicitud sigue admitiendo posturas.
+RECEIVING_DEMAND_STATUSES: frozenset[DemandStatus] = frozenset(
+    {DemandStatus.OPEN, DemandStatus.PARTIALLY_COVERED}
+)
+
+
+# ------------------------------------------------------------------
 # Comunicación y contenido
 # ------------------------------------------------------------------
 class RequestType(StrEnum):
@@ -314,6 +348,9 @@ class NotificationType(StrEnum):
     NEW_MESSAGE = "new_message"
     COMMERCIAL_REQUEST = "commercial_request"
     COMMERCIAL_REQUEST_ANSWERED = "commercial_request_answered"
+    DEMAND_OFFER_RECEIVED = "demand_offer_received"
+    DEMAND_OFFER_ACCEPTED = "demand_offer_accepted"
+    DEMAND_OFFER_REJECTED = "demand_offer_rejected"
     RETURN_REQUESTED = "return_requested"
     RETURN_RESOLVED = "return_resolved"
     LOW_STOCK = "low_stock"

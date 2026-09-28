@@ -42,6 +42,11 @@ class CartItemResponse(BaseModel):
     line_total: Decimal
     available_qty: int
 
+    # Verdadero cuando el precio viene de una postura aceptada y no de la lista
+    # del vendedor. La interfaz lo señala para que el comprador entienda por qué
+    # esta línea no vale lo que dice el catálogo.
+    is_negotiated: bool = False
+
     # Avisos que la interfaz debe mostrar antes de continuar (HU-CC-05, CA6).
     price_changed: bool = False
     previous_price: Decimal | None = None
