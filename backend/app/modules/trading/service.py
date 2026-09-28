@@ -475,8 +475,8 @@ class TradingService:
         return variant
 
     def _restrict_to_satisfiable(
-        self, statement: Select[tuple[DemandRequest]], profile: ProducerProfile
-    ) -> Select[tuple[DemandRequest]]:
+        self, statement: Select[DemandRequest], profile: ProducerProfile
+    ) -> Select[DemandRequest]:
         """Acota el listado a las solicitudes que los lotes del vendedor cumplen.
 
         Se compara contra el mejor lote del vendedor —el de menor factor y menor

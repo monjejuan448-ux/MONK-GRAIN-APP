@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.files import validate_document, validate_image
 from app.core.pagination import Page, PageParams
 from app.core.permissions import ProducerUser
+from app.core.rate_limit import rate_limit
 from app.db.session import get_session
 from app.models.enums import SubOrderStatus
 from app.modules.producers.catalog_service import ProducerCatalogService
@@ -188,6 +189,10 @@ def unpublish_product(
     response_model=ProducerProductDetail,
     status_code=status.HTTP_201_CREATED,
     summary="Subir una fotografía del café",
+    # Subir un archivo cuesta leerlo completo, validar su contenido real y
+    # escribirlo en el almacenamiento: es la operación más cara de la API y la
+    # única donde repetirla en bucle no le cuesta nada a quien lo hace.
+    dependencies=[Depends(rate_limit("upload", limit=20, window_seconds=60))],
 )
 async def upload_product_image(
     product_id: uuid.UUID,
@@ -296,6 +301,7 @@ def list_own_certifications(
     response_model=ProducerCertificationResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar una certificación",
+    dependencies=[Depends(rate_limit("upload", limit=20, window_seconds=60))],
 )
 async def add_certification(
     producer: ProducerUser,

@@ -150,6 +150,11 @@ jobs:
       - name: Formato
         run: npm run format:check
 
+      - name: Pruebas
+        # Vitest y Testing Library estaban instalados desde el principio sin una
+        # sola prueba, y el CI no las ejecutaba: la ausencia no rompía nada.
+        run: npm test
+
       - name: Compilación de producción
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1

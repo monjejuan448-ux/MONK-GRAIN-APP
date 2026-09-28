@@ -148,13 +148,39 @@ Se subestimaba a sí mismo. Las cifras del README se corrigieron y ahora se mide
 
 ---
 
+## 6b. Defectos encontrados al escribir las pruebas del frontend
+
+### 6b.1 Las cifras de cuatro dígitos salían sin separador de miles
+
+**Síntoma.** En la misma lista del catálogo convivían `12.000 kg` y `6775 kg`.
+
+**Causa.** `NEXT_PUBLIC_DEFAULT_LOCALE` valía `es` —español genérico—, mientras el backend usaba `DEFAULT_LOCALE=es-CO`. `Intl.NumberFormat("es")` **no agrupa los miles en números de cuatro dígitos**, por convención tipográfica del español; `es-CO` sí. El código tenía `?? "es-CO"` como respaldo, así que solo fallaba porque la variable **sí** estaba definida, con el valor incompleto.
+
+Se descubrió al escribir la primera prueba de `formatKilos`: esperaba `1.250 kg` y recibía `1250 kg`.
+
+**Corrección.** `NEXT_PUBLIC_DEFAULT_LOCALE=es-CO` en `.env` y `.env.example`, con el motivo anotado junto a la variable.
+
+**Verificación en ejecución.** El catálogo pasa de `['26.500 kg', '875 kg', '12.000 kg', '16.050 kg', '6775 kg', ...]` a tener todas las cifras agrupadas.
+
+**Pruebas.** Fijado en `tests/format.test.ts`, que ahora falla si alguien vuelve a poner `es`.
+
+### 6b.2 La imagen del backend estaba desactualizada respecto a sus dependencias
+
+**Síntoma.** Tras recrear el contenedor, `pytest` no podía ni recolectar `test_receipt.py`: `ModuleNotFoundError: No module named 'pypdf'`.
+
+**Causa.** `pypdf` está declarado en `pyproject.toml` y el Dockerfile instala `.[dev]`, pero **la imagen se construyó antes de que esa dependencia se añadiera**. Como `pyproject.toml` está montado por *bind* en `docker-compose.yml`, la declaración se ve desde dentro del contenedor mientras la instalación corresponde a una versión anterior del archivo. Alguien había instalado `pypdf` a mano en el contenedor vivo, y el arreglo se perdió al recrearlo.
+
+Es un defecto de reproducibilidad de la misma familia que la ausencia de `package-lock.json`: funciona en la máquina donde alguien lo parcheó y falla en cualquier otra.
+
+**Corrección.** `docker compose build backend`. Queda anotado que **cambiar las dependencias de `pyproject.toml` exige reconstruir la imagen**: el bind-mount hace que no se note.
+
+---
+
 ## 7. Lo que se deja anotado sin corregir
 
 Con su motivo, para que la decisión sea explícita y no un olvido:
 
-- **El frontend no tiene pruebas.** Vitest, Testing Library y jsdom están instalados; la carpeta `web/tests/` existe y está vacía. `npm test` falla por no encontrar archivos y el CI no lo ejecuta.
 - **Los tokens viven en `sessionStorage`.** Migrarlos a cookies `httpOnly` exige además protección CSRF y middleware: es un cambio de arquitectura, no una corrección.
-- **`RATE_LIMIT_DEFAULT_PER_MINUTE` está configurado y no se aplica en ningún sitio.** Solo los endpoints de autenticación tienen techo.
 - **No hay proceso en segundo plano.** Nada vigila el vencimiento de certificaciones ni los plazos de devolución.
 - **Las pruebas comparten una sola base de datos** (`monkgrain_test`, que el conftest borra y recrea por sesión). Dos ejecuciones simultáneas de `pytest` se estorban y producen cientos de errores que no son defectos del producto. El CI ejecuta una sola sesión, así que no le afecta.
 - **`migrations/env.py` tiene un hallazgo de Ruff** (`SIM103`) que es anterior a este trabajo. El CI solo revisa `app` y `tests`, de modo que no lo detecta.
