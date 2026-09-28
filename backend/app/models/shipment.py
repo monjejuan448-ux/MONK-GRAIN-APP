@@ -54,7 +54,9 @@ class Shipment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     shipping_cost: Mapped[Decimal] = mapped_column(
         Numeric(14, 2), default=Decimal("0.00"), nullable=False
     )
-    weight_grams: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    # Peso despachado en kilogramos. En gramos, un lote de media tonelada son
+    # 500.000: la unidad del comercio de pergamino es el kilo.
+    weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     status: Mapped[ShipmentStatus] = mapped_column(
         pg_enum(ShipmentStatus, "shipment_status"),

@@ -71,7 +71,10 @@ class CartService:
     # Operaciones
     # ------------------------------------------------------------------
     def add_item(self, user: User, variant_id: uuid.UUID, quantity: int) -> CartResponse:
-        """Agrega una variante al carrito o suma a la línea existente."""
+        """Agrega kilos de un lote al carrito o los suma a la línea existente.
+
+        Las cantidades son kilogramos: el pergamino se vende por peso.
+        """
         cart = self.get_or_create_cart(user)
         variant = self._get_purchasable_variant(variant_id)
 
@@ -81,10 +84,12 @@ class CartService:
         desired = (existing.quantity if existing else 0) + quantity
         available = variant.inventory.available_qty if variant.inventory else 0
 
-        # No se permite superar el stock disponible (HU-CC-05, CA4).
+        self._check_minimum(variant, desired)
+
+        # No se permite superar los kilos disponibles (HU-CC-05, CA4).
         if desired > available:
             raise BusinessRuleError(
-                f"Solo quedan {available} unidades disponibles de esta presentación.",
+                f"Solo quedan {available} kg disponibles de este lote.",
                 details={"available_qty": available},
             )
 
@@ -103,6 +108,20 @@ class CartService:
         self.session.commit()
         return self.get_cart(user)
 
+    @staticmethod
+    def _check_minimum(variant: ProductVariant, quantity_kg: int) -> None:
+        """Hace valer el mínimo de compra del lote.
+
+        El vendedor lo fija porque por debajo de cierta cantidad el flete se come
+        la venta. Se comprueba aquí, y no solo en la interfaz, porque el endpoint
+        se puede llamar directamente.
+        """
+        if quantity_kg < variant.min_qty_kg:
+            raise BusinessRuleError(
+                f"Este lote se vende desde {variant.min_qty_kg} kg.",
+                details={"min_qty_kg": variant.min_qty_kg},
+            )
+
     def update_item(self, user: User, item_id: uuid.UUID, quantity: int) -> CartResponse:
         cart = self.get_or_create_cart(user)
         item = self.session.scalar(
@@ -114,9 +133,10 @@ class CartService:
             raise NotFoundError("Este producto no está en tu carrito.")
 
         available = item.variant.inventory.available_qty if item.variant.inventory else 0
+        self._check_minimum(item.variant, quantity)
         if quantity > available:
             raise BusinessRuleError(
-                f"Solo quedan {available} unidades disponibles de esta presentación.",
+                f"Solo quedan {available} kg disponibles de este lote.",
                 details={"available_qty": available},
             )
 
@@ -238,8 +258,8 @@ class CartService:
                     product_slug=product.slug,
                     producer_name=producer.brand_name or producer.legal_name,
                     image_url=build_media_url(primary.image_key) if primary else None,
-                    weight_grams=variant.weight_grams,
-                    grind=variant.grind,
+                    presentation=variant.presentation,
+                    min_qty_kg=variant.min_qty_kg,
                     quantity=item.quantity,
                     unit_price=variant.price,
                     line_total=variant.price * item.quantity,

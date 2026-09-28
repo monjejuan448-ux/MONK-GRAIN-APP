@@ -86,11 +86,18 @@ class CatalogRepository:
         self, statement: Select[tuple[Product]], filters: ProductFilters
     ) -> Select[tuple[Product]]:
         """Aplica los filtros combinables del catálogo."""
-        # Ordenar por puntaje también requiere la tabla de atributos, aunque no
-        # se esté filtrando por ninguno de sus campos.
+        # Ordenar por factor de rendimiento también requiere la tabla de
+        # atributos, aunque no se esté filtrando por ninguno de sus campos.
         needs_attributes = (
-            any((filters.variety, filters.process, filters.roast, filters.min_score is not None))
-            or filters.sort == "score"
+            any(
+                (
+                    filters.variety,
+                    filters.process,
+                    filters.max_yield_factor is not None,
+                    filters.max_moisture_pct is not None,
+                )
+            )
+            or filters.sort == "yield_factor"
         )
         needs_geography = any((filters.department, filters.municipality, filters.region))
 
@@ -131,13 +138,29 @@ class CatalogRepository:
             )
         if filters.process:
             statement = statement.where(CoffeeAttributes.process == filters.process)
-        if filters.roast:
-            statement = statement.where(CoffeeAttributes.roast == filters.roast)
-        if filters.min_score is not None:
-            statement = statement.where(CoffeeAttributes.cupping_score >= filters.min_score)
+        # El factor se filtra por su máximo: un factor más bajo es mejor café,
+        # así que lo que un comprador acota es el techo que acepta. Los lotes sin
+        # factor declarado quedan fuera —no se puede afirmar que lo cumplan—.
+        if filters.max_yield_factor is not None:
+            statement = statement.where(CoffeeAttributes.yield_factor <= filters.max_yield_factor)
+        if filters.max_moisture_pct is not None:
+            statement = statement.where(CoffeeAttributes.moisture_pct <= filters.max_moisture_pct)
 
-        if filters.state:
-            statement = statement.where(Product.state == filters.state)
+        if filters.min_available_kg is not None:
+            # Kilos vendibles: existencias menos lo reservado por pedidos en
+            # curso. Basta con que una variante activa los tenga.
+            statement = statement.where(
+                Product.id.in_(
+                    select(ProductVariant.product_id)
+                    .join(Inventory, Inventory.variant_id == ProductVariant.id)
+                    .where(
+                        ProductVariant.is_active.is_(True),
+                        ProductVariant.deleted_at.is_(None),
+                        Inventory.stock_qty - Inventory.reserved_qty >= filters.min_available_kg,
+                    )
+                )
+            )
+
         if filters.producer_id:
             statement = statement.where(Product.producer_id == filters.producer_id)
         if filters.min_price is not None:
@@ -169,7 +192,9 @@ class CatalogRepository:
             "rating": Product.rating_avg.desc(),
             "popular": Product.sales_count.desc(),
             "newest": Product.published_at.desc(),
-            "score": CoffeeAttributes.cupping_score.desc().nullslast(),
+            # Ascendente a propósito: en el factor de rendimiento, menos es
+            # mejor. Los lotes sin factor declarado van al final.
+            "yield_factor": CoffeeAttributes.yield_factor.asc().nullslast(),
         }
         # El identificador desempata para que la paginación sea estable: sin un
         # criterio único, dos productos con el mismo precio podrían alternar de

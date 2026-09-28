@@ -331,8 +331,8 @@ class ProducerCatalogService:
         variant = ProductVariant(
             product_id=product.id,
             sku=self._build_sku(product, payload),
-            weight_grams=payload.weight_grams,
-            grind=payload.grind,
+            presentation=payload.presentation,
+            min_qty_kg=payload.min_qty_kg,
             price=payload.price,
             wholesale_price=payload.wholesale_price,
             is_active=payload.is_active,
@@ -362,8 +362,8 @@ class ProducerCatalogService:
         if variant is None:
             raise NotFoundError("No encontramos esta presentación.")
 
-        variant.weight_grams = payload.weight_grams
-        variant.grind = payload.grind
+        variant.presentation = payload.presentation
+        variant.min_qty_kg = payload.min_qty_kg
         variant.price = payload.price
         variant.wholesale_price = payload.wholesale_price
         variant.is_active = payload.is_active
@@ -408,18 +408,22 @@ class ProducerCatalogService:
         return self._to_detail(self._owned_product(user, product_id))
 
     def _build_sku(self, product: Product, payload: VariantInput) -> str:
-        """Referencia legible y única de la presentación."""
-        base = slugify(product.name)[:28].upper().replace("-", "-")
-        grind = payload.grind.value[:3].upper() if payload.grind else "STD"
-        candidate = f"{base}-{payload.weight_grams:.0f}-{grind}"
+        """Referencia legible y única de la oferta.
+
+        Se compone del nombre del lote y su mínimo en kilos, que es lo que la
+        distingue de otra oferta del mismo café.
+        """
+        base = slugify(product.name)[:28].upper()
+        presentation = slugify(payload.presentation)[:10].upper() or "STD"
+        candidate = f"{base}-{payload.min_qty_kg}KG-{presentation}"
         suffix = 2
         while (
             self.session.scalar(select(ProductVariant.id).where(ProductVariant.sku == candidate))
             is not None
         ):
-            candidate = f"{base}-{payload.weight_grams:.0f}-{grind}-{suffix}"
+            candidate = f"{base}-{payload.min_qty_kg}KG-{presentation}-{suffix}"
             suffix += 1
-        return candidate
+        return candidate[:60]
 
     # ------------------------------------------------------------------
     # Consulta
@@ -480,8 +484,8 @@ class ProducerCatalogService:
                     id=variant.id,
                     sku=variant.sku,
                     label=variant.label,
-                    weight_grams=variant.weight_grams,
-                    grind=variant.grind,
+                    presentation=variant.presentation,
+                    min_qty_kg=variant.min_qty_kg,
                     price=variant.price,
                     wholesale_price=variant.wholesale_price,
                     is_active=variant.is_active,

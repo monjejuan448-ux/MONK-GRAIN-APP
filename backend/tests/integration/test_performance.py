@@ -77,7 +77,7 @@ class TestQueryCounts:
         service = CatalogService(session)
 
         count_queries.count = 0
-        service.get_product_detail("cafe-de-prueba")
+        service.get_product_detail("pergamino-de-prueba")
 
         assert count_queries.count <= MAX_QUERIES_PRODUCT_DETAIL
 

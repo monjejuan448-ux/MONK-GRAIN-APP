@@ -12,45 +12,66 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
-from app.models.enums import CoffeeProcess, CoffeeState, GrindType, ProductStatus, RoastLevel
+from app.models.enums import CoffeeProcess, CoffeeState, ProductStatus
 from app.schemas.common import ORMModel
 
 
 class CoffeeAttributesInput(BaseModel):
-    """Datos de catación y origen del café."""
+    """Origen, análisis y trazabilidad del lote de pergamino.
+
+    Todo es opcional: un caficultor publica lo que tenga medido. Exigir el
+    análisis físico completo dejaría fuera a quien no lo ha mandado a un
+    laboratorio, que es la mayoría.
+    """
 
     variety: str | None = Field(default=None, max_length=100)
     process: CoffeeProcess | None = None
-    roast: RoastLevel | None = None
     altitude_masl: int | None = Field(default=None, ge=0, le=3000)
-    sensory_profile: str | None = Field(default=None, max_length=2000)
-    tasting_notes: list[str] | None = Field(default=None, max_length=10)
-    # La escala SCA llega a 100. El modelo académico usaba DECIMAL(3,2), que no
-    # admite un 100.00; la columna es NUMERIC(5,2).
-    cupping_score: Decimal | None = Field(default=None, ge=0, le=100)
     harvest_date: date | None = None
-    roast_date: date | None = None
-    moisture_pct: Decimal | None = Field(default=None, ge=0, le=100)
 
-    @field_validator("tasting_notes")
+    # Factor de rendimiento: kilos de pergamino que hay que trillar para obtener
+    # un saco de 70 kg de excelso. Más bajo es mejor; el estándar es 94.
+    yield_factor: Decimal | None = Field(default=None, ge=80, le=130)
+    moisture_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    healthy_bean_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    pasilla_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    borer_damage_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    screen_sizes: list[int] | None = Field(default=None, max_length=7)
+
+    lot_code: str | None = Field(default=None, max_length=60)
+    sica_code: str | None = Field(default=None, max_length=40)
+    drying_method: str | None = Field(default=None, max_length=80)
+    notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("screen_sizes")
     @classmethod
-    def clean_notes(cls, value: list[str] | None) -> list[str] | None:
+    def clean_screens(cls, value: list[int] | None) -> list[int] | None:
+        """Las mallas del café van de la 14 a la 20."""
         if value is None:
             return None
-        notes = [note.strip() for note in value if note.strip()]
-        if any(len(note) > 50 for note in notes):
-            raise ValueError("Cada nota de cata admite hasta 50 caracteres.")
-        return notes or None
+        invalid = sorted({size for size in value if size < 14 or size > 20})
+        if invalid:
+            raise ValueError(
+                "Las mallas válidas van de 14 a 20. No existen: "
+                + ", ".join(str(size) for size in invalid)
+                + "."
+            )
+        return sorted(set(value)) or None
 
 
 class ProductInput(BaseModel):
-    """Datos con los que el vendedor crea o edita su café."""
+    """Datos con los que el vendedor crea o edita su lote de pergamino.
+
+    `base_price` y `wholesale_price` son precios **por kilogramo**.
+    """
 
     name: str = Field(min_length=3, max_length=180)
     description: str = Field(min_length=20, max_length=5000)
-    state: CoffeeState
+    # Se conserva en la entrada aunque hoy solo admita `pergamino`: el día que
+    # se habilite un segundo estado, el vendedor ya lo estará declarando.
+    state: CoffeeState = CoffeeState.PERGAMINO
     base_price: Decimal = Field(gt=0, le=Decimal("99999999.99"))
     wholesale_price: Decimal | None = Field(default=None, gt=0, le=Decimal("99999999.99"))
     wholesale_min_qty: int | None = Field(default=None, ge=1)
@@ -66,20 +87,42 @@ class ProductInput(BaseModel):
     def wholesale_below_retail(cls, value: Decimal | None, info: ValidationInfo) -> Decimal | None:
         base = info.data.get("base_price")
         if value is not None and base is not None and value >= base:
-            raise ValueError("El precio mayorista debe ser menor que el precio al detal.")
+            raise ValueError(
+                "El precio por volumen debe ser menor que el precio por kilo corriente."
+            )
         return value
 
 
 class VariantInput(BaseModel):
-    """Presentación concreta: peso, molienda y precio propios."""
+    """Oferta concreta del lote: cómo se entrega, mínimo y precio por kilo.
 
-    weight_grams: Decimal = Field(gt=0, le=Decimal("50000"))
-    grind: GrindType | None = None
+    `price` es el precio de un kilogramo y `stock_qty` los kilos disponibles.
+    """
+
+    presentation: str = Field(min_length=3, max_length=80)
+    min_qty_kg: int = Field(default=1, ge=1, le=100_000)
     price: Decimal = Field(gt=0, le=Decimal("99999999.99"))
     wholesale_price: Decimal | None = Field(default=None, gt=0)
     stock_qty: int = Field(default=0, ge=0)
     low_stock_threshold: int = Field(default=5, ge=0)
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def minimum_must_fit_the_stock(self) -> VariantInput:
+        """El mínimo no puede superar las existencias: la oferta sería
+        incomprable y el comprador solo lo descubriría en el carrito.
+
+        Se valida sobre el modelo ya construido y no campo por campo: un
+        `field_validator` sobre `min_qty_kg` no llega a ver `stock_qty`, porque
+        Pydantic valida en el orden en que están declarados los campos y el
+        inventario va después. La comprobación no se ejecutaba nunca.
+        """
+        if self.stock_qty > 0 and self.min_qty_kg > self.stock_qty:
+            raise ValueError(
+                f"El mínimo de compra ({self.min_qty_kg} kg) no puede superar los "
+                f"kilos disponibles ({self.stock_qty} kg)."
+            )
+        return self
 
 
 class ProductImageResponse(ORMModel):
@@ -94,8 +137,8 @@ class VariantDetail(ORMModel):
     id: uuid.UUID
     sku: str
     label: str
-    weight_grams: Decimal
-    grind: GrindType | None
+    presentation: str
+    min_qty_kg: int
     price: Decimal
     wholesale_price: Decimal | None
     is_active: bool

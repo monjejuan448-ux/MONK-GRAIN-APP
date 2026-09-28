@@ -5,16 +5,21 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import GrindType
+# Tope de kilos por línea. El pergamino se comercia en cientos o miles de kilos,
+# de modo que el límite anterior de 999 —pensado para bolsas— habría impedido
+# comprar una tonelada. Cien toneladas es holgado y sigue acotando una cantidad
+# absurda escrita por error.
+MAX_KG_PER_LINE = 100_000
 
 
 class CartItemAdd(BaseModel):
     variant_id: uuid.UUID
-    quantity: int = Field(ge=1, le=999)
+    # Cantidad en kilogramos.
+    quantity: int = Field(ge=1, le=MAX_KG_PER_LINE)
 
 
 class CartItemUpdate(BaseModel):
-    quantity: int = Field(ge=1, le=999)
+    quantity: int = Field(ge=1, le=MAX_KG_PER_LINE)
 
 
 class CartItemResponse(BaseModel):
@@ -27,8 +32,11 @@ class CartItemResponse(BaseModel):
     product_slug: str
     producer_name: str
     image_url: str | None
-    weight_grams: Decimal
-    grind: GrindType | None
+    presentation: str
+    # Mínimo de compra del lote, en kilos. Va en la respuesta para que el
+    # carrito pueda impedir bajar de ahí sin tener que preguntar al catálogo.
+    min_qty_kg: int
+    # Cantidad y existencias, en kilogramos.
     quantity: int
     unit_price: Decimal
     line_total: Decimal

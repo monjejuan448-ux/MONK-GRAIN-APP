@@ -166,13 +166,13 @@ class CatalogService:
         farm = product.farm
         municipality = farm.municipality if farm else None
 
-        # Disponible si alguna variante activa tiene existencias reales.
-        is_available = any(
-            variant.is_active
-            and variant.deleted_at is None
-            and variant.inventory is not None
-            and variant.inventory.available_qty > 0
+        # Kilos vendibles sumando las variantes activas. Se calcula aquí y no en
+        # la consulta porque las variantes ya vienen cargadas: una agregación en
+        # SQL añadiría un recorrido a la tabla sin ahorrar nada.
+        available_kg = sum(
+            variant.inventory.available_qty
             for variant in product.variants
+            if variant.is_active and variant.deleted_at is None and variant.inventory is not None
         )
 
         return ProductListItem(
@@ -194,19 +194,20 @@ class CatalogService:
             region=farm.region.name if farm and farm.region else None,
             municipality=municipality.name if municipality else None,
             department=municipality.department.name if municipality else None,
-            sensory_profile=product.attributes.sensory_profile if product.attributes else None,
-            cupping_score=product.attributes.cupping_score if product.attributes else None,
+            yield_factor=product.attributes.yield_factor if product.attributes else None,
+            moisture_pct=product.attributes.moisture_pct if product.attributes else None,
+            available_kg=available_kg,
             rating_avg=product.rating_avg,
             rating_count=product.rating_count,
-            is_available=is_available,
+            is_available=available_kg > 0,
         )
 
     def _to_variant(self, variant: ProductVariant, show_wholesale: bool) -> VariantResponse:
         return VariantResponse(
             id=variant.id,
             sku=variant.sku,
-            weight_grams=variant.weight_grams,
-            grind=variant.grind,
+            presentation=variant.presentation,
+            min_qty_kg=variant.min_qty_kg,
             price=variant.price,
             # El precio mayorista se omite por completo si no corresponde: no se
             # envía y se oculta en la interfaz, se envía solo a quien puede verlo.

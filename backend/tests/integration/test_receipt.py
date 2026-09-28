@@ -100,8 +100,10 @@ class TestReceipt:
 
         assert order.order_number in text
         assert buyer.full_name in text
-        assert "Café de Prueba" in text  # nombre congelado del producto
-        assert "250 g · grano entero" in text  # presentación congelada
+        assert "Pergamino de Prueba" in text  # nombre congelado del producto
+        # Presentación congelada. El lote de prueba se vende desde 1 kg, así que
+        # la etiqueta es solo la presentación, sin la coletilla del mínimo.
+        assert "A granel, en costal de fique" in text
         assert "Calle 10 # 5-20" in text  # dirección de entrega
         assert "Pitalito, Huila" in text  # municipio y departamento resueltos
         assert "Total COP" in text

@@ -27,7 +27,7 @@ class TestProductListing:
         assert response.status_code == 200
         body = response.json()
         assert body["total"] == 1
-        assert body["items"][0]["name"] == "Café de Prueba"
+        assert body["items"][0]["name"] == "Pergamino de Prueba"
 
     def test_unpublished_products_are_hidden(
         self, client: TestClient, product_variant: ProductVariant, session: Session
@@ -58,11 +58,28 @@ class TestProductListing:
         assert client.get(f"{API}/products?process=washed").json()["total"] == 1
         assert client.get(f"{API}/products?process=natural").json()["total"] == 0
 
-    def test_filter_by_minimum_cupping_score(
+    def test_filter_by_maximum_yield_factor(
         self, client: TestClient, product_variant: ProductVariant
     ) -> None:
-        assert client.get(f"{API}/products?min_score=80").json()["total"] == 1
-        assert client.get(f"{API}/products?min_score=90").json()["total"] == 0
+        """El factor se acota por arriba: menos es mejor café, así que lo que un
+        comprador declara es el techo que acepta. El lote de prueba tiene 92."""
+        assert client.get(f"{API}/products?max_yield_factor=94").json()["total"] == 1
+        assert client.get(f"{API}/products?max_yield_factor=90").json()["total"] == 0
+
+    def test_filter_by_maximum_moisture(
+        self, client: TestClient, product_variant: ProductVariant
+    ) -> None:
+        """Por encima del 12 % el pergamino corre riesgo de hongos. El lote de
+        prueba está al 11 %."""
+        assert client.get(f"{API}/products?max_moisture_pct=12").json()["total"] == 1
+        assert client.get(f"{API}/products?max_moisture_pct=10.5").json()["total"] == 0
+
+    def test_filter_by_minimum_available_kilos(
+        self, client: TestClient, product_variant: ProductVariant
+    ) -> None:
+        """Quien necesita media tonelada no quiere ver lotes de 10 kg."""
+        assert client.get(f"{API}/products?min_available_kg=10").json()["total"] == 1
+        assert client.get(f"{API}/products?min_available_kg=11").json()["total"] == 0
 
     def test_price_range_filter(self, client: TestClient, product_variant: ProductVariant) -> None:
         assert client.get(f"{API}/products?max_price=50000").json()["total"] == 1
@@ -75,11 +92,11 @@ class TestProductListing:
         assert client.get(f"{API}/products?q=cafe").json()["total"] == 1
 
     def test_filters_combine(self, client: TestClient, product_variant: ProductVariant) -> None:
-        combined = client.get(f"{API}/products?process=washed&min_score=80&max_price=50000")
+        combined = client.get(f"{API}/products?process=washed&max_yield_factor=94&max_price=50000")
         assert combined.json()["total"] == 1
 
-        # Basta con que un criterio no se cumpla para excluir el producto.
-        contradictory = client.get(f"{API}/products?process=washed&min_score=95")
+        # Basta con que un criterio no se cumpla para excluir el lote.
+        contradictory = client.get(f"{API}/products?process=washed&max_yield_factor=85")
         assert contradictory.json()["total"] == 0
 
     def test_sorting_by_price(
@@ -111,13 +128,18 @@ class TestProductDetail:
     def test_detail_includes_traceability(
         self, client: TestClient, product_variant: ProductVariant
     ) -> None:
-        response = client.get(f"{API}/products/cafe-de-prueba")
+        response = client.get(f"{API}/products/pergamino-de-prueba")
 
         assert response.status_code == 200
         body = response.json()
         assert body["attributes"]["variety"] == "Caturra"
         assert body["attributes"]["process"] == "washed"
         assert body["attributes"]["altitude_masl"] == 1750
+        # El análisis del pergamino es lo que decide una compra por volumen.
+        assert body["attributes"]["yield_factor"] == "92.00"
+        assert body["attributes"]["moisture_pct"] == "11.00"
+        assert body["attributes"]["screen_sizes"] == [15, 16, 17]
+        assert body["attributes"]["lot_code"] == "PR-2026-001"
         assert body["farm"]["name"] == "Finca de Prueba"
 
     def test_exact_farm_coordinates_are_never_exposed(
@@ -125,7 +147,7 @@ class TestProductDetail:
     ) -> None:
         """Publicar la coordenada real de una finca rural es un riesgo de
         seguridad física para el productor, no solo de privacidad (ADR-08)."""
-        body = client.get(f"{API}/products/cafe-de-prueba").json()
+        body = client.get(f"{API}/products/pergamino-de-prueba").json()
 
         farm = body["farm"]
         assert "exact_lat" not in farm
@@ -133,22 +155,22 @@ class TestProductDetail:
         assert farm["approx_lat"] is not None
 
         # Ni siquiera en el cuerpo completo de la respuesta.
-        assert "1.860000" not in client.get(f"{API}/products/cafe-de-prueba").text
+        assert "1.860000" not in client.get(f"{API}/products/pergamino-de-prueba").text
 
     def test_wholesale_price_hidden_from_anonymous_visitors(
         self, client: TestClient, product_variant: ProductVariant
     ) -> None:
         """El precio mayorista solo lo ve un comprador empresarial verificado."""
-        body = client.get(f"{API}/products/cafe-de-prueba").json()
+        body = client.get(f"{API}/products/pergamino-de-prueba").json()
 
         assert body["variants"][0]["wholesale_price"] is None
-        assert "35000" not in client.get(f"{API}/products/cafe-de-prueba").text
+        assert "35000" not in client.get(f"{API}/products/pergamino-de-prueba").text
 
     def test_wholesale_price_hidden_from_regular_buyers(
         self, client: TestClient, product_variant: ProductVariant, buyer_token: str
     ) -> None:
         body = client.get(
-            f"{API}/products/cafe-de-prueba",
+            f"{API}/products/pergamino-de-prueba",
             headers={"Authorization": f"Bearer {buyer_token}"},
         ).json()
 
