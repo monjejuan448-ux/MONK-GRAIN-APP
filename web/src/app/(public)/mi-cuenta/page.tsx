@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Heart, MapPin, MessageSquare, Package, ShoppingBag, Undo2 } from "lucide-react";
+import {
+  Heart,
+  MapPin,
+  Megaphone,
+  MessageSquare,
+  Package,
+  ShoppingBag,
+  Undo2,
+} from "lucide-react";
 
 import { EmptyState, ErrorState, Skeleton } from "@/components/shared/states";
 import { StatCard } from "@/components/shared/StatCard";
@@ -178,6 +186,11 @@ export default function BuyerAccountPage() {
                   href="/mi-cuenta/devoluciones"
                   icon={Undo2}
                   label="Mis devoluciones"
+                />
+                <AccountLink
+                  href="/mi-cuenta/solicitudes"
+                  icon={Megaphone}
+                  label="Lo que estoy buscando"
                 />
                 <AccountLink href="/favoritos" icon={Heart} label="Mis favoritos" />
                 <AccountLink

@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Coffee, Package, Star, TrendingUp, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  Coffee,
+  Megaphone,
+  Package,
+  Star,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 
 import { EmptyState, ErrorState, Skeleton } from "@/components/shared/states";
 import { StatCard } from "@/components/shared/StatCard";
@@ -122,6 +130,25 @@ export default function ProducerDashboardPage() {
             className={cn(buttonVariants({ variant: "outline" }))}
           >
             Certificaciones
+          </Link>
+          <Link
+            href="/productor/pedidos"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Pedidos
+          </Link>
+          <Link
+            href="/productor/solicitudes"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            <Megaphone className="mr-1.5 size-4" aria-hidden="true" />
+            Quién compra
+          </Link>
+          <Link
+            href="/productor/posturas"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Mis posturas
           </Link>
           <Link
             href="/productor/devoluciones"
