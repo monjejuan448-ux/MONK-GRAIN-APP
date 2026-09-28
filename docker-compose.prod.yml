@@ -1,0 +1,92 @@
+# ============================================================
+# MONK GRAIN — Sobrescritura para producción
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Diferencias con el entorno de desarrollo:
+#   - Imágenes de la etapa `production`, con usuario sin privilegios.
+#   - Sin volúmenes de código montados: la imagen es inmutable.
+#   - Nginx al frente, con TLS y límite de peticiones.
+#   - Sin Mailpit ni MinIO: se usan servicios reales.
+#   - Puertos de las bases de datos no expuestos al exterior.
+# ============================================================
+
+services:
+  postgres:
+    # La base de datos no debe ser alcanzable desde fuera del servidor.
+    # Si se usa un servicio gestionado, elimina este bloque por completo.
+    ports: []
+    restart: always
+    command: >-
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=100
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+
+  redis:
+    ports: []
+    restart: always
+    # `noeviction` es deliberado: si Redis se queda sin memoria, preferimos que
+    # falle de forma visible antes de que descarte contadores del limitador de
+    # peticiones sin avisar.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    restart: always
+    # El código viaja dentro de la imagen: nada se monta desde el servidor.
+    volumes: []
+    ports: []
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  web:
+    build:
+      context: ./web
+      target: production
+    restart: always
+    volumes: []
+    ports: []
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      API_INTERNAL_URL: http://backend:8000/api/v1
+
+  # Mailpit y MinIO son herramientas de desarrollo: en producción se usan un
+  # servicio SMTP y un almacenamiento S3 reales, configurados por entorno.
+  mailpit:
+    profiles: ["nunca"]
+
+  minio:
+    profiles: ["nunca"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: monkgrain_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend
+      - web
+    networks: [monkgrain]
+
+volumes:
+  nginx_cache:

@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Paleta de MONK GRAIN expresada en HSL para que Tailwind pueda modular la
+   * opacidad. El modo oscuro redefine los mismos tokens: ningún componente
+   * necesita saber en qué tema está.
+   */
+  :root {
+    --background: 40 60% 99%; /* #FFFDF8 blanco cálido */
+    --foreground: 25 45% 16%; /* #3B2417 café oscuro */
+
+    --card: 0 0% 100%;
+    --card-foreground: 25 45% 16%;
+
+    --primary: 25 34% 33%; /* #6F4E37 café tostado */
+    --primary-foreground: 38 44% 91%;
+
+    --secondary: 155 42% 21%; /* #1F4D3A verde bosque */
+    --secondary-foreground: 38 44% 91%;
+
+    --muted: 38 44% 91%; /* #F4EBDD crema */
+    --muted-foreground: 25 20% 42%;
+
+    --accent: 36 49% 56%; /* #C79A55 dorado suave */
+    --accent-foreground: 25 45% 16%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 33 25% 86%;
+    --input: 33 25% 86%;
+    --ring: 25 34% 33%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 25 30% 10%;
+    --foreground: 38 44% 93%;
+
+    --card: 25 28% 14%;
+    --card-foreground: 38 44% 93%;
+
+    --primary: 30 32% 55%;
+    --primary-foreground: 25 45% 12%;
+
+    --secondary: 152 25% 38%;
+    --secondary-foreground: 38 44% 93%;
+
+    --muted: 25 20% 20%;
+    --muted-foreground: 33 18% 68%;
+
+    --accent: 36 52% 62%;
+    --accent-foreground: 25 45% 12%;
+
+    --destructive: 0 60% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 18% 25%;
+    --input: 25 18% 25%;
+    --ring: 30 32% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+
+  /* El foco debe ser siempre visible: la navegación por teclado es un
+     requisito de accesibilidad, no una preferencia estética (HU-TRX-01). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Respeta a quien pidió menos movimiento en su sistema operativo. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Enlace de salto para usuarios de teclado y lectores de pantalla. */
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground;
+  }
+
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  /*
+    Tipografía de los documentos legales. Se define aquí en lugar de repetir
+    clases en cada etiqueta porque son textos largos escritos como prosa: lo
+    que importa es que se lean cómodamente y que la jerarquía de títulos se
+    distinga de un vistazo.
+  */
+  .prose-legal {
+    @apply text-[15px] leading-relaxed text-foreground;
+  }
+
+  .prose-legal h1 {
+    @apply mb-2 font-display text-3xl font-bold leading-tight;
+  }
+
+  .prose-legal h2 {
+    @apply mb-3 mt-10 border-b border-border pb-2 font-display text-xl font-semibold;
+  }
+
+  .prose-legal h3 {
+    @apply mb-2 mt-6 font-display text-base font-semibold;
+  }
+
+  .prose-legal p {
+    @apply mb-4;
+  }
+
+  .prose-legal ul {
+    @apply mb-4 list-disc space-y-1.5 pl-6;
+  }
+
+  .prose-legal ol {
+    @apply mb-4 list-decimal space-y-1.5 pl-6;
+  }
+
+  .prose-legal a {
+    @apply font-medium text-primary underline underline-offset-2;
+  }
+
+  .prose-legal hr {
+    @apply my-8 border-border;
+  }
+
+  .prose-legal strong {
+    @apply font-semibold;
+  }
+}

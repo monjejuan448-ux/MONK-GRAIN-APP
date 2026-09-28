@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comprobante {{ order.order_number }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 22mm 16mm;
+          @bottom-center { content: "Página " counter(page) " de " counter(pages);
+                           font-size: 8pt; color: #6b6b6b; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt; color: #241c17; line-height: 1.45; }
+  h1 { font-size: 17pt; margin: 0; letter-spacing: .5px; }
+  h2 { font-size: 11pt; margin: 18px 0 6px; padding-bottom: 3px; border-bottom: 1px solid #d9d2ca; }
+  h3 { font-size: 10pt; margin: 0 0 2px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start;
+          border-bottom: 2px solid #4a3428; padding-bottom: 10px; }
+  .brand { color: #4a3428; }
+  .muted { color: #6b6b6b; }
+  .small { font-size: 8.5pt; }
+  .right { text-align: right; }
+  .note { background: #f6f2ee; border-left: 3px solid #b08d57; padding: 7px 10px; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th { text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .4px;
+       color: #6b6b6b; border-bottom: 1px solid #d9d2ca; padding: 4px 0; }
+  td { padding: 5px 0; border-bottom: 1px solid #eee7df; vertical-align: top; }
+  .seller { margin-top: 14px; page-break-inside: avoid; }
+  .totals { margin-top: 14px; width: 58%; margin-left: 42%; }
+  .totals td { border: 0; padding: 3px 0; }
+  .totals .grand td { border-top: 1.5px solid #4a3428; padding-top: 7px;
+                      font-size: 12pt; font-weight: bold; }
+  .cols { display: flex; gap: 18px; }
+  .cols > div { flex: 1; }
+  footer { margin-top: 22px; padding-top: 8px; border-top: 1px solid #d9d2ca;
+           font-size: 8pt; color: #6b6b6b; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="brand">
+    <h1>MONK GRAIN</h1>
+    <p class="small muted" style="margin:2px 0 0">Café colombiano de origen</p>
+  </div>
+  <div class="right">
+    <h3>Comprobante de pedido</h3>
+    <p style="margin:0"><strong>{{ order.order_number }}</strong></p>
+    <p class="small muted" style="margin:0">Realizado el {{ placed_at }}</p>
+    <p class="small muted" style="margin:0">Emitido el {{ issued_at }}</p>
+  </div>
+</div>
+
+<div class="note small">
+  <strong>Este documento no es una factura.</strong> Es la constancia de tu compra.
+  La factura electrónica la expide cada vendedor conforme a la normativa de la DIAN.
+</div>
+
+<div class="cols">
+  <div>
+    <h2>Comprador</h2>
+    <p style="margin:0">{{ buyer_name }}</p>
+    <p class="small muted" style="margin:0">{{ buyer_email }}</p>
+  </div>
+  <div>
+    <h2>Entrega</h2>
+    <p style="margin:0">{{ address.recipient_name }}</p>
+    <p class="small" style="margin:0">
+      {{ address.street_address }}{% if address.neighborhood %}, {{ address.neighborhood }}{% endif %}<br>
+      {% if address.place %}{{ address.place }}<br>{% endif %}
+      Tel. {{ address.phone }}
+    </p>
+    {% if address.notes %}<p class="small muted" style="margin:2px 0 0">{{ address.notes }}</p>{% endif %}
+  </div>
+</div>
+
+<h2>Pago</h2>
+<p style="margin:0">
+  Estado: <strong>{{ payment_status }}</strong>
+  {% if payment_method %} · Medio: {{ payment_method }}{% endif %}
+  {% if payment_reference %}<br><span class="small muted">Referencia {{ payment_reference }}</span>{% endif %}
+</p>
+{% if simulated_payment %}
+<p class="small muted" style="margin:4px 0 0">
+  La plataforma opera hoy con un proveedor de pago simulado: no se realizó ningún cobro real.
+</p>
+{% endif %}
+
+<h2>Detalle por vendedor</h2>
+{% for seller in sellers %}
+<div class="seller">
+  <h3>{{ seller.display_name }}</h3>
+  <p class="small muted" style="margin:0">
+    {{ seller.legal_name }}{% if seller.document_number %} · NIT/CC {{ seller.document_number }}{% endif %}<br>
+    {% if seller.notification_address %}Notificaciones: {{ seller.notification_address }}<br>{% endif %}
+    {% if seller.contact_phone %}Tel. {{ seller.contact_phone }} · {% endif %}Envío {{ seller.number }} · {{ seller.status }}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:52%">Café</th>
+        <th class="right" style="width:10%">Cant.</th>
+        <th class="right" style="width:19%">Precio unit.</th>
+        <th class="right" style="width:19%">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in seller.lines %}
+      <tr>
+        <td>{{ item.name }}<br><span class="small muted">{{ item.variant }}</span></td>
+        <td class="right">{{ item.quantity }}</td>
+        <td class="right">{{ item.unit_price | money }}</td>
+        <td class="right">{{ item.line_total | money }}</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="3" class="right small muted">Subtotal de este vendedor</td>
+        <td class="right">{{ seller.subtotal | money }}</td>
+      </tr>
+      <tr>
+        <td colspan="3" class="right small muted">Envío</td>
+        <td class="right">{{ seller.shipping_cost | money }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+<table class="totals">
+  <tr><td class="muted">Productos</td><td class="right">{{ order.subtotal | money }}</td></tr>
+  <tr><td class="muted">Envío</td><td class="right">{{ order.shipping_total | money }}</td></tr>
+  {% if order.discount_total and order.discount_total > 0 %}
+  <tr><td class="muted">Descuento</td><td class="right">− {{ order.discount_total | money }}</td></tr>
+  {% endif %}
+  <tr class="grand"><td>Total {{ order.currency }}</td><td class="right">{{ order.grand_total | money }}</td></tr>
+</table>
+
+<p class="small muted" style="margin-top:6px">
+  Los precios están expresados en pesos colombianos con los impuestos incluidos.
+  El costo de envío se muestra por separado.
+</p>
+
+{% if order.customer_notes %}
+<h2>Notas del comprador</h2>
+<p class="small">{{ order.customer_notes }}</p>
+{% endif %}
+
+<footer>
+  <p style="margin:0 0 3px"><strong>Tus derechos.</strong>
+  Puedes retractarte dentro de los cinco (5) días hábiles siguientes a la entrega si el café
+  vuelve sellado (artículo 47 de la Ley 1480 de 2011), y la garantía legal te ampara aunque lo
+  hayas abierto (artículos 7, 8 y 11). Solicita una u otra desde el detalle del pedido en tu cuenta.</p>
+  <p style="margin:0">Autoridad competente en protección al consumidor:
+  Superintendencia de Industria y Comercio — www.sic.gov.co.
+  Conserva este comprobante: acredita la relación de consumo.</p>
+</footer>
+
+</body>
+</html>
