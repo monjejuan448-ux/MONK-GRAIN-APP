@@ -7,7 +7,7 @@ const FOOTER_SECTIONS = [
     title: "Comprar",
     links: [
       { href: "/catalogo", label: "Catálogo" },
-      { href: "/regiones", label: "Cafés por región" },
+      { href: "/catalogo", label: "Cafés por región" },
       { href: "/productores", label: "Productores" },
       { href: "/catalogo?sort=newest", label: "Novedades" },
     ],
@@ -16,8 +16,8 @@ const FOOTER_SECTIONS = [
     title: "Vender",
     links: [
       { href: "/vender", label: "Registrarme como productor" },
-      { href: "/vender/como-funciona", label: "Cómo funciona" },
-      { href: "/vender/comisiones", label: "Comisiones" },
+      { href: "/vender#pasos", label: "Cómo funciona" },
+      { href: "/vender#condiciones", label: "Comisiones" },
     ],
   },
   {
@@ -35,7 +35,7 @@ const FOOTER_SECTIONS = [
       { href: "/ayuda", label: "Centro de ayuda" },
       { href: "/contacto", label: "Contacto" },
       { href: "/envios", label: "Envíos y entregas" },
-      { href: "/devoluciones", label: "Cambios y devoluciones" },
+      { href: "/legal/devoluciones", label: "Cambios y devoluciones" },
     ],
   },
 ];

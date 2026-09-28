@@ -54,4 +54,11 @@ export const authApi = {
     api.post<{ message: string }>("/auth/password-reset/confirm", { token, password }),
 
   me: (token: string) => api.get<CurrentUser>("/auth/me", { token }),
+
+  changePassword: (token: string, currentPassword: string, password: string) =>
+    api.post<{ message: string }>(
+      "/auth/change-password",
+      { current_password: currentPassword, password },
+      { token },
+    ),
 };

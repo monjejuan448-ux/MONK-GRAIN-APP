@@ -197,8 +197,8 @@ function AddressesContent() {
       <h1 className="font-display text-3xl font-bold">Mis direcciones</h1>
       <p className="mb-8 mt-1 text-muted-foreground">
         La dirección predeterminada es la que el checkout propone primero. Cada pedido
-        guarda su propia copia, así que corregir una dirección aquí no altera lo que ya
-        se despachó.
+        guarda su propia copia, así que corregir una dirección aquí no altera lo que ya se
+        despachó.
       </p>
 
       {returnTo && (

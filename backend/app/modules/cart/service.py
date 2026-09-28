@@ -417,7 +417,12 @@ class CartService:
                 .where(WishlistItem.wishlist_id == wishlist.id)
                 .options(
                     joinedload(WishlistItem.product).joinedload(Product.images),
-                    joinedload(WishlistItem.product).joinedload(Product.variants),
+                    # El inventario entra en la misma carga: comprobar las
+                    # existencias variante por variante sería una consulta por
+                    # cada una.
+                    joinedload(WishlistItem.product)
+                    .joinedload(Product.variants)
+                    .joinedload(ProductVariant.inventory),
                 )
                 .order_by(WishlistItem.created_at.desc())
             )
@@ -441,7 +446,19 @@ class CartService:
                     product_slug=product.slug,
                     image_url=build_media_url(primary.image_key) if primary else None,
                     base_price=product.base_price,
-                    is_available=product.is_purchasable,
+                    # Disponible si alguna variante activa tiene existencias
+                    # reales, con el mismo criterio que el catálogo. Antes se
+                    # usaba `is_purchasable`, que solo mira si el café sigue
+                    # publicado: un café agotado aparecía como disponible, que
+                    # es exactamente lo que este campo existe para evitar.
+                    is_available=product.is_purchasable
+                    and any(
+                        variant.is_active
+                        and variant.deleted_at is None
+                        and variant.inventory is not None
+                        and variant.inventory.available_qty > 0
+                        for variant in product.variants
+                    ),
                 )
             )
         return result
