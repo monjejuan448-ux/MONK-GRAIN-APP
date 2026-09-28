@@ -6,12 +6,14 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
+from app.core.rate_limit import client_identifier, consume, is_internal_caller
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.cart.router import router as cart_router
@@ -102,6 +104,67 @@ def register_middleware(app: FastAPI) -> None:
             duration_ms=round(elapsed_ms, 2),
         )
         return response
+
+    @app.middleware("http")
+    async def default_rate_limit(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Techo general de peticiones por cliente.
+
+        `RATE_LIMIT_DEFAULT_PER_MINUTE` estaba en la configuración sin aplicarse
+        en ningún sitio: solo los endpoints de autenticación tenían límite, de
+        modo que la búsqueda del catálogo, el checkout y la subida de archivos no
+        tenían techo alguno.
+
+        Es deliberadamente holgado —no pretende frenar un ataque distribuido, que
+        se detiene en el proxy— sino acotar lo que un solo cliente puede exigirle
+        a la base de datos. Los endpoints con su propio límite más estricto lo
+        conservan: este se suma, no lo reemplaza.
+
+        La comprobación de estado queda fuera: limitar al sistema que vigila si
+        el servicio está vivo lo dejaría ciego justo cuando hace falta.
+
+        Sobre el orden: en Starlette el middleware registrado más tarde queda por
+        fuera, de modo que este corre **dentro** de `security_headers` y **por
+        fuera** de `request_context`. Es deliberado. Por dentro de las cabeceras
+        de seguridad para que una respuesta 429 también las lleve; por fuera del
+        contexto de la petición porque el sentido de un límite es rechazar antes
+        de gastar trabajo. La contrapartida es que un 429 no produce la línea
+        `request_completed`: la cubre el aviso `rate_limit_exceeded`, que además
+        dice cuál fue el cupo superado.
+        """
+        # El renderizado del servidor de Next.js llama a la API por la red
+        # interna: contarlo aquí metería a todos los visitantes del sitio en un
+        # mismo cupo y la portada dejaría de cargar para todo el mundo.
+        if (
+            request.url.path == "/health"
+            or request.method == "OPTIONS"
+            or is_internal_caller(request)
+        ):
+            return await call_next(request)
+
+        if not consume(
+            "default",
+            client_identifier(request),
+            settings.rate_limit_default_per_minute,
+            window_seconds=60,
+        ):
+            # Se responde a mano y no con la excepción del dominio: el middleware
+            # corre por fuera de los manejadores de excepción de FastAPI, que no
+            # llegarían a traducirla.
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={
+                    "error": {
+                        "code": "rate_limit_exceeded",
+                        "message": (
+                            "Demasiadas peticiones. Espera un momento antes de volver a intentarlo."
+                        ),
+                    }
+                },
+            )
+
+        return await call_next(request)
 
     @app.middleware("http")
     async def security_headers(

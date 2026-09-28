@@ -57,8 +57,10 @@ El proyecto **fue** un marketplace minorista de café tostado hasta el pivote de
 | 13 | Desbloqueo de compra y despacho | ✅ [docs/16](docs/16-correcciones.md) |
 | 14 | Pivote del dominio a pergamino | ✅ [docs/14](docs/14-pergamino.md) |
 | 15 | Oferta y demanda entre comprador y vendedor | ✅ [docs/15](docs/15-oferta-demanda.md) |
+| 16 | Panel de administración completo | ✅ |
+| 17 | Pruebas del frontend y límite de peticiones | ✅ |
 
-**390 pruebas automatizadas, 87 % de cobertura**, verificado en ejecución contra PostgreSQL real.
+**390 pruebas del backend con 87 % de cobertura, más 38 del frontend**, verificado en ejecución contra PostgreSQL real.
 
 ---
 
@@ -182,8 +184,14 @@ docker compose exec backend alembic revision --autogenerate -m "descripcion del 
 ```
 
 > Las pruebas usan una base de datos propia (`monkgrain_test`) que se borra y se recrea en cada sesión. **Dos ejecuciones simultáneas de `pytest` se estorban** y producen cientos de errores que no son defectos del producto.
+>
+> `pyproject.toml` está montado por *bind* en el contenedor, así que **cambiar una dependencia exige `docker compose build backend`**: la declaración se ve desde dentro sin que la instalación exista. Es lo que hizo que `pytest` no pudiera ni recolectar `test_receipt.py` tras recrear el contenedor.
 
 ### Frontend
+
+```bash
+docker compose exec web npm test
+```
 
 ```bash
 docker compose exec web npm run lint
@@ -319,7 +327,13 @@ En ningún caso se almacenan datos completos de tarjetas: solo referencias y tok
 docker compose exec backend pytest
 ```
 
-**390 pruebas:** 319 de integración contra PostgreSQL real y 71 unitarias. Cobertura global del **87 %**.
+**Backend — 390 pruebas:** 319 de integración contra PostgreSQL real y 71 unitarias. Cobertura global del **87 %**.
+
+```bash
+docker compose exec web npm test
+```
+
+**Frontend — 38 pruebas** con Vitest y Testing Library, sobre el formateo del dominio, la lectura del análisis y el componente de compra. Consultan por lo que el usuario percibe —texto accesible, estado deshabilitado— y no por la estructura interna que React produjo.
 
 Las pruebas de integración usan PostgreSQL, no SQLite: el esquema depende de tipos específicos (CITEXT, JSONB, ENUM nativos, índices parciales) que SQLite no reproduce, y una prueba que pase contra otro motor daría una falsa sensación de seguridad.
 
@@ -331,9 +345,7 @@ Entre lo que verifican: que el checkout sea atómico; que los kilos se reserven 
 
 Lo que sigue pendiente, sin adornos:
 
-- **El frontend no tiene pruebas.** Vitest y Testing Library están instalados y `npm test` no encuentra ningún archivo. El CI tampoco lo ejecuta.
-- **Los tokens viven en `sessionStorage`**, no en cookies `httpOnly`. Aceptable para el MVP, no para producción: quedan expuestos a cualquier script que se cuele en la página. Migrarlos exige además protección CSRF.
-- **El límite de peticiones solo cubre la autenticación.** `RATE_LIMIT_DEFAULT_PER_MINUTE` está configurado y no se aplica en ningún sitio: la subida de archivos, la búsqueda del catálogo y el checkout no tienen techo.
+- **Los tokens viven en `sessionStorage`**, no en cookies `httpOnly`. Aceptable para el MVP, no para producción: quedan expuestos a cualquier script que se cuele en la página. Migrarlos exige además protección CSRF y middleware: es un cambio de arquitectura, no una corrección puntual, y es el pendiente de mayor peso que queda.
 - **No hay proceso en segundo plano.** Nada vigila el vencimiento de las certificaciones ni los plazos de las devoluciones, que la revisión legal dejó anotado.
 - **Ocho páginas de contenido sin escribir**, enlazadas desde la navegación: `/regiones`, `/blog`, `/nosotros`, `/trazabilidad`, `/sostenibilidad`, `/ayuda`, `/contacto` y `/envios`.
 - **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino.

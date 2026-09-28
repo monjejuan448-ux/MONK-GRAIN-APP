@@ -34,7 +34,7 @@ class CatalogRepository:
     # ------------------------------------------------------------------
     # Consultas base
     # ------------------------------------------------------------------
-    def _published_products(self) -> Select[tuple[Product]]:
+    def _published_products(self) -> Select[Product]:
         """Productos visibles al público.
 
         Un producto es comprable solo si está publicado, no eliminado y su
@@ -52,7 +52,7 @@ class CatalogRepository:
             )
         )
 
-    def _with_listing_relations(self, statement: Select[tuple[Product]]) -> Select[tuple[Product]]:
+    def _with_listing_relations(self, statement: Select[Product]) -> Select[Product]:
         """Carga anticipada de lo que necesita el listado.
 
         Sin esto, renderizar 20 productos dispararía más de 60 consultas
@@ -83,8 +83,8 @@ class CatalogRepository:
         return paginate_query(self.session, statement, params)
 
     def _apply_filters(
-        self, statement: Select[tuple[Product]], filters: ProductFilters
-    ) -> Select[tuple[Product]]:
+        self, statement: Select[Product], filters: ProductFilters
+    ) -> Select[Product]:
         """Aplica los filtros combinables del catálogo."""
         # Ordenar por factor de rendimiento también requiere la tabla de
         # atributos, aunque no se esté filtrando por ninguno de sus campos.
@@ -182,9 +182,7 @@ class CatalogRepository:
 
         return statement
 
-    def _apply_sorting(
-        self, statement: Select[tuple[Product]], sort: str
-    ) -> Select[tuple[Product]]:
+    def _apply_sorting(self, statement: Select[Product], sort: str) -> Select[Product]:
         """Ordena el conjunto ya filtrado (HU-VIS-03, CA4)."""
         ordering: dict[str, ColumnElement[Any]] = {
             "price_asc": Product.base_price.asc(),

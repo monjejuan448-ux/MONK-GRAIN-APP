@@ -49,12 +49,19 @@ class Page[T](BaseModel):
 
 
 def paginate_query[T](
-    session: Session, statement: Select[tuple[T]], params: PageParams
+    session: Session, statement: Select[T], params: PageParams
 ) -> tuple[list[T], int]:
     """Ejecuta una consulta paginada y devuelve (elementos, total).
 
     El conteo se hace sobre una subconsulta de la sentencia original para que
     respete exactamente los mismos filtros aplicados al listado.
+
+    Sobre el tipo de `statement`: SQLAlchemy 2.1 cambió lo que devuelve
+    `select(Modelo)`, de `Select[tuple[Modelo]]` a `Select[Modelo]`. La firma
+    anterior hacía que cada listado de la aplicación —nueve archivos, treinta y
+    seis avisos— dejara de tipar al actualizar la biblioteca, y `pyproject.toml`
+    declara `sqlalchemy>=2.0.36` sin techo, así que la actualización llega sola
+    en la siguiente construcción de la imagen.
     """
     count_statement = select(func.count()).select_from(statement.subquery())
     total = session.scalar(count_statement) or 0

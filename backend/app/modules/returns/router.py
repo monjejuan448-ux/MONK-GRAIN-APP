@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.files import validate_image
 from app.core.pagination import Page, PageParams
 from app.core.permissions import CurrentUser, ProducerUser
+from app.core.rate_limit import rate_limit
 from app.db.session import get_session
 from app.modules.returns.service import MAX_EVIDENCES_PER_RETURN, ReturnService
 from app.schemas.returns import (
@@ -80,6 +81,8 @@ def get_return(return_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> 
     response_model=ReturnDetail,
     status_code=status.HTTP_201_CREATED,
     summary="Adjuntar fotografías",
+    # Cada petición puede traer varias imágenes de 5 MB.
+    dependencies=[Depends(rate_limit("upload", limit=20, window_seconds=60))],
 )
 async def upload_evidence(
     return_id: uuid.UUID,
