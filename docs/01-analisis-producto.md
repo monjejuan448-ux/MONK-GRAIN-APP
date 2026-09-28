@@ -4,13 +4,34 @@
 
 ---
 
-## 0. Nota de alcance — pivote respecto al análisis académico previo
+## 0. Nota de alcance — vigente tras el pivote a pergamino
 
-El trabajo de análisis previo (carpetas GUIA N1-N3) definía MONK GRAIN como un marketplace **B2B exclusivamente internacional** (productor colombiano ↔ comprador internacional). El brief actual **amplía y reemplaza** esa visión: MONK GRAIN pasa a ser un **marketplace multiactor enfocado primero en el mercado colombiano** (COP, departamentos/municipios, operadores logísticos y medios de pago nacionales), que conecta caficultores, fincas, cooperativas, tostadores, distribuidores, cafeterías, empresas y consumidores finales, con expansión internacional como fase futura.
+> **⚠️ Advertencia de vigencia (28 de septiembre de 2026).**
+> Este documento se redactó para un **marketplace minorista de café tostado** y el producto pivotó a **compra y venta de café pergamino seco**. Lo que sigue vigente es la arquitectura, los roles, el alcance de pagos y logística, y la mayor parte de los requisitos no funcionales. Lo que **ya no aplica** es todo lo referido a tueste, molienda, puntaje de catación, notas de cata y presentaciones en gramos.
+>
+> **La definición vigente del producto está en [14 — Pergamino](14-pergamino.md)** y el mercado de dos lados en [15 — Oferta y demanda](15-oferta-demanda.md). Cuando este documento y el 14 se contradigan, manda el 14.
 
-A partir de aquí este documento es la fuente de verdad vigente. Los artefactos académicos (GUIA N1-N3) quedan como insumo histórico de contexto, no como especificación activa.
+### Las cuatro visiones que hubo del producto
 
-**Decisiones que quedan resueltas por este mismo brief** (ya no son bloqueantes):
+El alcance de MONK GRAIN no se cerró hasta el pivote. Vale la pena dejar el rastro completo, porque explica las contradicciones que quedaron en el repositorio:
+
+| Fuente | Producto que definía |
+|---|---|
+| GUIA N1–N3 (artefactos académicos) | Gestión agrícola con calendario lunar y sensores IoT, más marketplace |
+| `plan pre-desarrollo/analisis_monk_grain.md` | Marketplace B2B de **exportación** a compradores internacionales |
+| Este documento (versión original) | Minorista nacional multiactor de café **tostado** ← lo que se construyó primero |
+| **Vigente** | Compra y venta de **pergamino seco**, por kilo, en los dos sentidos del mercado |
+
+Los artefactos académicos (GUIA N1-N3) quedan como insumo histórico de contexto, no como especificación activa.
+
+**Decisiones que quedaron cerradas en el pivote** (ver [docs/14](14-pergamino.md) para el razonamiento de cada una):
+- **Un solo producto:** pergamino seco. Sin tueste, sin molienda, sin catación.
+- **Una sola unidad:** el kilogramo, con lectura en cargas de 125 kg.
+- **Precio libre por kilo** puesto por el vendedor; el factor de rendimiento queda informativo.
+- **Compradores:** empresas y personas naturales, de modo que se conservan reseñas, favoritos y derecho de retracto.
+- **Dos sentidos del mercado:** el vendedor publica lotes y el comprador publica solicitudes de compra.
+
+**Decisiones técnicas que siguen vigentes sin cambios:**
 - **Stack tecnológico:** Next.js + TypeScript + Tailwind (web), React Native + Expo (móvil), FastAPI + Python (backend), PostgreSQL + SQLAlchemy + Alembic + Redis (datos), Docker + Nginx + GitHub Actions (infraestructura).
 - **Pagos/logística en el MVP:** el MVP incluye checkout **simulado** y creación de órdenes; la integración real con pasarelas de pago (Wompi, Mercado Pago, PayU, PSE) y con operadores logísticos queda **arquitectónicamente preparada pero no activa** hasta una fase posterior.
 
