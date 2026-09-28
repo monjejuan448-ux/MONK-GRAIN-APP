@@ -27,11 +27,9 @@ from app.models.catalog import (
 from app.models.enums import (
     CoffeeProcess,
     CoffeeState,
-    GrindType,
     ProducerStatus,
     ProducerType,
     ProductStatus,
-    RoastLevel,
     RoleCode,
     UserStatus,
 )
@@ -251,8 +249,12 @@ def _create_product(
     price: Decimal,
     stock: int,
     wholesale_price: Decimal | None = None,
+    min_qty_kg: int = 1,
 ) -> ProductVariant:
-    """Crea un producto publicado con una variante e inventario."""
+    """Crea un lote de pergamino publicado con una oferta e inventario.
+
+    `price` es el precio por kilogramo y `stock`, los kilos disponibles.
+    """
     farm = session.scalar(select(Farm).where(Farm.producer_id == producer.id))
 
     product = Product(
@@ -260,8 +262,8 @@ def _create_product(
         farm_id=farm.id if farm else None,
         slug=slug,
         name=name,
-        description="Café de prueba para la suite de integración.",
-        state=CoffeeState.ROASTED,
+        description="Pergamino de prueba para la suite de integración.",
+        state=CoffeeState.PERGAMINO,
         status=ProductStatus.PUBLISHED,
         base_price=price,
         wholesale_price=wholesale_price,
@@ -276,19 +278,24 @@ def _create_product(
             product_id=product.id,
             variety="Caturra",
             process=CoffeeProcess.WASHED,
-            roast=RoastLevel.MEDIUM,
             altitude_masl=1750,
-            cupping_score=Decimal("86.50"),
-            sensory_profile="Dulce, con acidez cítrica.",
+            yield_factor=Decimal("92.00"),
+            moisture_pct=Decimal("11.00"),
+            healthy_bean_pct=Decimal("94.00"),
+            pasilla_pct=Decimal("3.50"),
+            borer_damage_pct=Decimal("1.20"),
+            screen_sizes=[15, 16, 17],
+            drying_method="Marquesina",
+            lot_code="PR-2026-001",
         )
     )
     session.add(ProductImage(product_id=product.id, image_key=f"test/{slug}.jpg", is_primary=True))
 
     variant = ProductVariant(
         product_id=product.id,
-        sku=f"{slug.upper()}-250",
-        weight_grams=Decimal("250"),
-        grind=GrindType.WHOLE_BEAN,
+        sku=f"{slug.upper()}-{min_qty_kg}KG",
+        presentation="A granel, en costal de fique",
+        min_qty_kg=min_qty_kg,
         price=price,
         wholesale_price=wholesale_price,
         is_active=True,
@@ -305,11 +312,17 @@ def _create_product(
 
 @pytest.fixture
 def product_variant(session: Session, producer: ProducerProfile) -> ProductVariant:
+    """Lote con 10 kg disponibles a 40.000 el kilo, sin mínimo de compra.
+
+    El mínimo se deja en 1 kg a propósito: así las pruebas de carrito, checkout,
+    devoluciones y reseñas siguen razonando con cantidades pequeñas y legibles, y
+    el mínimo se ejercita donde toca, en `test_cart_minimums`.
+    """
     return _create_product(
         session,
         producer,
-        slug="cafe-de-prueba",
-        name="Café de Prueba",
+        slug="pergamino-de-prueba",
+        name="Pergamino de Prueba",
         price=Decimal("40000"),
         stock=10,
         wholesale_price=Decimal("35000"),
@@ -321,10 +334,24 @@ def second_variant(session: Session, second_producer: ProducerProfile) -> Produc
     return _create_product(
         session,
         second_producer,
-        slug="cafe-de-prueba-dos",
-        name="Segundo Café de Prueba",
+        slug="pergamino-de-prueba-dos",
+        name="Segundo Pergamino de Prueba",
         price=Decimal("50000"),
         stock=8,
+    )
+
+
+@pytest.fixture
+def variant_with_minimum(session: Session, producer: ProducerProfile) -> ProductVariant:
+    """Lote que se vende desde 125 kg, como una carga."""
+    return _create_product(
+        session,
+        producer,
+        slug="pergamino-por-carga",
+        name="Pergamino por Carga",
+        price=Decimal("22000"),
+        stock=1250,
+        min_qty_kg=125,
     )
 
 

@@ -78,11 +78,26 @@ def _jpeg_bytes(width: int = 900, height: int = 700) -> bytes:
 
 NEW_COFFEE = {
     "name": "Tolima Honey de Prueba",
-    "description": "Café de prueba con descripción suficientemente larga para el validador.",
-    "state": "roasted",
-    "base_price": "52000",
+    "description": "Lote de prueba con descripción suficientemente larga para el validador.",
+    # `base_price` es el precio por kilogramo de pergamino seco.
+    "base_price": "22000",
     "dispatch_days": 3,
-    "attributes": {"variety": "Caturra", "process": "honey", "cupping_score": "86.5"},
+    "attributes": {
+        "variety": "Caturra",
+        "process": "honey",
+        "yield_factor": "91.50",
+        "moisture_pct": "11.00",
+        "screen_sizes": [15, 16, 17],
+        "lot_code": "TO-2026-001",
+    },
+}
+
+# Oferta mínima válida: cómo se entrega el lote, precio por kilo y kilos.
+NEW_OFFER = {
+    "presentation": "A granel, en costal de fique",
+    "min_qty_kg": 125,
+    "price": "22000",
+    "stock_qty": 1250,
 }
 
 
@@ -179,11 +194,12 @@ class TestPublishingRequirements:
 
         variant = client.post(
             f"{API}/producer/catalog/{product_id}/variants",
-            json={"weight_grams": "250", "grind": "whole_bean", "price": "52000", "stock_qty": 40},
+            json=NEW_OFFER,
             headers=producer_headers,
         )
         assert variant.status_code == 201
-        assert variant.json()["variants"][0]["stock_qty"] == 40
+        assert variant.json()["variants"][0]["stock_qty"] == 1250
+        assert variant.json()["variants"][0]["min_qty_kg"] == 125
 
         image = client.post(
             f"{API}/producer/catalog/{product_id}/images",
@@ -214,7 +230,7 @@ class TestPublishingRequirements:
         product_id = product["id"]
         client.post(
             f"{API}/producer/catalog/{product_id}/variants",
-            json={"weight_grams": "250", "price": "52000", "stock_qty": 10},
+            json={**NEW_OFFER, "min_qty_kg": 10, "price": "52000", "stock_qty": 10},
             headers=producer_headers,
         )
         client.post(
@@ -285,7 +301,7 @@ class TestVariantManagement:
 
         response = client.put(
             f"{API}/producer/catalog/{product_variant.product_id}/variants/{product_variant.id}",
-            json={"weight_grams": "250", "price": "40000", "stock_qty": 1},
+            json={**NEW_OFFER, "min_qty_kg": 1, "price": "40000", "stock_qty": 1},
             headers=producer_headers,
         )
 
@@ -372,7 +388,7 @@ class TestCatalogueIsolation:
 
         response = client.post(
             f"{API}/producer/catalog/{product['id']}/variants",
-            json={"weight_grams": "250", "price": "1"},
+            json={**NEW_OFFER, "min_qty_kg": 1, "price": "1", "stock_qty": 0},
             headers=second_producer_headers,
         )
 
@@ -429,7 +445,7 @@ class TestSellerNotificationData:
         product_id = product["id"]
         client.post(
             f"{API}/producer/catalog/{product_id}/variants",
-            json={"weight_grams": "250", "price": "40000", "stock_qty": 5},
+            json={**NEW_OFFER, "min_qty_kg": 5, "price": "40000", "stock_qty": 5},
             headers=producer_headers,
         )
         client.post(

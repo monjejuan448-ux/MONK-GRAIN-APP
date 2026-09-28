@@ -4,14 +4,12 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 from app.models.enums import (
     CoffeeProcess,
     CoffeeState,
-    GrindType,
     ProductStatus,
-    RoastLevel,
 )
 from app.schemas.common import ORMModel
 
@@ -40,15 +38,26 @@ class ProducerSummary(ORMModel):
 
 
 class CoffeeAttributesResponse(ORMModel):
+    """Ficha técnica del lote de pergamino."""
+
     variety: str | None
     process: CoffeeProcess | None
-    roast: RoastLevel | None
     altitude_masl: int | None
-    sensory_profile: str | None
-    tasting_notes: list[str] | None
-    cupping_score: Decimal | None
     harvest_date: date | None
-    roast_date: date | None
+
+    # Análisis
+    yield_factor: Decimal | None
+    moisture_pct: Decimal | None
+    healthy_bean_pct: Decimal | None
+    pasilla_pct: Decimal | None
+    borer_damage_pct: Decimal | None
+    screen_sizes: list[int] | None
+
+    # Trazabilidad
+    lot_code: str | None
+    sica_code: str | None
+    drying_method: str | None
+    notes: str | None
 
 
 class ProductImageResponse(ORMModel):
@@ -59,7 +68,8 @@ class ProductImageResponse(ORMModel):
 
 
 class VariantResponse(ORMModel):
-    """Presentación comprable.
+    """Oferta comprable de un lote. `price` es el precio de un kilogramo y
+    `available_qty` los kilos disponibles.
 
     `wholesale_price` solo se rellena para compradores empresariales
     verificados; para el resto viaja como `None` (HU-CE-02, CA2).
@@ -67,8 +77,8 @@ class VariantResponse(ORMModel):
 
     id: uuid.UUID
     sku: str
-    weight_grams: Decimal
-    grind: GrindType | None
+    presentation: str
+    min_qty_kg: int
     price: Decimal
     wholesale_price: Decimal | None = None
     available_qty: int
@@ -107,8 +117,12 @@ class ProductListItem(BaseModel):
     region: str | None
     municipality: str | None
     department: str | None
-    sensory_profile: str | None
-    cupping_score: Decimal | None
+    # El factor de rendimiento y la humedad son lo que un comprador de
+    # pergamino contrasta con el precio; van en el listado para no obligar a
+    # abrir cada ficha para comparar.
+    yield_factor: Decimal | None
+    moisture_pct: Decimal | None
+    available_kg: int
     rating_avg: Decimal
     rating_count: int
     is_available: bool
@@ -139,15 +153,24 @@ class ProductFilters(BaseModel):
     region: str | None = None
     variety: str | None = None
     process: CoffeeProcess | None = None
-    roast: RoastLevel | None = None
-    state: CoffeeState | None = None
     certification: str | None = None
     producer_id: uuid.UUID | None = None
+
+    # Precios por kilogramo.
     min_price: Decimal | None = Field(default=None, ge=0)
     max_price: Decimal | None = Field(default=None, ge=0)
-    min_score: Decimal | None = Field(default=None, ge=0, le=100)
+
+    # Un factor más bajo es mejor café, así que el filtro útil es el máximo que
+    # el comprador acepta, no el mínimo.
+    max_yield_factor: Decimal | None = Field(default=None, ge=80, le=130)
+    max_moisture_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    # Kilos mínimos disponibles: quien necesita media tonelada no quiere ver
+    # lotes de 50 kg.
+    min_available_kg: int | None = Field(default=None, ge=1)
+
     sort: str = Field(
-        default="newest", pattern="^(price_asc|price_desc|rating|score|popular|newest)$"
+        default="newest",
+        pattern="^(price_asc|price_desc|rating|yield_factor|popular|newest)$",
     )
 
 
@@ -177,15 +200,32 @@ class ProducerDetail(ProducerListItem):
 
 
 class ProductVariantInput(BaseModel):
-    """Variante enviada al crear o editar un producto."""
+    """Oferta enviada al crear o editar un lote.
+
+    `price` es el precio de un kilogramo y `stock_qty` los kilos disponibles.
+    """
 
     sku: str = Field(min_length=3, max_length=60)
-    weight_grams: Decimal = Field(gt=0)
-    grind: GrindType | None = None
+    presentation: str = Field(min_length=3, max_length=80)
+    min_qty_kg: int = Field(default=1, ge=1)
     price: Decimal = Field(ge=0)
     wholesale_price: Decimal | None = Field(default=None, ge=0)
     stock_qty: int = Field(ge=0)
     low_stock_threshold: int = Field(default=5, ge=0)
+
+    @model_validator(mode="after")
+    def minimum_must_fit_the_stock(self) -> "ProductVariantInput":
+        """Un mínimo mayor que las existencias hace la oferta incomprable.
+
+        Se rechaza al publicar en lugar de dejar que el comprador descubra en el
+        carrito que no puede llevar ni la cantidad mínima.
+        """
+        if self.stock_qty and self.min_qty_kg > self.stock_qty:
+            raise ValueError(
+                "El mínimo de compra no puede superar los kilos disponibles "
+                f"({self.min_qty_kg} kg mínimo contra {self.stock_qty} kg en existencia)."
+            )
+        return self
 
 
 class ProductCreate(BaseModel):
@@ -205,13 +245,36 @@ class ProductCreate(BaseModel):
 
     variety: str | None = Field(default=None, max_length=100)
     process: CoffeeProcess | None = None
-    roast: RoastLevel | None = None
     altitude_masl: int | None = Field(default=None, ge=0, le=6000)
-    sensory_profile: str | None = None
-    tasting_notes: list[str] | None = None
-    cupping_score: Decimal | None = Field(default=None, ge=0, le=100)
     harvest_date: date | None = None
-    roast_date: date | None = None
+
+    # Análisis del pergamino. Todo opcional: se publica lo que se tenga medido.
+    yield_factor: Decimal | None = Field(default=None, ge=80, le=130)
+    moisture_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    healthy_bean_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    pasilla_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    borer_damage_pct: Decimal | None = Field(default=None, ge=0, le=100)
+    screen_sizes: list[int] | None = None
+
+    lot_code: str | None = Field(default=None, max_length=60)
+    sica_code: str | None = Field(default=None, max_length=40)
+    drying_method: str | None = Field(default=None, max_length=80)
+    notes: str | None = None
+
+    @field_validator("screen_sizes")
+    @classmethod
+    def screens_must_be_real_sizes(cls, value: list[int] | None) -> list[int] | None:
+        """Las mallas de café van de la 14 a la 20; fuera de ahí no existen."""
+        if value is None:
+            return None
+        invalid = sorted({size for size in value if size < 14 or size > 20})
+        if invalid:
+            raise ValueError(
+                "Las mallas válidas van de 14 a 20. No existen: "
+                + ", ".join(str(size) for size in invalid)
+                + "."
+            )
+        return sorted(set(value))
 
     certification_ids: list[int] = []
     variants: list[ProductVariantInput] = Field(min_length=1)

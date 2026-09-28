@@ -44,7 +44,7 @@ class TestSavingAndRemoving:
         assert response.status_code == 201, response.text
         listed = client.get(f"{API}/wishlist", headers=auth_headers).json()
         assert len(listed) == 1
-        assert listed[0]["product_name"] == "Café de Prueba"
+        assert listed[0]["product_name"] == "Pergamino de Prueba"
 
     def test_saving_the_same_coffee_twice_is_rejected(
         self,

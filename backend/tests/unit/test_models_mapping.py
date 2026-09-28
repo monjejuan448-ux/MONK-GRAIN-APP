@@ -92,13 +92,54 @@ def test_payment_reference_is_unique_per_provider() -> None:
 
 
 @pytest.mark.unit
-def test_cupping_score_supports_full_range() -> None:
-    """El puntaje de catación llega a 100.00 y necesita precisión suficiente."""
-    column = Base.metadata.tables["coffee_attributes"].columns["cupping_score"]
+def test_yield_factor_supports_the_whole_commercial_range() -> None:
+    """El factor de rendimiento llega a tres cifras y necesita precisión bastante.
+
+    Es el dato que gobierna el precio de un lote de pergamino: un
+    `NUMERIC(3,2)` solo admitiría hasta 9.99 y no podría representar un 94.50.
+    """
+    column = Base.metadata.tables["coffee_attributes"].columns["yield_factor"]
     assert column.type.precision is not None
     assert column.type.precision >= 5, (
-        "NUMERIC(3,2) solo admite hasta 9.99 y no puede representar el puntaje real"
+        "NUMERIC(3,2) solo admite hasta 9.99 y no puede representar un factor de 94.50"
     )
+
+
+@pytest.mark.unit
+def test_the_pergamino_analysis_lives_in_the_schema() -> None:
+    """El análisis del pergamino son columnas, no un JSON de cajón de sastre.
+
+    Ser columnas es lo que permite filtrar y ordenar por factor y por humedad, y
+    que la base de datos rechace un porcentaje imposible.
+    """
+    columns = set(Base.metadata.tables["coffee_attributes"].columns.keys())
+    assert {
+        "yield_factor",
+        "moisture_pct",
+        "healthy_bean_pct",
+        "pasilla_pct",
+        "borer_damage_pct",
+        "screen_sizes",
+        "lot_code",
+        "sica_code",
+    } <= columns
+    # Y lo que ya no existe: en pergamino no hay tueste ni molienda.
+    assert not {"roast", "roast_date", "cupping_score", "tasting_notes"} & columns
+
+
+@pytest.mark.unit
+def test_the_coffee_state_admits_only_pergamino() -> None:
+    """MONK GRAIN comercia un solo estado; la base de datos lo hace cumplir."""
+    column = Base.metadata.tables["products"].columns["state"]
+    assert set(column.type.enums) == {"pergamino"}
+
+
+@pytest.mark.unit
+def test_variants_are_sold_by_the_kilo() -> None:
+    """Ni gramos ni molienda: el pergamino se vende por peso, con un mínimo."""
+    columns = set(Base.metadata.tables["product_variants"].columns.keys())
+    assert {"presentation", "min_qty_kg"} <= columns
+    assert not {"weight_grams", "grind"} & columns
 
 
 @pytest.mark.unit

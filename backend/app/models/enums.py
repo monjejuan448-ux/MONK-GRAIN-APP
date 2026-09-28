@@ -71,9 +71,17 @@ class CertStatus(StrEnum):
 # Catálogo
 # ------------------------------------------------------------------
 class CoffeeState(StrEnum):
-    GREEN = "green"
-    ROASTED = "roasted"
-    GROUND = "ground"
+    """Estado en que se comercializa el café.
+
+    MONK GRAIN opera un solo estado: **pergamino seco**, el café beneficiado y
+    secado que todavía conserva el pergamino y aún no ha pasado por trilla. El
+    enum se conserva con un único valor en lugar de eliminar la columna porque
+    deja constancia explícita de qué se está vendiendo —un pedido de hace un año
+    sigue diciendo qué era— y admite un segundo estado el día que se decida sin
+    tocar el esquema.
+    """
+
+    PERGAMINO = "pergamino"
 
 
 class CoffeeProcess(StrEnum):
@@ -82,32 +90,6 @@ class CoffeeProcess(StrEnum):
     HONEY = "honey"
     ANAEROBIC = "anaerobic"
     OTHER = "other"
-
-
-class RoastLevel(StrEnum):
-    LIGHT = "light"
-    MEDIUM = "medium"
-    MEDIUM_DARK = "medium_dark"
-    DARK = "dark"
-
-
-class GrindType(StrEnum):
-    WHOLE_BEAN = "whole_bean"
-    COARSE = "coarse"
-    MEDIUM = "medium"
-    FINE = "fine"
-
-
-# Nombre de la molienda tal como se le muestra a una persona. El valor del enum
-# es un identificador técnico: mostrarlo tal cual dejaba «500 g · whole_bean» en
-# la ficha, y ese mismo texto queda congelado en cada pedido
-# (`variant_label_snapshot`), donde ya no hay forma de corregirlo.
-GRIND_LABELS: dict[GrindType, str] = {
-    GrindType.WHOLE_BEAN: "grano entero",
-    GrindType.COARSE: "molienda gruesa",
-    GrindType.MEDIUM: "molienda media",
-    GrindType.FINE: "molienda fina",
-}
 
 
 class ProductStatus(StrEnum):

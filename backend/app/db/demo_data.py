@@ -1,9 +1,12 @@
-"""Datos de demostración: productores y cafés colombianos realistas.
+"""Datos de demostración: caficultores y lotes de pergamino colombianos.
 
 Sirven para probar el catálogo, los filtros y el flujo de compra sin depender de
-que existan productores reales. Los datos son verosímiles (variedades, procesos,
-altitudes y perfiles sensoriales corresponden a los de la caficultura
-colombiana) pero las fincas y personas son ficticias.
+que existan vendedores reales. Los datos son verosímiles —variedades, procesos,
+altitudes, factores de rendimiento, humedades y análisis físicos corresponden a
+los de la caficultura colombiana— pero las fincas, las personas y los lotes son
+ficticios.
+
+Los precios son por kilogramo de pergamino seco y las existencias, kilos.
 
 Uso:
     docker compose exec backend python -m app.db.demo_data
@@ -32,11 +35,9 @@ from app.models.catalog import (
 from app.models.enums import (
     CoffeeProcess,
     CoffeeState,
-    GrindType,
     ProducerStatus,
     ProducerType,
     ProductStatus,
-    RoastLevel,
     RoleCode,
     UserStatus,
 )
@@ -56,11 +57,25 @@ def slugify(text: str) -> str:
     return "-".join(part for part in ascii_text.replace("/", " ").split() if part)
 
 
+# Las categorías agrupan el pergamino por lo que decide una compra: el factor de
+# rendimiento. Más bajo es mejor café y más vale el kilo.
 CATEGORIES = [
-    ("cafe-tostado", "Café tostado", "Listo para moler y preparar"),
-    ("cafe-molido", "Café molido", "Molido según tu método de preparación"),
-    ("cafe-verde", "Café verde", "Grano sin tostar para tostadores"),
-    ("microlotes", "Microlotes", "Lotes pequeños de calidad excepcional"),
+    (
+        "pergamino-exportacion",
+        "Pergamino de exportación",
+        "Factor 92 o menor, apto para trilla de excelso de exportación",
+    ),
+    (
+        "pergamino-estandar",
+        "Pergamino estándar",
+        "Factor entre 93 y 96, el rango de la compra corriente",
+    ),
+    ("microlotes", "Microlotes", "Lotes pequeños de variedades y beneficios especiales"),
+    (
+        "pergamino-certificado",
+        "Pergamino certificado",
+        "Lotes con certificación orgánica, Fairtrade, Rainforest o UTZ vigente",
+    ),
 ]
 
 # (correo, nombre, tipo, razón social, documento, marca, historia, municipio DANE, región)
@@ -135,197 +150,238 @@ PRODUCERS: list[tuple[Any, ...]] = [
     ),
 ]
 
-# (productor_idx, nombre, estado, variedad, proceso, tueste, altitud, perfil,
-#  notas, puntaje, cosecha, precio_base, certificaciones, presentaciones)
+# Lotes de pergamino seco. Los datos son verosímiles —variedades, procesos,
+# altitudes, factores de rendimiento y análisis físicos corresponden a los de la
+# caficultura colombiana— pero las fincas, las personas y los lotes son ficticios.
+#
+# (productor_idx, nombre, categoría, variedad, proceso, altitud, descripción,
+#  factor, humedad, almendra_sana, pasilla, broca, mallas, secado, lote,
+#  cosecha, precio_kg, certificaciones, ofertas)
+#
+# Cada oferta es (presentación, mínimo_kg, precio_kg, precio_volumen, kilos).
 PRODUCTS: list[tuple[Any, ...]] = [
     (
         0,
-        "Microlote Geisha Lavado",
-        CoffeeState.ROASTED,
+        "Microlote Geisha Pergamino",
+        "microlotes",
         "Geisha",
         CoffeeProcess.WASHED,
-        RoastLevel.LIGHT,
         1850,
-        "Taza limpia y floral, de cuerpo sedoso y acidez cítrica brillante. "
-        "Final prolongado con dulzor a panela.",
-        ["jazmín", "bergamota", "durazno", "panela"],
-        Decimal("89.50"),
+        "Microlote de Geisha beneficiado por lavado y secado en marquesina durante "
+        "18 días. Factor 86, el más bajo de la finca en esta cosecha. Trillado da "
+        "una almendra grande y muy uniforme.",
+        Decimal("86.00"),
+        Decimal("10.80"),
+        Decimal("97.50"),
+        Decimal("1.20"),
+        Decimal("0.40"),
+        [17, 18],
+        "Marquesina, 18 días",
+        "GE-2026-003",
         date(2026, 4, 15),
-        Decimal("78000"),
+        Decimal("31000"),
         ["organic", "denominacion_origen"],
-        [
-            ("250 g", Decimal("250"), GrindType.WHOLE_BEAN, Decimal("78000"), None, 40),
-            ("500 g", Decimal("500"), GrindType.WHOLE_BEAN, Decimal("145000"), None, 25),
-        ],
+        [("A granel, en costal de fique", 125, Decimal("31000"), None, 375)],
     ),
     (
         0,
         "El Mirador Caturra Honey",
-        CoffeeState.ROASTED,
+        "pergamino-exportacion",
         "Caturra",
         CoffeeProcess.HONEY,
-        RoastLevel.MEDIUM,
         1720,
-        "Dulzor pronunciado y cuerpo cremoso. Acidez media que recuerda a la "
-        "manzana roja, con un fondo de caramelo.",
-        ["caramelo", "manzana roja", "almendra"],
-        Decimal("86.25"),
+        "Beneficio honey con mucílago parcial y secado lento. Factor 90 y humedad "
+        "controlada al 11 %. Lote homogéneo de una sola parcela.",
+        Decimal("90.00"),
+        Decimal("11.00"),
+        Decimal("95.00"),
+        Decimal("2.80"),
+        Decimal("0.90"),
+        [15, 16, 17],
+        "Marquesina, 14 días",
+        "MI-2026-011",
         date(2026, 3, 20),
-        Decimal("42000"),
+        Decimal("24500"),
         ["denominacion_origen"],
         [
-            ("250 g", Decimal("250"), GrindType.WHOLE_BEAN, Decimal("42000"), None, 60),
-            ("250 g molido", Decimal("250"), GrindType.MEDIUM, Decimal("42000"), None, 45),
+            ("A granel, en costal de fique", 125, Decimal("24500"), None, 1250),
             (
-                "1 kg",
-                Decimal("1000"),
-                GrindType.WHOLE_BEAN,
-                Decimal("155000"),
-                Decimal("138000"),
-                30,
+                "Empacado en la finca, bultos de 70 kg",
+                700,
+                Decimal("25500"),
+                Decimal("23800"),
+                2100,
             ),
         ],
     ),
     (
         1,
         "Nariño Altura Lavado",
-        CoffeeState.ROASTED,
+        "pergamino-exportacion",
         "Castillo",
         CoffeeProcess.WASHED,
-        RoastLevel.MEDIUM,
         2050,
-        "Acidez viva y estructurada, típica de las alturas nariñenses. Notas "
-        "florales que dan paso a un dulzor de caña.",
-        ["flores blancas", "caña de azúcar", "cítricos"],
-        Decimal("87.00"),
+        "Consolidado de 23 caficultores asociados de Sandoná, todos por encima de "
+        "2.000 metros. Análisis físico por lote y humedad verificada en el acopio.",
+        Decimal("91.50"),
+        Decimal("10.50"),
+        Decimal("94.20"),
+        Decimal("3.50"),
+        Decimal("1.10"),
+        [15, 16, 17],
+        "Secador mecánico Guardiola",
+        "SA-2026-047",
         date(2026, 5, 10),
-        Decimal("46000"),
+        Decimal("23000"),
         ["fairtrade", "organic"],
         [
-            ("340 g", Decimal("340"), GrindType.WHOLE_BEAN, Decimal("46000"), None, 80),
-            (
-                "1 kg",
-                Decimal("1000"),
-                GrindType.WHOLE_BEAN,
-                Decimal("128000"),
-                Decimal("115000"),
-                50,
-            ),
+            ("A granel, en costal de fique", 125, Decimal("23000"), None, 2500),
+            ("Bultos de 70 kg", 700, Decimal("23800"), Decimal("22200"), 4900),
         ],
     ),
     (
         1,
-        "Verde Nariño Excelso",
-        CoffeeState.GREEN,
-        "Castillo",
+        "Sandoná Pergamino Corriente",
+        "pergamino-estandar",
+        "Colombia",
         CoffeeProcess.WASHED,
-        None,
-        1950,
-        "Café verde excelso listo para tostar. Humedad controlada al 10,5 % y "
-        "cero defectos primarios.",
-        ["floral", "cítrico"],
-        Decimal("85.50"),
-        date(2026, 5, 2),
-        Decimal("32000"),
+        1900,
+        "Pergamino de compra corriente del acopio de la asociación. Factor 94, el "
+        "estándar de la Federación. Disponibilidad continua durante la cosecha.",
+        Decimal("94.00"),
+        Decimal("11.50"),
+        Decimal("89.00"),
+        Decimal("6.50"),
+        Decimal("2.10"),
+        [14, 15, 16],
+        "Patio de cemento y secador mecánico",
+        "SA-2026-052",
+        date(2026, 5, 22),
+        Decimal("18200"),
         ["fairtrade"],
         [
-            ("1 kg", Decimal("1000"), None, Decimal("32000"), Decimal("27000"), 200),
-            ("5 kg", Decimal("5000"), None, Decimal("150000"), Decimal("125000"), 60),
+            ("A granel, en costal de fique", 125, Decimal("18200"), None, 6250),
+            ("Bultos de 70 kg", 1400, Decimal("18900"), Decimal("17600"), 9800),
         ],
-    ),
-    (
-        2,
-        "Alta Vista Anaeróbico 72h",
-        CoffeeState.ROASTED,
-        "Pink Bourbon",
-        CoffeeProcess.ANAEROBIC,
-        RoastLevel.LIGHT,
-        1780,
-        "Fermentación anaeróbica de 72 horas. Perfil intenso y afrutado, con "
-        "acidez málica y un final vinoso muy marcado.",
-        ["frutos rojos", "vino tinto", "cacao", "mango"],
-        Decimal("90.25"),
-        date(2026, 2, 28),
-        Decimal("95000"),
-        ["rainforest"],
-        [("250 g", Decimal("250"), GrindType.WHOLE_BEAN, Decimal("95000"), None, 18)],
     ),
     (
         2,
         "Quindío Clásico",
-        CoffeeState.ROASTED,
+        "pergamino-estandar",
         "Colombia",
         CoffeeProcess.WASHED,
-        RoastLevel.MEDIUM_DARK,
         1600,
-        "El perfil clásico del Eje Cafetero: cuerpo alto, acidez suave y notas "
-        "a chocolate con nuez. Ideal para prensa francesa.",
-        ["chocolate", "nuez", "caramelo"],
-        Decimal("83.00"),
+        "El pergamino clásico del Eje Cafetero. Factor 93, secado en silo con aire "
+        "caliente y control de humedad cada cuatro horas.",
+        Decimal("93.00"),
+        Decimal("11.20"),
+        Decimal("90.50"),
+        Decimal("5.80"),
+        Decimal("1.80"),
+        [14, 15, 16, 17],
+        "Silo con aire caliente",
+        "AV-2026-019",
         date(2026, 4, 5),
-        Decimal("34000"),
+        Decimal("19000"),
         [],
         [
-            ("500 g", Decimal("500"), GrindType.WHOLE_BEAN, Decimal("34000"), None, 100),
-            ("500 g molido", Decimal("500"), GrindType.COARSE, Decimal("34000"), None, 75),
+            ("A granel, en costal de fique", 125, Decimal("19000"), None, 5000),
+            ("Bultos de 70 kg", 700, Decimal("19600"), Decimal("18400"), 7000),
         ],
     ),
     (
+        2,
+        "Alta Vista Pink Bourbon",
+        "microlotes",
+        "Pink Bourbon",
+        CoffeeProcess.ANAEROBIC,
+        1780,
+        "Fermentación anaeróbica de 72 horas antes del lavado, secado a la sombra "
+        "en camas africanas. Factor 88 y almendra sana del 96 %.",
+        Decimal("88.00"),
+        Decimal("10.60"),
+        Decimal("96.10"),
+        Decimal("1.90"),
+        Decimal("0.60"),
+        [16, 17, 18],
+        "Camas africanas a la sombra, 21 días",
+        "AV-2026-024",
+        date(2026, 2, 28),
+        Decimal("28500"),
+        ["rainforest"],
+        [("A granel, en costal de fique", 125, Decimal("28500"), None, 875)],
+    ),
+    (
         3,
-        "Selección del Tostador — Cauca",
-        CoffeeState.GROUND,
+        "Acopio Cauca — Lote Consolidado",
+        "pergamino-estandar",
         "Caturra",
         CoffeeProcess.WASHED,
-        RoastLevel.MEDIUM,
         1900,
-        "Mezcla de dos fincas caucanas, molida para método de goteo. Balanceado, "
-        "con dulzor persistente y acidez cítrica agradable.",
-        ["naranja", "panela", "chocolate con leche"],
-        Decimal("84.75"),
+        "Consolidado del centro de acopio de Popayán, de pequeños productores del "
+        "norte del Cauca. Se analiza cada entrega y se mezcla por factor.",
+        Decimal("92.50"),
+        Decimal("11.00"),
+        Decimal("92.00"),
+        Decimal("4.60"),
+        Decimal("1.40"),
+        [15, 16, 17],
+        "Patio de cemento",
+        "PO-2026-088",
         date(2026, 3, 12),
-        Decimal("38000"),
+        Decimal("20500"),
         ["utz"],
         [
-            ("340 g", Decimal("340"), GrindType.MEDIUM, Decimal("38000"), None, 90),
-            ("340 g fino", Decimal("340"), GrindType.FINE, Decimal("38000"), None, 55),
+            ("A granel, en costal de fique", 250, Decimal("20500"), None, 12500),
+            ("Bultos de 70 kg", 1400, Decimal("21200"), Decimal("19800"), 14000),
         ],
     ),
     (
         4,
         "La Esperanza Sombrío Nativo",
-        CoffeeState.ROASTED,
+        "pergamino-certificado",
         "Caturra",
         CoffeeProcess.NATURAL,
-        RoastLevel.MEDIUM,
         1680,
-        "Secado al sol en marquesina durante 21 días. Cuerpo denso y dulzor "
-        "intenso, con notas a fruta madura.",
-        ["mora", "panela", "cacao"],
-        Decimal("85.00"),
-        date(2026, 4, 22),
-        Decimal("40000"),
-        ["bird_friendly", "organic"],
-        [
-            ("250 g", Decimal("250"), GrindType.WHOLE_BEAN, Decimal("40000"), None, 35),
-            ("500 g", Decimal("500"), GrindType.WHOLE_BEAN, Decimal("75000"), None, 20),
-        ],
+        "Beneficio natural con la cereza entera secada al sol en marquesina durante "
+        "21 días. Lote pequeño de una finca de tres hectáreas bajo sombra de guamo "
+        "y nogal.",
+        Decimal("92.00"),
+        Decimal("11.30"),
+        Decimal("93.40"),
+        Decimal("4.10"),
+        Decimal("1.60"),
+        [15, 16],
+        "Marquesina, 21 días",
+        "ES-2026-006",
+        date(2026, 4, 18),
+        Decimal("22000"),
+        ["organic"],
+        [("A granel, en costal de fique", 62, Decimal("22000"), None, 620)],
     ),
     (
         4,
-        "La Esperanza Descafeinado",
-        CoffeeState.ROASTED,
+        "La Esperanza Lote de Traspatio",
+        "pergamino-estandar",
         "Colombia",
         CoffeeProcess.WASHED,
-        RoastLevel.MEDIUM,
-        1650,
-        "Descafeinado por el método de agua de montaña, sin solventes químicos. "
-        "Conserva el dulzor y el cuerpo del café original.",
-        ["chocolate", "caramelo", "avellana"],
-        Decimal("82.50"),
+        1580,
+        "Último pergamino de la cosecha principal, ya vendido casi por completo. "
+        "Se deja publicado para dejar constancia del lote y su análisis.",
+        Decimal("96.00"),
+        Decimal("11.80"),
+        Decimal("86.50"),
+        Decimal("8.20"),
+        Decimal("2.90"),
+        [14, 15],
+        "Marquesina, 16 días",
+        "ES-2026-007",
         date(2026, 3, 30),
-        Decimal("44000"),
-        ["organic"],
-        [("250 g", Decimal("250"), GrindType.WHOLE_BEAN, Decimal("44000"), None, 0)],
+        Decimal("16800"),
+        [],
+        # Sin existencias a propósito: el catálogo debe saber mostrar un lote
+        # agotado, y los favoritos marcarlo como tal.
+        [("A granel, en costal de fique", 62, Decimal("16800"), None, 0)],
     ),
 ]
 
@@ -447,18 +503,23 @@ def _create_products(
     for (
         producer_index,
         name,
-        state,
+        category_slug,
         variety,
         process,
-        roast,
         altitude,
-        sensory,
-        notes,
-        score,
+        description,
+        yield_factor,
+        moisture,
+        healthy_bean,
+        pasilla,
+        borer,
+        screens,
+        drying,
+        lot_code,
         harvest,
-        base_price,
+        price_per_kg,
         cert_codes,
-        variants,
+        offers,
     ) in PRODUCTS:
         slug = slugify(name)
         if session.scalar(select(Product).where(Product.slug == slug)) is not None:
@@ -467,31 +528,33 @@ def _create_products(
         producer = producers[producer_index]
         farm = session.scalar(select(Farm).where(Farm.producer_id == producer.id))
 
-        category_slug = {
-            CoffeeState.ROASTED: "cafe-tostado",
-            CoffeeState.GROUND: "cafe-molido",
-            CoffeeState.GREEN: "cafe-verde",
-        }[state]
+        volume_prices = [offer[3] for offer in offers if offer[3] is not None]
+        # Mínimo en kilos a partir del cual aplica el precio por volumen: el de la
+        # primera oferta que lo declara.
+        volume_min = next((offer[1] for offer in offers if offer[3] is not None), None)
 
-        wholesale_prices = [v[4] for v in variants if v[4] is not None]
         product = Product(
             producer_id=producer.id,
             farm_id=farm.id if farm else None,
             category_id=categories[category_slug].id,
             slug=slug,
             name=name,
-            description=sensory,
-            state=state,
+            description=description,
+            state=CoffeeState.PERGAMINO,
             status=ProductStatus.PUBLISHED,
-            base_price=base_price,
-            wholesale_price=min(wholesale_prices) if wholesale_prices else None,
-            wholesale_min_qty=10 if wholesale_prices else None,
-            dispatch_days=3,
+            # Precio por kilogramo del lote.
+            base_price=price_per_kg,
+            wholesale_price=min(volume_prices) if volume_prices else None,
+            wholesale_min_qty=volume_min,
+            dispatch_days=5,
             storage_conditions=(
-                "Conservar en lugar fresco y seco, lejos de la luz directa. "
-                "Una vez abierto, mantener el empaque bien cerrado."
+                "Almacenar sobre estibas, en bodega ventilada y a la sombra, sin "
+                "contacto con el piso ni con paredes húmedas. El pergamino toma "
+                "humedad del ambiente y olores de lo que se guarde a su lado."
             ),
-            allows_samples=state == CoffeeState.GREEN,
+            # Todo lote de pergamino admite muestra: ningún comprador cierra una
+            # compra por volumen sin trillar y catar una muestra antes.
+            allows_samples=True,
             published_at=datetime.now(UTC),
         )
         session.add(product)
@@ -502,14 +565,20 @@ def _create_products(
                 product_id=product.id,
                 variety=variety,
                 process=process,
-                roast=roast,
                 altitude_masl=altitude,
-                sensory_profile=sensory,
-                tasting_notes=notes,
-                cupping_score=score,
                 harvest_date=harvest,
-                roast_date=date(2026, 7, 1) if state != CoffeeState.GREEN else None,
-                moisture_pct=Decimal("10.50"),
+                yield_factor=yield_factor,
+                moisture_pct=moisture,
+                healthy_bean_pct=healthy_bean,
+                pasilla_pct=pasilla,
+                borer_damage_pct=borer,
+                screen_sizes=screens,
+                drying_method=drying,
+                lot_code=lot_code,
+                # Código SICA ficticio, derivado del código del lote para que sea
+                # estable entre ejecuciones.
+                sica_code=f"SICA-{abs(hash(lot_code)) % 10**8:08d}",
+                notes=None,
             )
         )
 
@@ -517,7 +586,7 @@ def _create_products(
             ProductImage(
                 product_id=product.id,
                 image_key=f"demo/{slug}.jpg",
-                alt_text=f"{name}, café de {producer.brand_name}",
+                alt_text=f"Pergamino seco de {producer.brand_name}: {name}",
                 is_primary=True,
                 sort_order=0,
             )
@@ -531,23 +600,27 @@ def _create_products(
                     )
                 )
 
-        for _label, grams, grind, price, wholesale, stock in variants:
-            grind_suffix = f"-{grind.value[:3].upper()}" if grind else ""
-            sku = f"{slug[:20].upper()}-{int(grams)}{grind_suffix}"
+        for presentation, min_kg, price, volume_price, stock_kg in offers:
             variant = ProductVariant(
                 product_id=product.id,
-                sku=sku,
-                weight_grams=grams,
-                grind=grind,
+                sku=f"{slug[:24].upper()}-{min_kg}KG",
+                presentation=presentation,
+                min_qty_kg=min_kg,
                 price=price,
-                wholesale_price=wholesale,
+                wholesale_price=volume_price,
                 is_active=True,
             )
             session.add(variant)
             session.flush()
             session.add(
                 Inventory(
-                    variant_id=variant.id, stock_qty=stock, reserved_qty=0, low_stock_threshold=5
+                    variant_id=variant.id,
+                    # Existencias en kilogramos.
+                    stock_qty=stock_kg,
+                    reserved_qty=0,
+                    # Aviso de existencias bajas cuando ya no alcanza para dos
+                    # compras del mínimo.
+                    low_stock_threshold=min_kg * 2,
                 )
             )
 

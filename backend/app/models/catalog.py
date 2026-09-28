@@ -25,13 +25,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin, pg_enum
 from app.models.enums import (
-    GRIND_LABELS,
     CoffeeProcess,
     CoffeeState,
-    GrindType,
     ProductStatus,
     ReviewStatus,
-    RoastLevel,
 )
 
 if TYPE_CHECKING:
@@ -64,11 +61,13 @@ class Category(Base, SoftDeleteMixin):
 
 
 class Product(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
-    """Café publicado por un productor.
+    """Lote de pergamino seco publicado por un productor.
 
-    El precio real vive en las variantes: un mismo lote en 250 g y en 1 kg son
-    precios distintos. `base_price` es solo la referencia de visualización
-    ("desde $X") que se muestra en el listado.
+    Todos los precios son **por kilogramo**: es la unidad en la que se compara
+    una oferta con otra, y la única forma de que dos lotes de tamaño distinto
+    sean comparables de un vistazo. `base_price` es el precio por kilo del lote
+    más barato del productor para este café, que es lo que se muestra en el
+    listado; el precio que se cobra vive en la variante.
     """
 
     __tablename__ = "products"
@@ -149,7 +148,17 @@ class Product(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
 
 
 class CoffeeAttributes(Base, TimestampMixin):
-    """Ficha técnica del café. Relación uno a uno con el producto."""
+    """Ficha técnica del lote de pergamino. Relación uno a uno con el producto.
+
+    Reúne lo que describe un lote de café seco: su origen y beneficio —variedad,
+    proceso, altitud, cosecha—, su análisis —factor de rendimiento, humedad,
+    almendra sana, pasilla, broca, granulometría— y su trazabilidad —código de
+    lote y de SICA—.
+
+    Todos los campos admiten nulo: un productor publica lo que tiene medido, y
+    exigir un análisis físico completo para poder publicar dejaría fuera a la
+    mayoría de los caficultores pequeños. La interfaz muestra qué falta.
+    """
 
     __tablename__ = "coffee_attributes"
 
@@ -162,33 +171,83 @@ class CoffeeAttributes(Base, TimestampMixin):
     process: Mapped[CoffeeProcess | None] = mapped_column(
         pg_enum(CoffeeProcess, "coffee_process"), nullable=True
     )
-    roast: Mapped[RoastLevel | None] = mapped_column(
-        pg_enum(RoastLevel, "roast_level"), nullable=True
-    )
     altitude_masl: Mapped[int | None] = mapped_column(nullable=True)
-    sensory_profile: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tasting_notes: Mapped[list[str] | None] = mapped_column(ARRAY(String(50)), nullable=True)
-
-    # NUMERIC(5,2): el rango de catación llega a 100.00. Un NUMERIC(3,2) solo
-    # admitiría hasta 9.99 y haría imposible registrar el puntaje real.
-    cupping_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
-
     harvest_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    roast_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # ------------------------------------------------------------------
+    # Análisis del pergamino
+    # ------------------------------------------------------------------
+    # El factor de rendimiento es el dato que gobierna el valor de un lote de
+    # pergamino en Colombia: los kilos de pergamino seco que hay que trillar para
+    # obtener un saco de 70 kg de café excelso de exportación. Cuanto más bajo,
+    # mejor el café y más vale el kilo. El estándar de la Federación es 94.
+    #
+    # Aquí es informativo y no altera el precio, que lo pone el vendedor: quien
+    # compara dos ofertas lo ve al lado del precio y decide. Automatizar el
+    # cálculo exigiría una fuente del precio de referencia del día, que hoy no
+    # existe en el sistema.
+    yield_factor: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+
+    # Humedad. Por debajo de 10 % el café se deteriora en la trilla; por encima
+    # de 12 % corre riesgo de hongos y es causal de rechazo en un punto de
+    # compra. Se admite todo el rango y se advierte en la interfaz.
     moisture_pct: Mapped[Decimal | None] = mapped_column(Numeric(4, 2), nullable=True)
+
+    # Análisis físico de la muestra, en porcentaje sobre el peso analizado.
+    healthy_bean_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    pasilla_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+    borer_damage_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+
+    # Granulometría: mallas en las que se retiene el grano (14 a 20). Se guarda
+    # como arreglo porque un lote se describe por las mallas que lo componen,
+    # no por una sola.
+    screen_sizes: Mapped[list[int] | None] = mapped_column(ARRAY(SmallInteger), nullable=True)
+
+    # ------------------------------------------------------------------
+    # Trazabilidad del lote
+    # ------------------------------------------------------------------
+    # Código con el que el productor identifica el lote en su finca. Es lo que
+    # permite que una reclamación apunte a un lote concreto y no al café «en
+    # general» de esa finca.
+    lot_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
+
+    # Código del predio en el Sistema de Información Cafetera de la Federación.
+    # No se valida contra la Federación —no hay integración—, así que se guarda
+    # como lo declara el productor y la interfaz lo presenta como declarado.
+    sica_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+    drying_method: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     product: Mapped["Product"] = relationship(back_populates="attributes")
 
     __table_args__ = (
-        Index("ix_coffee_attributes_filters", "process", "roast", "altitude_masl"),
-        Index("ix_coffee_attributes_score", "cupping_score"),
+        Index("ix_coffee_attributes_filters", "process", "altitude_masl"),
+        # El factor es el criterio de ordenación natural del catálogo de
+        # pergamino, igual que el puntaje de catación lo era en el de tostado.
+        Index("ix_coffee_attributes_yield_factor", "yield_factor"),
+        # Rango del factor. Por debajo de 80 no existe café en Colombia y por
+        # encima de 130 el lote no es comercializable: un valor fuera de ahí es
+        # un error de digitación, no un café malo.
         CheckConstraint(
-            "cupping_score IS NULL OR (cupping_score >= 0 AND cupping_score <= 100)",
-            name="cupping_score_range",
+            "yield_factor IS NULL OR (yield_factor >= 80 AND yield_factor <= 130)",
+            name="yield_factor_range",
         ),
         CheckConstraint(
             "moisture_pct IS NULL OR (moisture_pct >= 0 AND moisture_pct <= 100)",
             name="moisture_range",
+        ),
+        CheckConstraint(
+            "healthy_bean_pct IS NULL OR (healthy_bean_pct >= 0 AND healthy_bean_pct <= 100)",
+            name="healthy_bean_range",
+        ),
+        CheckConstraint(
+            "pasilla_pct IS NULL OR (pasilla_pct >= 0 AND pasilla_pct <= 100)",
+            name="pasilla_range",
+        ),
+        CheckConstraint(
+            "borer_damage_pct IS NULL OR (borer_damage_pct >= 0 AND borer_damage_pct <= 100)",
+            name="borer_damage_range",
         ),
     )
 
@@ -215,7 +274,18 @@ class ProductImage(Base, UUIDPrimaryKeyMixin):
 
 
 class ProductVariant(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin):
-    """Presentación concreta del producto: peso y molienda, con su propio precio."""
+    """Oferta concreta de un lote: precio por kilogramo y mínimo de compra.
+
+    La unidad de venta es el kilogramo: `price` es el precio de un kilo y las
+    cantidades del carrito, del pedido y del inventario se cuentan en kilos. Un
+    mismo café puede ofrecerse en varias condiciones —a granel más barato, en
+    empaque de la finca más caro— y cada una es una variante con su propio
+    mínimo.
+
+    No se modela el peso del lote aquí: los kilos disponibles viven en el
+    inventario, que es donde se reservan y se descuentan. Tener el peso en dos
+    sitios llevaría a que discrepen.
+    """
 
     __tablename__ = "product_variants"
 
@@ -223,8 +293,19 @@ class ProductVariant(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin)
         PgUUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
     )
     sku: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
-    weight_grams: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    grind: Mapped[GrindType | None] = mapped_column(pg_enum(GrindType, "grind_type"), nullable=True)
+
+    # Cómo se entrega el lote: «a granel», «empacado en la finca», «en bultos de
+    # 70 kg». Texto libre porque el empaque del pergamino no está normalizado y
+    # un enum obligaría a mantener una lista que no termina.
+    presentation: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    # Mínimo de compra en kilos. Un caficultor no despacha 3 kg de pergamino: el
+    # costo del flete se come la venta. Se cuenta en kilos enteros, igual que el
+    # inventario, para que el mínimo y las existencias sean comparables sin
+    # convertir.
+    min_qty_kg: Mapped[int] = mapped_column(default=1, nullable=False)
+
+    # Precio de un kilogramo.
     price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     wholesale_price: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -237,26 +318,28 @@ class ProductVariant(Base, UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin)
     __table_args__ = (
         Index("ix_product_variants_product", "product_id"),
         CheckConstraint("price >= 0", name="variant_price_non_negative"),
-        CheckConstraint("weight_grams > 0", name="variant_weight_positive"),
+        CheckConstraint("min_qty_kg > 0", name="variant_min_qty_positive"),
     )
 
     @property
     def label(self) -> str:
         """Etiqueta legible que se congela en el pedido (`variant_label_snapshot`).
 
-        Se usa el nombre en español de la molienda y no el valor del enum: ese
-        valor es un identificador técnico, y el texto que se genere aquí queda
-        guardado tal cual en el histórico del pedido.
+        El texto que se genere aquí queda guardado tal cual en el histórico del
+        pedido, donde ya no hay forma de corregirlo: de ahí que se redacte en
+        español y no con identificadores técnicos.
         """
-        weight = f"{self.weight_grams:.0f} g"
-        return f"{weight} · {GRIND_LABELS[self.grind]}" if self.grind else weight
+        if self.min_qty_kg > 1:
+            return f"{self.presentation} · mínimo {self.min_qty_kg} kg"
+        return self.presentation
 
 
 class Inventory(Base):
-    """Existencias de una variante.
+    """Existencias de una variante, **en kilogramos**.
 
-    `reserved_qty` retiene el stock de pedidos en curso: se convierte en
-    descuento efectivo al confirmarse el pago y se libera si el pago se rechaza.
+    `reserved_qty` retiene los kilos de pedidos en curso: se convierten en
+    descuento efectivo al confirmarse el pago y se liberan si el pago se rechaza
+    o si alguna de las dos partes cancela.
     """
 
     __tablename__ = "inventories"
@@ -287,7 +370,7 @@ class Inventory(Base):
 
     @property
     def available_qty(self) -> int:
-        """Unidades realmente vendibles."""
+        """Kilos realmente vendibles."""
         return self.stock_qty - self.reserved_qty
 
     @property

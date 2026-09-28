@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.pagination import Page, PageParams
 from app.core.permissions import OptionalUser
 from app.db.session import get_session
-from app.models.enums import CoffeeProcess, CoffeeState, RoastLevel
+from app.models.enums import CoffeeProcess
 from app.modules.catalog.service import CatalogService
 from app.schemas.catalog import (
     ProducerDetail,
@@ -39,16 +39,27 @@ def list_products(
     region: Annotated[str | None, Query(description="Código de la región cafetera")] = None,
     variety: str | None = None,
     process: CoffeeProcess | None = None,
-    roast: RoastLevel | None = None,
-    state: CoffeeState | None = None,
     certification: str | None = None,
     producer_id: uuid.UUID | None = None,
-    min_price: float | None = Query(default=None, ge=0),
-    max_price: float | None = Query(default=None, ge=0),
-    min_score: float | None = Query(default=None, ge=0, le=100),
+    min_price: Annotated[
+        float | None, Query(ge=0, description="Precio mínimo por kilogramo")
+    ] = None,
+    max_price: Annotated[
+        float | None, Query(ge=0, description="Precio máximo por kilogramo")
+    ] = None,
+    max_yield_factor: Annotated[
+        float | None,
+        Query(ge=80, le=130, description="Factor de rendimiento máximo aceptado"),
+    ] = None,
+    max_moisture_pct: Annotated[
+        float | None, Query(ge=0, le=100, description="Humedad máxima aceptada")
+    ] = None,
+    min_available_kg: Annotated[
+        int | None, Query(ge=1, description="Kilos disponibles mínimos")
+    ] = None,
     sort: Annotated[
         str,
-        Query(pattern="^(price_asc|price_desc|rating|score|popular|newest)$"),
+        Query(pattern="^(price_asc|price_desc|rating|yield_factor|popular|newest)$"),
     ] = "newest",
 ) -> Page[ProductListItem]:
     """Devuelve el catálogo público, paginado y filtrable.
@@ -63,13 +74,13 @@ def list_products(
         region=region,
         variety=variety,
         process=process,
-        roast=roast,
-        state=state,
         certification=certification,
         producer_id=producer_id,
         min_price=min_price,
         max_price=max_price,
-        min_score=min_score,
+        max_yield_factor=max_yield_factor,
+        max_moisture_pct=max_moisture_pct,
+        min_available_kg=min_available_kg,
         sort=sort,
     )
     return CatalogService(session).list_products(filters, params, user)
