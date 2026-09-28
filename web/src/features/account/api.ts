@@ -49,7 +49,33 @@ export const addressesApi = {
 
   /** Marca una dirección como predeterminada; el servidor retira la anterior. */
   makeDefault: (token: string, addressId: string) =>
-    api.patch<Address>(`/users/me/addresses/${addressId}`, { is_default: true }, { token }),
+    api.patch<Address>(
+      `/users/me/addresses/${addressId}`,
+      { is_default: true },
+      { token },
+    ),
+};
+
+export interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  email_notifications_enabled: boolean;
+}
+
+/** Campos del perfil que el titular puede corregir. El correo no está: para
+ *  cambiarlo hay que volver a verificarlo, porque es la llave de la
+ *  recuperación de contraseña. */
+export interface ProfileInput {
+  full_name?: string;
+  phone?: string | null;
+  email_notifications_enabled?: boolean;
+}
+
+export const profileApi = {
+  update: (token: string, data: ProfileInput) =>
+    api.patch<Profile>("/users/me", data, { token }),
 };
 
 export const geoApi = {

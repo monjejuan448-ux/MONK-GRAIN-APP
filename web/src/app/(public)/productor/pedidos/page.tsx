@@ -196,8 +196,7 @@ export default function ProducerOrdersPage() {
       <h1 className="font-display text-3xl font-bold">Pedidos recibidos</h1>
       <p className="mb-8 mt-1 text-muted-foreground">
         Cada pedido avanza de un estado al siguiente y el comprador ve el cambio. Un
-        pedido ya despachado no se cancela: se devuelve, desde la sección de
-        devoluciones.
+        pedido ya despachado no se cancela: se devuelve, desde la sección de devoluciones.
       </p>
 
       <div aria-live="polite" className="sr-only">
@@ -388,8 +387,8 @@ export default function ProducerOrdersPage() {
                               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                             />
                             <p className="mt-1.5 text-xs text-muted-foreground">
-                              El comprador recibe este motivo y las unidades vuelven a
-                              tu inventario.
+                              El comprador recibe este motivo y las unidades vuelven a tu
+                              inventario.
                             </p>
                           </div>
                         )}
@@ -399,7 +398,9 @@ export default function ProducerOrdersPage() {
                             type="submit"
                             size="sm"
                             isLoading={isSaving}
-                            variant={pending.target === "cancelled" ? "destructive" : "primary"}
+                            variant={
+                              pending.target === "cancelled" ? "destructive" : "primary"
+                            }
                           >
                             {pending.target === "shipped"
                               ? "Confirmar despacho"

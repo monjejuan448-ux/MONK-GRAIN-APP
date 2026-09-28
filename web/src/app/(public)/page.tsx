@@ -164,11 +164,13 @@ export default async function HomePage() {
               Cada región cafetera de Colombia imprime su carácter en la taza.
             </p>
           </div>
+          {/* El catálogo ya filtra por región; apuntar aquí evita un 404
+              mientras la página de regiones no exista. */}
           <Link
-            href="/regiones"
+            href="/catalogo"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
-            Ver todas
+            Ver el catálogo
           </Link>
         </header>
 
@@ -305,7 +307,7 @@ export default async function HomePage() {
               Registrarme como productor
             </Link>
             <Link
-              href="/vender/como-funciona"
+              href="/vender#pasos"
               className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
             >
               Cómo funciona

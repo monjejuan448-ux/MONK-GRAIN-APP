@@ -218,7 +218,11 @@ export function AddressForm({ address, isFirst, onSubmit, onCancel }: AddressFor
             ))}
           </select>
           {fieldErrors.department && (
-            <p id="department-error" className="mt-1.5 text-sm text-destructive" role="alert">
+            <p
+              id="department-error"
+              className="mt-1.5 text-sm text-destructive"
+              role="alert"
+            >
               {fieldErrors.department}
             </p>
           )}

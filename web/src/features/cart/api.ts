@@ -139,6 +139,25 @@ export interface OrderDetail {
   placed_at: string;
 }
 
+export interface WishlistItem {
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  image_url: string | null;
+  base_price: string;
+  is_available: boolean;
+}
+
+export const wishlistApi = {
+  list: (token: string) => api.get<WishlistItem[]>("/wishlist", { token }),
+
+  add: (token: string, productId: string) =>
+    api.post<{ message: string }>("/wishlist", { product_id: productId }, { token }),
+
+  remove: (token: string, productId: string) =>
+    api.delete<{ message: string }>(`/wishlist/${productId}`, { token }),
+};
+
 export const orderApi = {
   checkout: (
     token: string,

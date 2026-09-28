@@ -21,6 +21,43 @@ router = APIRouter(prefix="/users", tags=["usuarios"])
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
+class ProfileUpdate(BaseModel):
+    """Datos personales que el titular puede corregir por sí mismo.
+
+    El correo queda fuera a propósito: cambiarlo exige volver a verificarlo,
+    porque es la llave de la recuperación de contraseña. El estado de la cuenta y
+    los roles también, que son decisiones de la administración y no del titular.
+    """
+
+    full_name: str | None = Field(default=None, min_length=3, max_length=150)
+    phone: str | None = Field(default=None, max_length=30)
+    email_notifications_enabled: bool | None = None
+
+
+class ProfileResponse(ORMModel):
+    id: uuid.UUID
+    email: str
+    full_name: str
+    phone: str | None
+    email_notifications_enabled: bool
+
+
+@router.patch("/me", response_model=ProfileResponse, summary="Editar mis datos")
+def update_profile(
+    payload: ProfileUpdate, user: CurrentUser, session: SessionDep
+) -> ProfileResponse:
+    """Actualiza los datos personales del titular.
+
+    Solo se aplican los campos presentes en la petición: un `null` explícito en
+    `phone` significa borrarlo, mientras que su ausencia lo deja como estaba.
+    """
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
+
+    session.commit()
+    return ProfileResponse.model_validate(user)
+
+
 class AddressCreate(BaseModel):
     label: str | None = Field(default=None, max_length=50)
     recipient_name: str = Field(min_length=3, max_length=150)
