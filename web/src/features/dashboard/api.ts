@@ -89,11 +89,91 @@ export const producerApi = {
   ) => api.patch(`/orders/sub-orders/${subOrderId}/status`, data, { token }),
 };
 
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  full_name: string;
+  status: "pending_verification" | "active" | "suspended";
+  roles: string[];
+  is_producer: boolean;
+  producer_status: string | null;
+  order_count: number;
+  created_at: string;
+  last_login_at: string | null;
+}
+
+export interface ReportedReview {
+  id: string;
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  rating: number;
+  comment: string | null;
+  author_name: string;
+  status: "published" | "hidden" | "reported";
+  created_at: string;
+  report_count: number;
+  /** Motivos que adujeron quienes la denunciaron, del más reciente al primero. */
+  report_reasons: string[];
+}
+
+export interface AuditLogEntry {
+  id: number;
+  actor_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  created_at: string;
+}
+
+export const USER_STATUS_META: Record<
+  AdminUserItem["status"],
+  { label: string; variant: "success" | "warning" | "default" }
+> = {
+  active: { label: "Activa", variant: "success" },
+  pending_verification: { label: "Sin verificar", variant: "warning" },
+  suspended: { label: "Suspendida", variant: "default" },
+};
+
+export const ROLE_LABELS: Record<string, string> = {
+  consumer: "Comprador",
+  business: "Empresa",
+  producer: "Vendedor",
+  admin: "Administración",
+  visitor: "Visitante",
+};
+
 export const adminApi = {
   dashboard: (token: string, days = 30) =>
     api.get<AdminDashboard>("/admin/dashboard", { token, query: { days } }),
   pendingProducers: (token: string) =>
     api.get<PageResult<PendingProducer>>("/admin/producers/pending", { token }),
+  users: (token: string, filters: { q?: string; status?: string; role?: string } = {}) =>
+    api.get<PageResult<AdminUserItem>>("/admin/users", {
+      token,
+      query: { q: filters.q, status: filters.status, role: filters.role },
+    }),
+
+  suspendUser: (token: string, userId: string, suspend: boolean, reason?: string) =>
+    api.post<{ message: string }>(
+      `/admin/users/${userId}/suspend`,
+      { suspend, reason: reason || null },
+      { token },
+    ),
+
+  reportedReviews: (token: string) =>
+    api.get<PageResult<ReportedReview>>("/admin/reviews/reported", { token }),
+
+  moderateReview: (token: string, reviewId: string, hide: boolean, reason?: string) =>
+    api.post<{ message: string }>(
+      `/admin/reviews/${reviewId}/moderate`,
+      { hide, reason: reason || null },
+      { token },
+    ),
+
+  auditLogs: (token: string) =>
+    api.get<PageResult<AuditLogEntry>>("/admin/audit-logs", { token }),
+
   reviewProducer: (
     token: string,
     producerId: string,
