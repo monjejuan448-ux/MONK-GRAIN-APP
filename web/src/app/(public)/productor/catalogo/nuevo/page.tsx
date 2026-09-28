@@ -47,7 +47,7 @@ export default function NewProductPage() {
         Volver a mi catálogo
       </Link>
 
-      <h1 className="font-display text-3xl font-bold">Publicar un café</h1>
+      <h1 className="font-display text-3xl font-bold">Publicar un lote</h1>
       <p className="mb-8 mt-1 text-muted-foreground">
         Empieza por lo esencial. Se guardará como borrador hasta que agregues fotografía y
         presentación.

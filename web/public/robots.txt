@@ -1,0 +1,12 @@
+# MONK GRAIN
+# Las áreas con datos de una cuenta no deben acabar en un índice de búsqueda.
+User-agent: *
+Disallow: /mi-cuenta/
+Disallow: /productor/
+Disallow: /admin/
+Disallow: /carrito
+Disallow: /checkout
+Disallow: /favoritos
+Allow: /
+
+Sitemap: /sitemap.xml

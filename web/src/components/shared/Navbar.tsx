@@ -58,7 +58,7 @@ export function Navbar() {
             role="search"
           >
             <label htmlFor="site-search" className="sr-only">
-              Buscar café
+              Buscar lotes
             </label>
             <div className="relative">
               <Search
@@ -108,7 +108,7 @@ export function Navbar() {
                 "ml-2 hidden sm:inline-flex",
               )}
             >
-              Vender café
+              Vender pergamino
             </Link>
 
             <Button
@@ -131,13 +131,13 @@ export function Navbar() {
         >
           <form action="/catalogo" className="mb-3 md:hidden" role="search">
             <label htmlFor="mobile-search" className="sr-only">
-              Buscar café
+              Buscar lotes
             </label>
             <input
               id="mobile-search"
               name="q"
               type="search"
-              placeholder="Buscar café"
+              placeholder="Buscar lotes"
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
           </form>
@@ -159,7 +159,7 @@ export function Navbar() {
                 className="block rounded-md px-3 py-2.5 text-sm font-medium text-secondary"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Vender café
+                Vender pergamino
               </Link>
             </li>
           </ul>
