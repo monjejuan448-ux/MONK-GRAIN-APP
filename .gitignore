@@ -1,0 +1,52 @@
+# Entorno
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.eslintcache
+coverage/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+
+# Docker y datos locales
+docker-data/
+*.pid
+
+# Editores y sistema
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Archivos subidos en desarrollo
+uploads/
+media/
