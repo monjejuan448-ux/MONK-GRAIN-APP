@@ -136,7 +136,10 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Instalar dependencias
-        run: npm ci || npm install
+        # `npm ci` a secas, sin respaldo en `npm install`: el respaldo ocultaba
+        # que no existía package-lock.json y hacía que cada ejecución resolviera
+        # versiones distintas dentro de los rangos declarados.
+        run: npm ci
 
       - name: Verificación de tipos
         run: npx tsc --noEmit
