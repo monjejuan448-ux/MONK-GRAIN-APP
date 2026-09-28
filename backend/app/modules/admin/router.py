@@ -11,10 +11,12 @@ from app.core.pagination import Page, PageParams
 from app.core.permissions import AdminUser
 from app.core.rate_limit import client_ip
 from app.db.session import get_session
+from app.models.enums import RoleCode, UserStatus
 from app.modules.admin.service import AdminService
 from app.schemas.common import MessageResponse
 from app.schemas.dashboard import (
     AdminDashboard,
+    AdminUserItem,
     AuditLogEntry,
     PendingProducerItem,
     ProducerReviewDecision,
@@ -70,6 +72,31 @@ def review_producer(
         reason=payload.reason,
         ip_address=client_ip(request),
     )
+
+
+@router.get(
+    "/users",
+    response_model=Page[AdminUserItem],
+    summary="Cuentas de la plataforma",
+)
+def list_users(
+    admin: AdminUser,
+    session: SessionDep,
+    params: Annotated[PageParams, Depends()],
+    q: Annotated[
+        str | None, Query(max_length=120, description="Buscar por correo o nombre")
+    ] = None,
+    status_filter: Annotated[
+        UserStatus | None, Query(alias="status", description="Filtrar por estado de la cuenta")
+    ] = None,
+    role: Annotated[RoleCode | None, Query(description="Filtrar por rol")] = None,
+) -> Page[AdminUserItem]:
+    """Listado de cuentas para poder encontrar la que se va a suspender.
+
+    Es lo que faltaba para que `/users/{id}/suspend` fuera alcanzable: sin
+    listado, había que conocer el identificador de la cuenta de memoria.
+    """
+    return AdminService(session).list_users(params, q=q, status=status_filter, role=role)
 
 
 class SuspendRequest(BaseModel):

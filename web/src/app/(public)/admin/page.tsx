@@ -1,13 +1,22 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Coffee, DollarSign, ShoppingCart, UserCheck, Users } from "lucide-react";
+import {
+  Coffee,
+  DollarSign,
+  Flag,
+  ScrollText,
+  ShoppingCart,
+  UserCheck,
+  Users,
+} from "lucide-react";
 
 import { EmptyState, ErrorState, Skeleton } from "@/components/shared/states";
 import { StatCard } from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ORDER_STATUS_META,
@@ -18,6 +27,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { formatCurrency, formatDateShort } from "@/lib/format";
 import { session } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -121,6 +131,38 @@ export default function AdminDashboardPage() {
       <header className="mb-8">
         <h1 className="font-display text-3xl font-bold">Panel administrativo</h1>
         <p className="mt-2 text-muted-foreground">Actividad de los últimos 30 días.</p>
+
+        <nav
+          aria-label="Secciones de administración"
+          className="mt-5 flex flex-wrap gap-2"
+        >
+          <Link
+            href="/admin/usuarios"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <Users className="mr-1.5 size-4" aria-hidden="true" />
+            Cuentas
+          </Link>
+          <Link
+            href="/admin/resenas"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <Flag className="mr-1.5 size-4" aria-hidden="true" />
+            Reseñas denunciadas
+            {data && data.reported_reviews > 0 && (
+              <Badge variant="warning" className="ml-1.5">
+                {data.reported_reviews}
+              </Badge>
+            )}
+          </Link>
+          <Link
+            href="/admin/auditoria"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <ScrollText className="mr-1.5 size-4" aria-hidden="true" />
+            Auditoría
+          </Link>
+        </nav>
       </header>
 
       {error && (

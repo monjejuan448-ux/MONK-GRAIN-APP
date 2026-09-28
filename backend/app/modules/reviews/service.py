@@ -292,6 +292,7 @@ class ReviewService:
                 id=review.id,
                 product_id=review.product_id,
                 product_name=review.product.name,
+                product_slug=review.product.slug,
                 rating=review.rating,
                 comment=review.comment,
                 author_name=self._author_name(review),

@@ -97,6 +97,9 @@ class ReportedReview(ORMModel):
     id: uuid.UUID
     product_id: uuid.UUID
     product_name: str
+    # El slug, no solo el identificador: es lo que la ruta pública del lote usa,
+    # y sin él la cola de moderación no puede enlazar a lo que se está moderando.
+    product_slug: str
     rating: int
     comment: str | None
     author_name: str

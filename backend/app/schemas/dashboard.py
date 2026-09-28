@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel
 
-from app.models.enums import ProducerStatus, ProductStatus, SubOrderStatus
+from app.models.enums import ProducerStatus, ProductStatus, SubOrderStatus, UserStatus
 
 
 class BuyerDashboard(BaseModel):
@@ -138,6 +138,26 @@ class ProducerReviewDecision(BaseModel):
 
     approve: bool
     reason: str | None = None
+
+
+class AdminUserItem(BaseModel):
+    """Cuenta en el listado del administrador.
+
+    No lleva el documento de identidad ni el teléfono: para decidir una
+    suspensión no hacen falta, y un listado es justo donde menos conviene tener
+    datos personales que nadie va a usar.
+    """
+
+    id: uuid.UUID
+    email: str
+    full_name: str
+    status: UserStatus
+    roles: list[str]
+    is_producer: bool
+    producer_status: str | None
+    order_count: int
+    created_at: datetime
+    last_login_at: datetime | None
 
 
 class AuditLogEntry(BaseModel):

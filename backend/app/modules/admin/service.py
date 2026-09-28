@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import BusinessRuleError, NotFoundError
@@ -27,7 +27,12 @@ from app.models.messaging import Notification
 from app.models.order import Order, SubOrder
 from app.models.producer import ProducerProfile
 from app.models.user import Role, User, UserRole
-from app.schemas.dashboard import AdminDashboard, AuditLogEntry, PendingProducerItem
+from app.schemas.dashboard import (
+    AdminDashboard,
+    AdminUserItem,
+    AuditLogEntry,
+    PendingProducerItem,
+)
 
 logger = get_logger(__name__)
 
@@ -174,6 +179,77 @@ class AdminService:
     # ------------------------------------------------------------------
     # Aprobación de vendedores
     # ------------------------------------------------------------------
+    def list_users(
+        self,
+        params: PageParams,
+        *,
+        q: str | None = None,
+        status: UserStatus | None = None,
+        role: RoleCode | None = None,
+    ) -> Page[AdminUserItem]:
+        """Cuentas de la plataforma, con búsqueda por correo o nombre.
+
+        Existía el endpoint para suspender una cuenta pero no había forma de
+        encontrarla: había que conocer su identificador de memoria. Sin este
+        listado, la suspensión era inalcanzable en la práctica.
+        """
+        statement = (
+            select(User)
+            .where(User.deleted_at.is_(None))
+            .options(joinedload(User.producer_profile))
+            .order_by(User.created_at.desc(), User.id)
+        )
+
+        if q:
+            pattern = f"%{q.strip()}%"
+            statement = statement.where(
+                or_(
+                    User.email.ilike(pattern),
+                    func.unaccent(User.full_name).ilike(func.unaccent(pattern)),
+                )
+            )
+        if status is not None:
+            statement = statement.where(User.status == status)
+        if role is not None:
+            statement = statement.where(
+                User.id.in_(
+                    select(UserRole.user_id)
+                    .join(Role, Role.id == UserRole.role_id)
+                    .where(Role.code == role.value)
+                )
+            )
+
+        users, total = paginate_query(self.session, statement, params)
+
+        # Los pedidos de toda la página en una sola consulta, no uno por fila.
+        order_counts: dict[uuid.UUID, int] = {}
+        if users:
+            rows = self.session.execute(
+                select(Order.user_id, func.count(Order.id))
+                .where(Order.user_id.in_([user.id for user in users]))
+                .group_by(Order.user_id)
+            ).all()
+            order_counts = {row[0]: row[1] for row in rows}
+
+        items = [
+            AdminUserItem(
+                id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                status=user.status,
+                roles=sorted(role.code for role in user.roles),
+                is_producer=user.producer_profile is not None,
+                producer_status=(
+                    user.producer_profile.status.value if user.producer_profile else None
+                ),
+                order_count=order_counts.get(user.id, 0),
+                created_at=user.created_at,
+                last_login_at=user.last_login_at,
+            )
+            for user in users
+        ]
+        return Page.create(items, total, params)
+
     def list_pending_producers(self, params: PageParams) -> Page[PendingProducerItem]:
         statement = (
             select(ProducerProfile)
