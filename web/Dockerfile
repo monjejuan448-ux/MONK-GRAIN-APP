@@ -10,7 +10,9 @@ WORKDIR /app
 # ------------------------------------------------------------
 FROM base AS deps
 COPY package.json package-lock.json* ./
-RUN npm ci || npm install
+# `npm ci` a secas: el respaldo en `npm install` ocultaba que no existía
+# package-lock.json y hacía que cada construcción resolviera versiones distintas.
+RUN npm ci
 
 # ------------------------------------------------------------
 # Desarrollo: recarga automática
@@ -28,7 +30,20 @@ CMD ["npm", "run", "dev"]
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+
+# Las variables `NEXT_PUBLIC_*` se incrustan en el paquete del navegador **al
+# compilar**, no al arrancar: declararlas solo como entorno del contenedor llega
+# demasiado tarde y el navegador acaba llamando a `localhost`. La política de
+# seguridad de contenido también se calcula aquí, y sin el origen real de la API
+# su `connect-src` bloquearía las peticiones del propio sitio.
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_DEFAULT_LOCALE=es-CO
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_DEFAULT_LOCALE=$NEXT_PUBLIC_DEFAULT_LOCALE \
+    NEXT_TELEMETRY_DISABLED=1
+
 RUN npm run build
 
 # ------------------------------------------------------------

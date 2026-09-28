@@ -26,7 +26,7 @@ export function Logo({ className, showWordmark = true, monochrome = false }: Log
             MONK GRAIN
           </span>
           <span className="text-[0.625rem] uppercase tracking-[0.18em] text-muted-foreground">
-            Café de origen
+            Pergamino seco
           </span>
         </span>
       )}

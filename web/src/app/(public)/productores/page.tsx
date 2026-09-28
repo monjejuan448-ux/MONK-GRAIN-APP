@@ -63,8 +63,25 @@ function ProducerCard({ producer }: { producer: ProducerListItem }) {
   );
 }
 
+/**
+ * Listado de vendedores.
+ *
+ * La API puede no estar disponible cuando esta página se prerenderiza: la imagen
+ * de producción se construye sin ningún backend al que llamar, y ahí el
+ * prerenderizado tumbaba la construcción entera con `ENOTFOUND backend`. Se
+ * devuelve la lista vacía y la página se rellena en la primera revalidación.
+ */
+async function getProducers(): Promise<ProducerListItem[]> {
+  try {
+    const page = await catalogApi.listProducers();
+    return page.items;
+  } catch {
+    return [];
+  }
+}
+
 export default async function ProducersPage() {
-  const page = await catalogApi.listProducers();
+  const producers = await getProducers();
 
   return (
     <div className="container-page py-10">
@@ -76,7 +93,7 @@ export default async function ProducersPage() {
         </p>
       </header>
 
-      {page.items.length === 0 ? (
+      {producers.length === 0 ? (
         <EmptyState
           icon={<Coffee className="size-10" aria-hidden="true" />}
           title="Todavía no hay productores publicados"
@@ -89,7 +106,7 @@ export default async function ProducersPage() {
         />
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {page.items.map((producer) => (
+          {producers.map((producer) => (
             <li key={producer.id}>
               <ProducerCard producer={producer} />
             </li>
@@ -98,7 +115,9 @@ export default async function ProducersPage() {
       )}
 
       <aside className="mt-12 rounded-lg border border-border bg-muted/30 p-6 text-center">
-        <h2 className="font-display text-xl font-semibold">¿Cultivas o tuestas café?</h2>
+        <h2 className="font-display text-xl font-semibold">
+          ¿Tienes pergamino para vender?
+        </h2>
         <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
           Publica tu café y véndelo directamente, sin intermediarios.
         </p>

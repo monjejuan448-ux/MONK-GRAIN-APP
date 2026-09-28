@@ -316,7 +316,7 @@ export function ResultCount({ total }: { total: number }) {
     <Badge variant="outline" aria-live="polite">
       {total === 0
         ? "Sin resultados"
-        : `${total} ${total === 1 ? "café encontrado" : "cafés encontrados"}`}
+        : `${total} ${total === 1 ? "lote encontrado" : "lotes encontrados"}`}
     </Badge>
   );
 }
