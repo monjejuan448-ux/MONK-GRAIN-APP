@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Award, Leaf, MapPin, Mountain, Package, Sprout } from "lucide-react";
+import {
+  Award,
+  FlaskConical,
+  Leaf,
+  MapPin,
+  Mountain,
+  Package,
+  Sprout,
+} from "lucide-react";
 
 import { CoffeeImage } from "@/components/shared/CoffeeImage";
 import { Badge } from "@/components/ui/badge";
@@ -12,12 +20,19 @@ import { catalogApi } from "@/features/catalog/api";
 import { ProductReviews } from "@/features/reviews/components/ProductReviews";
 import { Stars } from "@/features/reviews/components/Stars";
 import { ApiError } from "@/lib/api";
-import { formatAltitude, formatCuppingScore, formatDate } from "@/lib/format";
 import {
-  COFFEE_STATE_LABELS,
+  formatAltitude,
+  formatDate,
+  formatKilosWithCargas,
+  formatPercent,
+  formatScreenSizes,
+  formatYieldFactor,
+} from "@/lib/format";
+import {
+  moistureQuality,
   PROCESS_LABELS,
   PRODUCER_TYPE_LABELS,
-  ROAST_LABELS,
+  yieldFactorQuality,
   type ProductDetail,
 } from "@/types/catalog";
 
@@ -37,14 +52,17 @@ async function getProduct(slug: string): Promise<ProductDetail | null> {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
-  if (!product) return { title: "Café no encontrado" };
+  if (!product) return { title: "Lote no encontrado" };
 
   const producer = product.producer.brand_name ?? product.producer.legal_name;
+  const factor = product.yield_factor
+    ? `Factor ${formatYieldFactor(product.yield_factor)}. `
+    : "";
   return {
     title: product.name,
-    description: `${product.name} de ${producer}${
+    description: `Pergamino seco de ${producer}${
       product.region ? `, ${product.region}` : ""
-    }. ${product.sensory_profile ?? ""}`.slice(0, 160),
+    }. ${factor}${product.description}`.slice(0, 160),
   };
 }
 
@@ -57,6 +75,8 @@ export default async function ProductPage({ params }: PageProps) {
   const related = await catalogApi.getRelated(slug).catch(() => []);
   const producerName = product.producer.brand_name ?? product.producer.legal_name;
   const attributes = product.attributes;
+  const quality = yieldFactorQuality(attributes?.yield_factor ?? null);
+  const moisture = moistureQuality(attributes?.moisture_pct ?? null);
 
   return (
     <div className="container-page py-8">
@@ -95,11 +115,21 @@ export default async function ProductPage({ params }: PageProps) {
         {/* ---------------- Datos y compra ---------------- */}
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <Badge variant="accent">{COFFEE_STATE_LABELS[product.state]}</Badge>
-            {attributes?.cupping_score && (
-              <Badge variant="success">
-                Puntaje {formatCuppingScore(attributes.cupping_score)}
+            {/* El factor va primero y con su lectura al lado: es el dato que
+                decide la compra, y el número solo no se interpreta sin saber que
+                94 es el estándar de la Federación. */}
+            {quality && (
+              <Badge variant={quality.variant} size="md">
+                Factor {formatYieldFactor(attributes?.yield_factor)} · {quality.label}
               </Badge>
+            )}
+            {moisture && (
+              <Badge variant={moisture.variant === "warning" ? "warning" : "outline"}>
+                Humedad {formatPercent(attributes?.moisture_pct)}
+              </Badge>
+            )}
+            {attributes?.lot_code && (
+              <Badge variant="outline">Lote {attributes.lot_code}</Badge>
             )}
           </div>
 
@@ -144,11 +174,25 @@ export default async function ProductPage({ params }: PageProps) {
             <AddToCart variants={product.variants} productName={product.name} />
           </div>
 
-          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <Package className="size-4" aria-hidden="true" />
-            Despacho en {product.dispatch_days}{" "}
-            {product.dispatch_days === 1 ? "día hábil" : "días hábiles"}
-          </p>
+          <div className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2">
+              <Package className="size-4" aria-hidden="true" />
+              Despacho en {product.dispatch_days}{" "}
+              {product.dispatch_days === 1 ? "día hábil" : "días hábiles"}
+            </p>
+            {product.available_kg > 0 && (
+              <p className="flex items-center gap-2">
+                <Mountain className="size-4" aria-hidden="true" />
+                Quedan {formatKilosWithCargas(product.available_kg)} de este lote
+              </p>
+            )}
+            {product.allows_samples && (
+              <p className="flex items-center gap-2">
+                <FlaskConical className="size-4" aria-hidden="true" />
+                El vendedor envía muestra antes de una compra por volumen
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -172,22 +216,10 @@ export default async function ProductPage({ params }: PageProps) {
                   value={attributes?.process ? PROCESS_LABELS[attributes.process] : null}
                 />
                 <DataRow
-                  label="Nivel de tueste"
-                  value={attributes?.roast ? ROAST_LABELS[attributes.roast] : null}
-                />
-                <DataRow
                   label="Altitud"
                   value={
                     attributes?.altitude_masl
                       ? formatAltitude(attributes.altitude_masl)
-                      : null
-                  }
-                />
-                <DataRow
-                  label="Puntaje de catación"
-                  value={
-                    attributes?.cupping_score
-                      ? formatCuppingScore(attributes.cupping_score)
                       : null
                   }
                 />
@@ -197,11 +229,12 @@ export default async function ProductPage({ params }: PageProps) {
                     attributes?.harvest_date ? formatDate(attributes.harvest_date) : null
                   }
                 />
+                <DataRow label="Método de secado" value={attributes?.drying_method} />
+                <DataRow label="Código del lote" value={attributes?.lot_code} />
                 <DataRow
-                  label="Fecha de tueste"
-                  value={
-                    attributes?.roast_date ? formatDate(attributes.roast_date) : null
-                  }
+                  label="Código SICA"
+                  value={attributes?.sica_code}
+                  hint="Declarado por el productor; MONK GRAIN no lo verifica ante la Federación."
                 />
               </dl>
             </CardContent>
@@ -247,27 +280,83 @@ export default async function ProductPage({ params }: PageProps) {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Este café no tiene finca asociada en la plataforma.
+                  Este lote no tiene finca asociada en la plataforma.
                 </p>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {attributes?.tasting_notes && attributes.tasting_notes.length > 0 && (
-          <div className="mt-6">
-            <h3 className="mb-3 font-display text-lg font-semibold">Notas de cata</h3>
-            <ul className="flex flex-wrap gap-2">
-              {attributes.tasting_notes.map((note) => (
-                <li key={note}>
-                  <Badge variant="primary" size="md">
-                    {note}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* ---------------- Análisis del pergamino ---------------- */}
+        <Card className="mt-6">
+          <CardContent className="pt-6">
+            <h3 className="mb-1 flex items-center gap-2 font-display text-lg font-semibold">
+              <FlaskConical className="size-5 text-primary" aria-hidden="true" />
+              Análisis del pergamino
+            </h3>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Lo declara el productor. Pide una muestra y haz tu propio análisis antes de
+              cerrar una compra por volumen.
+            </p>
+
+            <dl className="grid gap-x-8 gap-y-2.5 text-sm sm:grid-cols-2">
+              <DataRow
+                label="Factor de rendimiento"
+                value={
+                  attributes?.yield_factor
+                    ? `${formatYieldFactor(attributes.yield_factor)}${
+                        quality ? ` · ${quality.label}` : ""
+                      }`
+                    : null
+                }
+                hint="Kilos de pergamino por saco de 70 kg de excelso. Más bajo es mejor; el estándar de la Federación es 94."
+              />
+              <DataRow
+                label="Humedad"
+                value={
+                  attributes?.moisture_pct ? formatPercent(attributes.moisture_pct) : null
+                }
+                hint={moisture?.hint}
+              />
+              <DataRow
+                label="Almendra sana"
+                value={
+                  attributes?.healthy_bean_pct
+                    ? formatPercent(attributes.healthy_bean_pct)
+                    : null
+                }
+              />
+              <DataRow
+                label="Pasilla"
+                value={
+                  attributes?.pasilla_pct ? formatPercent(attributes.pasilla_pct) : null
+                }
+              />
+              <DataRow
+                label="Daño por broca"
+                value={
+                  attributes?.borer_damage_pct
+                    ? formatPercent(attributes.borer_damage_pct)
+                    : null
+                }
+              />
+              <DataRow
+                label="Granulometría"
+                value={
+                  attributes?.screen_sizes && attributes.screen_sizes.length > 0
+                    ? formatScreenSizes(attributes.screen_sizes)
+                    : null
+                }
+              />
+            </dl>
+
+            {attributes?.notes && (
+              <p className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-muted-foreground">
+                {attributes.notes}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {product.certifications.length > 0 && (
           <div className="mt-6">
@@ -318,15 +407,22 @@ export default async function ProductPage({ params }: PageProps) {
 function DataRow({
   label,
   value,
+  hint,
 }: {
   label: string;
   value: string | number | null | undefined;
+  /** Qué significa el dato. El análisis del pergamino usa vocabulario del
+   *  sector, y un comprador nuevo no tiene por qué conocerlo. */
+  hint?: string;
 }) {
   if (!value) return null;
   return (
-    <div className="flex justify-between gap-4 border-b border-border pb-2 last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium">{value}</dd>
+    <div className="border-b border-border pb-2 last:border-0">
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted-foreground">{label}</dt>
+        <dd className="text-right font-medium">{value}</dd>
+      </div>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

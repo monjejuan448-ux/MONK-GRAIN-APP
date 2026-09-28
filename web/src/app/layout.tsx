@@ -5,12 +5,13 @@ import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "MONK GRAIN — Café colombiano de origen",
+    default: "MONK GRAIN — Compra y venta de café pergamino",
     template: "%s | MONK GRAIN",
   },
   description:
-    "Marketplace de café colombiano que conecta caficultores, fincas y cooperativas " +
-    "con tostadores, cafeterías y consumidores. Trazabilidad desde la finca.",
+    "Mercado de café pergamino seco que conecta a los caficultores de Colombia con " +
+    "quienes compran por volumen. Cada lote con su factor de rendimiento, su humedad " +
+    "y su análisis físico.",
   keywords: [
     "café colombiano",
     "café de origen",

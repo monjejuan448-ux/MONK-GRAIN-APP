@@ -7,10 +7,10 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Vender café",
+  title: "Vender pergamino",
   description:
-    "Publica tu café en MONK GRAIN y véndelo directamente a tostadores, cafeterías y " +
-    "consumidores de todo el país, sin intermediarios.",
+    "Publica tu pergamino seco en MONK GRAIN con su factor de rendimiento y su análisis, " +
+    "y véndelo por kilo a quien compra por volumen, sin intermediarios.",
 };
 
 const STEPS = [
@@ -54,13 +54,14 @@ export default function SellPage() {
           </Badge>
 
           <h1 className="mt-4 font-display text-4xl font-bold leading-tight sm:text-5xl">
-            Tu café, directo a quien lo va a tomar
+            Tu pergamino, al precio que pones tú
           </h1>
 
           <p className="mt-4 text-lg text-cream/85">
             MONK GRAIN conecta a las fincas y cooperativas cafeteras de Colombia con
-            tostadores, cafeterías y consumidores de todo el país. Sin intermediarios que
-            diluyan lo que recibes por tu cosecha.
+            quienes compran pergamino por volumen. Publicas tu lote con su factor y su
+            análisis, fijas tu precio por kilo y tu mínimo de compra, sin intermediarios
+            que diluyan lo que recibes por tu cosecha.
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">

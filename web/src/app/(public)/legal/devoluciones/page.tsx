@@ -72,13 +72,16 @@ export default function ReturnsPage() {
       <h3>Por qué te lo damos aunque la ley no nos obligue</h3>
       <p>
         El artículo 47 excluye del retracto los bienes perecederos y los que por su
-        naturaleza puedan deteriorarse o caducar con rapidez. El café tostado tiene fecha
-        de vencimiento y podría quedar cubierto por esa excepción. Aun así,{" "}
-        <strong>
-          MONK GRAIN decide reconocerte el retracto sobre el café que no hayas abierto
-        </strong>
-        , porque una bolsa sellada y dentro de su vida útil sí puede volver al inventario.
-        Es una condición más favorable que el mínimo legal, y como tal la asumimos.
+        naturaleza puedan deteriorarse o caducar con rapidez. El pergamino seco, guardado
+        en bodega ventilada y con su humedad entre 10 % y 12 %, se conserva meses sin
+        perder calidad: no es un bien que caduque con rapidez, de modo que{" "}
+        <strong>el retracto sí te corresponde</strong> sobre el lote que devuelvas en las
+        mismas condiciones en que lo recibiste.
+      </p>
+      <p>
+        Lo que sí puede hacer que un lote deje de ser devolvible es su manejo: pergamino
+        que se mojó, que se guardó sobre piso húmedo, que tomó olores de lo que estaba a
+        su lado o que ya pasó por trilla no vuelve al inventario del vendedor.
       </p>
       <p>
         Lo que no podemos aceptar es un empaque abierto: el café es un alimento y una
@@ -113,22 +116,27 @@ export default function ReturnsPage() {
       <h3>En qué casos puedes reclamar</h3>
       <ul>
         <li>El empaque llegó roto, mojado o violado.</li>
-        <li>El café llegó vencido o con signos de deterioro.</li>
-        <li>Recibiste un café distinto del que pediste.</li>
         <li>
-          El producto no corresponde a lo publicado: otra variedad, otro proceso, otro
-          peso, otra fecha de tueste.
+          El pergamino llegó húmedo, con moho, con olor a fermento o con signos de
+          deterioro.
+        </li>
+        <li>Recibiste un lote distinto del que pediste.</li>
+        <li>
+          El lote no corresponde a lo publicado: otra variedad, otro proceso, menos kilos
+          de los pagados, otro código de lote.
         </li>
         <li>
-          El café no cumple las condiciones de calidad e idoneidad que se anunciaron.
+          El análisis no corresponde a lo declarado: un factor de rendimiento
+          sensiblemente peor, más humedad, más pasilla o más broca de lo publicado.
         </li>
       </ul>
       <p>
-        Una diferencia de matiz en el sabor respecto de las notas de cata no constituye
-        por sí sola un defecto: el perfil sensorial es una descripción orientativa y el
-        café varía entre cosechas, tuestes y métodos de preparación. Otra cosa es que el
-        café no corresponda a la variedad, el origen o el proceso declarados: eso sí es un
-        incumplimiento.
+        El análisis que publica el vendedor se hace sobre una muestra, y toda muestra
+        tiene una tolerancia: una diferencia de medio punto de factor o de dos décimas de
+        humedad no constituye por sí sola un incumplimiento. Otra cosa es una diferencia
+        que cambia el valor del lote —tres puntos de factor, humedad por encima del 12 %,
+        el doble de pasilla declarada—: eso sí lo es. Por eso conviene pedir muestra y
+        hacer tu propio análisis antes de cerrar una compra por volumen.
       </p>
 
       <h3>Qué puedes pedir</h3>

@@ -45,7 +45,7 @@ const BENEFITS = [
     icon: Award,
     title: "Calidad documentada",
     description:
-      "Perfil sensorial, puntaje de catación, proceso y variedad en cada publicación.",
+      "Factor de rendimiento, humedad, almendra sana, pasilla y broca en cada lote.",
   },
   {
     icon: ShieldCheck,
@@ -71,8 +71,8 @@ const TRACEABILITY_STEPS = [
   { step: "02", title: "Cosecha", description: "Fecha de recolección y variedad." },
   {
     step: "03",
-    title: "Proceso",
-    description: "Lavado, natural u honey, y nivel de tueste.",
+    title: "Beneficio y secado",
+    description: "Lavado, natural u honey, y cómo se secó el pergamino.",
   },
   { step: "04", title: "Entrega", description: "Despacho con guía y seguimiento." },
 ];
@@ -120,13 +120,13 @@ export default async function HomePage() {
             </Badge>
 
             <h1 className="font-display text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
-              Del caficultor a tu taza, sin intermediarios
+              Pergamino de la finca, sin intermediarios
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream/85">
-              MONK GRAIN conecta a las fincas y cooperativas cafeteras de Colombia con
-              tostadores, cafeterías y personas que quieren saber exactamente de dónde
-              viene su café.
+              MONK GRAIN conecta a los caficultores, fincas y cooperativas de Colombia con
+              quienes compran pergamino seco por volumen. Cada lote publica su factor de
+              rendimiento y su análisis, y el precio es por kilo.
             </p>
 
             {/* La segunda acción no repite "Vender café": esa entrada ya vive
