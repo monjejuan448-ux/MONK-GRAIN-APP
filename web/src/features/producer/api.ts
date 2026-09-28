@@ -11,21 +11,27 @@ import type { Page } from "@/types/catalog";
 
 export type ProductStatus =
   "draft" | "pending_review" | "published" | "unpublished" | "rejected";
-export type CoffeeState = "green" | "roasted" | "ground";
-export type GrindType = "whole_bean" | "coarse" | "medium" | "fine";
+export type CoffeeState = "pergamino";
 export type CertStatus = "active" | "expiring" | "expired" | "revoked";
 
+/** Ficha del lote: origen, análisis del pergamino y trazabilidad. */
 export interface CoffeeAttributes {
   variety: string | null;
   process: string | null;
-  roast: string | null;
   altitude_masl: number | null;
-  sensory_profile: string | null;
-  tasting_notes: string[] | null;
-  cupping_score: string | null;
   harvest_date: string | null;
-  roast_date: string | null;
+
+  yield_factor: string | null;
   moisture_pct: string | null;
+  healthy_bean_pct: string | null;
+  pasilla_pct: string | null;
+  borer_damage_pct: string | null;
+  screen_sizes: number[] | null;
+
+  lot_code: string | null;
+  sica_code: string | null;
+  drying_method: string | null;
+  notes: string | null;
 }
 
 export interface ProductImage {
@@ -40,8 +46,10 @@ export interface ProductVariant {
   id: string;
   sku: string;
   label: string;
-  weight_grams: string;
-  grind: GrindType | null;
+  presentation: string;
+  /** Mínimo de compra en kilos. */
+  min_qty_kg: number;
+  /** Precio de un kilogramo. */
   price: string;
   wholesale_price: string | null;
   is_active: boolean;
@@ -84,10 +92,12 @@ export interface ProductInput {
 }
 
 export interface VariantInput {
-  weight_grams: string;
-  grind: GrindType | null;
+  presentation: string;
+  min_qty_kg: number;
+  /** Precio de un kilogramo. */
   price: string;
   wholesale_price?: string | null;
+  /** Kilos disponibles. */
   stock_qty: number;
   low_stock_threshold: number;
   is_active: boolean;
@@ -129,17 +139,27 @@ export const PRODUCT_STATUS_META: Record<
   rejected: { label: "Rechazado", tone: "warning" },
 };
 
-export const COFFEE_STATE_OPTIONS: { value: CoffeeState; label: string }[] = [
-  { value: "green", label: "Verde (sin tostar)" },
-  { value: "roasted", label: "Tostado en grano" },
-  { value: "ground", label: "Molido" },
+/**
+ * Presentaciones frecuentes del pergamino, como sugerencia.
+ *
+ * No es un enum: el empaque del pergamino no está normalizado y el vendedor
+ * escribe cómo entrega el suyo. Estas son las formas más comunes, para no
+ * obligarle a redactarlo desde cero.
+ */
+export const PRESENTATION_SUGGESTIONS = [
+  "A granel, en costal de fique",
+  "Bultos de 70 kg",
+  "Empacado en la finca",
+  "En sacos de polipropileno",
 ];
 
-export const GRIND_OPTIONS: { value: GrindType; label: string }[] = [
-  { value: "whole_bean", label: "Grano entero" },
-  { value: "coarse", label: "Molienda gruesa" },
-  { value: "medium", label: "Molienda media" },
-  { value: "fine", label: "Molienda fina" },
+/** Métodos de secado habituales en Colombia. */
+export const DRYING_SUGGESTIONS = [
+  "Marquesina",
+  "Patio de cemento",
+  "Camas africanas",
+  "Secador mecánico Guardiola",
+  "Silo con aire caliente",
 ];
 
 export const PROCESS_OPTIONS = [
@@ -148,13 +168,6 @@ export const PROCESS_OPTIONS = [
   { value: "honey", label: "Honey" },
   { value: "anaerobic", label: "Anaeróbico" },
   { value: "other", label: "Otro" },
-];
-
-export const ROAST_OPTIONS = [
-  { value: "light", label: "Claro" },
-  { value: "medium", label: "Medio" },
-  { value: "medium_dark", label: "Medio oscuro" },
-  { value: "dark", label: "Oscuro" },
 ];
 
 export const CERT_STATUS_META: Record<CertStatus, { label: string; tone: BadgeTone }> = {

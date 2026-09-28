@@ -8,8 +8,10 @@ export interface CartItem {
   product_slug: string;
   producer_name: string;
   image_url: string | null;
-  weight_grams: string;
-  grind: string | null;
+  presentation: string;
+  /** Mínimo de compra del lote, en kilos. */
+  min_qty_kg: number;
+  /** Cantidad en kilogramos. */
   quantity: number;
   unit_price: string;
   line_total: string;

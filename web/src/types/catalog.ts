@@ -3,12 +3,13 @@
  *
  * Los importes viajan como cadena para no perder precisión al pasar por JSON,
  * donde `number` es de punto flotante (ADR-04).
+ *
+ * MONK GRAIN comercia un solo producto: **pergamino seco**. Todos los precios
+ * son por kilogramo y todas las cantidades, kilos.
  */
 
-export type CoffeeState = "green" | "roasted" | "ground";
+export type CoffeeState = "pergamino";
 export type CoffeeProcess = "washed" | "natural" | "honey" | "anaerobic" | "other";
-export type RoastLevel = "light" | "medium" | "medium_dark" | "dark";
-export type GrindType = "whole_bean" | "coarse" | "medium" | "fine";
 
 export interface Page<T> {
   items: T[];
@@ -28,27 +29,43 @@ export interface ProductImage {
   is_primary: boolean;
 }
 
+/** Oferta comprable de un lote. `price` es el precio de un kilo. */
 export interface ProductVariant {
   id: string;
   sku: string;
-  weight_grams: string;
-  grind: GrindType | null;
+  presentation: string;
+  min_qty_kg: number;
   price: string;
   wholesale_price: string | null;
+  /** Kilos disponibles. */
   available_qty: number;
   is_active: boolean;
 }
 
+/** Ficha técnica del lote: origen, análisis del pergamino y trazabilidad. */
 export interface CoffeeAttributes {
   variety: string | null;
   process: CoffeeProcess | null;
-  roast: RoastLevel | null;
   altitude_masl: number | null;
-  sensory_profile: string | null;
-  tasting_notes: string[] | null;
-  cupping_score: string | null;
   harvest_date: string | null;
-  roast_date: string | null;
+
+  /**
+   * Factor de rendimiento: kilos de pergamino que hay que trillar para obtener
+   * un saco de 70 kg de café excelso. **Más bajo es mejor** y el estándar de la
+   * Federación es 94.
+   */
+  yield_factor: string | null;
+  moisture_pct: string | null;
+  healthy_bean_pct: string | null;
+  pasilla_pct: string | null;
+  borer_damage_pct: string | null;
+  /** Mallas en las que se retiene el grano, de la 14 a la 20. */
+  screen_sizes: number[] | null;
+
+  lot_code: string | null;
+  sica_code: string | null;
+  drying_method: string | null;
+  notes: string | null;
 }
 
 export interface ProducerSummary {
@@ -62,12 +79,13 @@ export interface ProducerSummary {
   rating_avg: string;
 }
 
-/** Producto tal como aparece en el listado del catálogo. */
+/** Lote tal como aparece en el listado del catálogo. */
 export interface ProductListItem {
   id: string;
   slug: string;
   name: string;
   state: CoffeeState;
+  /** Precio por kilogramo, «desde». */
   base_price: string;
   currency: string;
   primary_image_url: string | null;
@@ -75,8 +93,9 @@ export interface ProductListItem {
   region: string | null;
   municipality: string | null;
   department: string | null;
-  sensory_profile: string | null;
-  cupping_score: string | null;
+  yield_factor: string | null;
+  moisture_pct: string | null;
+  available_kg: number;
   rating_avg: string;
   rating_count: number;
   is_available: boolean;
@@ -98,7 +117,7 @@ export interface FarmSummary {
   environmental_practices: string | null;
 }
 
-/** Producto completo, con toda la trazabilidad de la ficha. */
+/** Lote completo, con toda la trazabilidad de la ficha. */
 export interface ProductDetail extends ProductListItem {
   description: string;
   images: ProductImage[];
@@ -118,22 +137,22 @@ export interface CatalogFilters {
   region?: string;
   variety?: string;
   process?: CoffeeProcess;
-  roast?: RoastLevel;
-  state?: CoffeeState;
   certification?: string;
+  /** Precios por kilogramo. */
   min_price?: number;
   max_price?: number;
-  min_score?: number;
-  sort?: "price_asc" | "price_desc" | "rating" | "score" | "popular" | "newest";
+  /** Techo de factor que el comprador acepta: menos es mejor café. */
+  max_yield_factor?: number;
+  max_moisture_pct?: number;
+  min_available_kg?: number;
+  sort?: "price_asc" | "price_desc" | "rating" | "yield_factor" | "popular" | "newest";
   page?: number;
   page_size?: number;
 }
 
 /** Etiquetas en español para los valores del dominio. */
 export const COFFEE_STATE_LABELS: Record<CoffeeState, string> = {
-  green: "Verde",
-  roasted: "Tostado",
-  ground: "Molido",
+  pergamino: "Pergamino seco",
 };
 
 export const PROCESS_LABELS: Record<CoffeeProcess, string> = {
@@ -144,23 +163,83 @@ export const PROCESS_LABELS: Record<CoffeeProcess, string> = {
   other: "Otro",
 };
 
-export const ROAST_LABELS: Record<RoastLevel, string> = {
-  light: "Tueste claro",
-  medium: "Tueste medio",
-  medium_dark: "Tueste medio-oscuro",
-  dark: "Tueste oscuro",
-};
-
-export const GRIND_LABELS: Record<GrindType, string> = {
-  whole_bean: "Grano entero",
-  coarse: "Molienda gruesa",
-  medium: "Molienda media",
-  fine: "Molienda fina",
-};
-
 export const PRODUCER_TYPE_LABELS: Record<ProducerSummary["type"], string> = {
   farmer: "Caficultor",
   farm: "Finca",
   cooperative: "Cooperativa",
   roaster: "Tostador",
 };
+
+/**
+ * Lectura del factor de rendimiento para quien no viene del sector.
+ *
+ * Los cortes siguen la práctica comercial colombiana: 94 es el estándar de la
+ * Federación, y por debajo de 90 se paga sobreprecio.
+ */
+export function yieldFactorQuality(factor: string | null): {
+  label: string;
+  hint: string;
+  variant: "success" | "primary" | "default" | "warning";
+} | null {
+  if (factor === null) return null;
+  const value = Number(factor);
+  if (Number.isNaN(value)) return null;
+
+  if (value <= 89) {
+    return {
+      label: "Excepcional",
+      hint: "Rinde mucho más que el estándar: se paga sobreprecio.",
+      variant: "success",
+    };
+  }
+  if (value <= 92) {
+    return {
+      label: "De exportación",
+      hint: "Por debajo del estándar de 94: apto para trilla de excelso.",
+      variant: "primary",
+    };
+  }
+  if (value <= 96) {
+    return {
+      label: "Estándar",
+      hint: "En el rango de la compra corriente.",
+      variant: "default",
+    };
+  }
+  return {
+    label: "Bajo rendimiento",
+    hint: "Hay que trillar más pergamino para el mismo excelso.",
+    variant: "warning",
+  };
+}
+
+/** Lectura de la humedad, que decide si el lote se puede almacenar. */
+export function moistureQuality(moisture: string | null): {
+  label: string;
+  hint: string;
+  variant: "success" | "default" | "warning";
+} | null {
+  if (moisture === null) return null;
+  const value = Number(moisture);
+  if (Number.isNaN(value)) return null;
+
+  if (value < 10) {
+    return {
+      label: "Muy seco",
+      hint: "Por debajo del 10 % el grano se quiebra en la trilla.",
+      variant: "warning",
+    };
+  }
+  if (value <= 12) {
+    return {
+      label: "En rango",
+      hint: "Entre 10 % y 12 %, el rango seguro.",
+      variant: "success",
+    };
+  }
+  return {
+    label: "Húmedo",
+    hint: "Por encima del 12 % hay riesgo de hongos: causal de rechazo.",
+    variant: "warning",
+  };
+}

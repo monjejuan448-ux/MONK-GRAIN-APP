@@ -113,7 +113,7 @@ export function ImageManager({ token, product, onChange }: ImageManagerProps) {
               id="alt_text"
               value={altText}
               onChange={(event) => setAltText(event.target.value)}
-              placeholder="Ej.: granos tostados sobre madera"
+              placeholder="Ej.: pergamino seco en la marquesina"
               maxLength={200}
             />
             <p className="mt-1.5 text-xs text-muted-foreground">

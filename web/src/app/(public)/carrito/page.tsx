@@ -10,12 +10,23 @@ import { EmptyState, Skeleton } from "@/components/shared/states";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cartApi, type Cart } from "@/features/cart/api";
+import { cartApi, type Cart, type CartItem } from "@/features/cart/api";
 import { ApiError } from "@/lib/api";
-import { formatCurrency, formatWeight } from "@/lib/format";
+import { formatCurrency, formatKilos, formatPricePerKilo } from "@/lib/format";
 import { anonymousCart, session } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { GRIND_LABELS, type GrindType } from "@/types/catalog";
+
+/**
+ * Salto de los botones de más y menos, en kilos.
+ *
+ * Un lote que se vende de carga en carga no se ajusta de kilo en kilo: harían
+ * falta 125 clics para llegar a la siguiente cantidad que el vendedor acepta. El
+ * paso se toma del mínimo del lote, que es la unidad en la que ese vendedor
+ * comercia.
+ */
+function stepOf(item: CartItem): number {
+  return Math.max(1, item.min_qty_kg);
+}
 
 export default function CartPage() {
   const router = useRouter();
@@ -216,13 +227,13 @@ export default function CartPage() {
                           {item.product_name}
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                          {formatWeight(item.weight_grams)}
-                          {item.grind && ` · ${GRIND_LABELS[item.grind as GrindType]}`}
+                          {item.presentation} · {formatPricePerKilo(item.unit_price)}
                         </p>
 
                         {!item.is_available && (
                           <p className="mt-1 text-sm text-destructive">
-                            Sin stock suficiente (quedan {item.available_qty})
+                            No alcanzan los kilos (quedan{" "}
+                            {formatKilos(item.available_qty)})
                           </p>
                         )}
 
@@ -237,28 +248,35 @@ export default function CartPage() {
                           <div className="flex items-center rounded-md border border-border">
                             <button
                               type="button"
-                              onClick={() => changeQuantity(item.id, item.quantity - 1)}
-                              disabled={item.quantity <= 1 || busyItemId === item.id}
+                              onClick={() =>
+                                changeQuantity(item.id, item.quantity - stepOf(item))
+                              }
+                              disabled={
+                                item.quantity - stepOf(item) < item.min_qty_kg ||
+                                busyItemId === item.id
+                              }
                               className="p-2 hover:bg-muted disabled:opacity-40"
-                              aria-label={`Reducir cantidad de ${item.product_name}`}
+                              aria-label={`Quitar ${formatKilos(stepOf(item))} de ${item.product_name}`}
                             >
                               <Minus className="size-3.5" aria-hidden="true" />
                             </button>
                             <span
-                              className="min-w-9 text-center text-sm"
+                              className="min-w-20 text-center text-sm"
                               aria-live="polite"
                             >
-                              {item.quantity}
+                              {formatKilos(item.quantity)}
                             </span>
                             <button
                               type="button"
-                              onClick={() => changeQuantity(item.id, item.quantity + 1)}
+                              onClick={() =>
+                                changeQuantity(item.id, item.quantity + stepOf(item))
+                              }
                               disabled={
-                                item.quantity >= item.available_qty ||
+                                item.quantity + stepOf(item) > item.available_qty ||
                                 busyItemId === item.id
                               }
                               className="p-2 hover:bg-muted disabled:opacity-40"
-                              aria-label={`Aumentar cantidad de ${item.product_name}`}
+                              aria-label={`Agregar ${formatKilos(stepOf(item))} de ${item.product_name}`}
                             >
                               <Plus className="size-3.5" aria-hidden="true" />
                             </button>

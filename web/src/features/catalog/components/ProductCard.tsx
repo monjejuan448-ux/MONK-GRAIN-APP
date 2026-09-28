@@ -3,9 +3,15 @@ import { MapPin, Star } from "lucide-react";
 
 import { CoffeeImage } from "@/components/shared/CoffeeImage";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatRating } from "@/lib/format";
+import {
+  formatKilosWithCargas,
+  formatPercent,
+  formatPricePerKilo,
+  formatRating,
+  formatYieldFactor,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { COFFEE_STATE_LABELS, type ProductListItem } from "@/types/catalog";
+import { yieldFactorQuality, type ProductListItem } from "@/types/catalog";
 
 interface ProductCardProps {
   product: ProductListItem;
@@ -14,6 +20,9 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const producerName = product.producer.brand_name ?? product.producer.legal_name;
+  // La calidad del factor se muestra como etiqueta y no como número suelto: un
+  // «91,50» no le dice nada a quien no compra café a diario.
+  const quality = yieldFactorQuality(product.yield_factor);
 
   return (
     <article
@@ -26,7 +35,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <CoffeeImage
           src={product.primary_image_url}
-          alt={`${product.name}, café de ${producerName}`}
+          alt={`${product.name}, pergamino de ${producerName}`}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
@@ -39,9 +48,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </div>
         )}
 
-        <Badge variant="accent" className="absolute left-3 top-3">
-          {COFFEE_STATE_LABELS[product.state]}
-        </Badge>
+        {/* El estado no se muestra: todo el catálogo es pergamino y repetirlo
+            en cada tarjeta gasta el espacio sin informar. Lo que distingue un
+            lote de otro es su factor. */}
+        {quality && (
+          <Badge variant={quality.variant} className="absolute left-3 top-3">
+            Factor {formatYieldFactor(product.yield_factor)}
+          </Badge>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">
@@ -67,17 +81,32 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </p>
         )}
 
-        {product.sensory_profile && (
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-            {product.sensory_profile}
-          </p>
-        )}
+        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          {quality && (
+            <>
+              <dt className="text-muted-foreground">Calidad</dt>
+              <dd className="text-right font-medium">{quality.label}</dd>
+            </>
+          )}
+          {product.moisture_pct && (
+            <>
+              <dt className="text-muted-foreground">Humedad</dt>
+              <dd className="text-right font-medium">
+                {formatPercent(product.moisture_pct)}
+              </dd>
+            </>
+          )}
+          <dt className="text-muted-foreground">Disponible</dt>
+          <dd className="text-right font-medium">
+            {product.available_kg > 0 ? formatKilosWithCargas(product.available_kg) : "—"}
+          </dd>
+        </dl>
 
         <div className="mt-auto flex items-end justify-between pt-4">
           <div>
             <p className="text-xs text-muted-foreground">Desde</p>
             <p className="font-display text-lg font-semibold">
-              {formatCurrency(product.base_price, { currency: product.currency })}
+              {formatPricePerKilo(product.base_price)}
             </p>
           </div>
 

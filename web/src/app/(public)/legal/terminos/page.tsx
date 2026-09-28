@@ -38,9 +38,10 @@ export default function TermsPage() {
       </ul>
       <p>
         Ponemos en contacto a caficultores, fincas, cooperativas y tostadores colombianos
-        con quienes quieren comprar su café.{" "}
-        <strong>Somos un intermediario tecnológico:</strong> no cultivamos, no tostamos ni
-        almacenamos café. Cada venta se celebra entre el comprador y el vendedor.
+        con quienes quieren comprar su café pergamino seco.{" "}
+        <strong>Somos un intermediario tecnológico:</strong> no cultivamos, no trillamos,
+        no analizamos ni almacenamos café. Cada venta se celebra entre el comprador y el
+        vendedor.
       </p>
       <p>
         La plataforma es un <strong>portal de contacto</strong> en el sentido del artículo
@@ -171,9 +172,15 @@ export default function TermsPage() {
           garantía y las devoluciones se tramitan frente a cada vendedor.
         </li>
         <li>
-          El café es un producto vivo: su sabor varía con la cosecha, el tueste y el
-          tiempo transcurrido. Las notas de cata describen un perfil, no una garantía
-          exacta de sabor.
+          El análisis del pergamino —factor de rendimiento, humedad, almendra sana,
+          pasilla, broca y granulometría— <strong>lo declara el vendedor</strong> sobre
+          una muestra de su lote. MONK GRAIN no lo verifica ni lo certifica, y toda
+          medición sobre muestra tiene una tolerancia. Pide muestra y haz tu propio
+          análisis antes de cerrar una compra por volumen.
+        </li>
+        <li>
+          El código SICA del predio se publica tal como lo declara el vendedor. No lo
+          contrastamos con la Federación Nacional de Cafeteros.
         </li>
       </ul>
       <p>

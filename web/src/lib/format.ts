@@ -56,38 +56,91 @@ export function formatDateShort(date: string | Date): string {
   }).format(value);
 }
 
-/** Convierte gramos a la unidad más legible: "250 g", "1 kg". */
-export function formatWeight(grams: number | string): string {
-  const value = typeof grams === "string" ? Number.parseFloat(grams) : grams;
+/**
+ * Formatea kilogramos de pergamino: "125 kg", "12.500 kg".
+ *
+ * No convierte a toneladas a propósito: el comercio de pergamino habla en kilos
+ * y en cargas, y ver "12,5 t" obligaría al comprador a hacer la cuenta de vuelta
+ * para compararlo con un precio por kilo.
+ */
+export function formatKilos(kilos: number | string): string {
+  const value = typeof kilos === "string" ? Number.parseFloat(kilos) : kilos;
   if (!Number.isFinite(value)) return "—";
 
-  if (value >= 1000) {
-    const kilos = value / 1000;
-    const formatted = new Intl.NumberFormat(DEFAULT_LOCALE, {
-      maximumFractionDigits: 2,
-    }).format(kilos);
-    return `${formatted} kg`;
-  }
+  const formatted = new Intl.NumberFormat(DEFAULT_LOCALE, {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted} kg`;
+}
 
-  return `${new Intl.NumberFormat(DEFAULT_LOCALE).format(value)} g`;
+/**
+ * Expresa unos kilos en cargas cuando la cifra lo merece.
+ *
+ * La carga de 125 kg es la unidad en la que se habla del precio del café en
+ * Colombia: "1.250 kg (10 cargas)" le dice a un caficultor algo que "1.250 kg"
+ * por sí solo no le dice. Por debajo de una carga se omite, porque "0,4 cargas"
+ * no es como nadie cuenta.
+ */
+const KILOS_PER_CARGA = 125;
+
+export function formatKilosWithCargas(kilos: number | string): string {
+  const value = typeof kilos === "string" ? Number.parseFloat(kilos) : kilos;
+  if (!Number.isFinite(value)) return "—";
+
+  const base = formatKilos(value);
+  if (value < KILOS_PER_CARGA) return base;
+
+  const cargas = value / KILOS_PER_CARGA;
+  const formatted = new Intl.NumberFormat(DEFAULT_LOCALE, {
+    maximumFractionDigits: cargas % 1 === 0 ? 0 : 1,
+  }).format(cargas);
+  return `${base} (${formatted} ${cargas === 1 ? "carga" : "cargas"})`;
+}
+
+/** Precio por kilogramo: "$22.000/kg". */
+export function formatPricePerKilo(amount: number | string): string {
+  return `${formatCurrency(amount)}/kg`;
+}
+
+/**
+ * Factor de rendimiento con dos decimales: "91,50".
+ *
+ * Se muestran los decimales porque medio punto de factor mueve el precio de una
+ * carga, y redondear a entero borraría esa diferencia.
+ */
+export function formatYieldFactor(factor: string | number | null | undefined): string {
+  if (factor == null) return "—";
+  const value = typeof factor === "string" ? Number.parseFloat(factor) : factor;
+  if (!Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat(DEFAULT_LOCALE, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+/** Porcentaje del análisis físico: "11,00 %". */
+export function formatPercent(value: string | number | null | undefined): string {
+  if (value == null) return "—";
+  const parsed = typeof value === "string" ? Number.parseFloat(value) : value;
+  if (!Number.isFinite(parsed)) return "—";
+  return `${new Intl.NumberFormat(DEFAULT_LOCALE, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(parsed)} %`;
+}
+
+/** Granulometría: "Mallas 15, 16 y 17". */
+export function formatScreenSizes(sizes: number[] | null | undefined): string {
+  if (!sizes || sizes.length === 0) return "—";
+  if (sizes.length === 1) return `Malla ${sizes[0]}`;
+  const head = sizes.slice(0, -1).join(", ");
+  return `Mallas ${head} y ${sizes[sizes.length - 1]}`;
 }
 
 /** Formatea la altitud sobre el nivel del mar: "1.750 m s. n. m.". */
 export function formatAltitude(masl: number | null | undefined): string {
   if (masl == null) return "—";
   return `${new Intl.NumberFormat(DEFAULT_LOCALE).format(masl)} m s. n. m.`;
-}
-
-/** Formatea el puntaje de catación con un decimal: "86,5". */
-export function formatCuppingScore(score: number | string | null | undefined): string {
-  if (score == null) return "—";
-  const value = typeof score === "string" ? Number.parseFloat(score) : score;
-  if (!Number.isFinite(value)) return "—";
-
-  return new Intl.NumberFormat(DEFAULT_LOCALE, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  }).format(value);
 }
 
 /** Formatea una calificación promedio: "4,5". */

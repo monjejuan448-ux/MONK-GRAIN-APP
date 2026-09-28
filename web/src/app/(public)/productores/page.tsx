@@ -71,7 +71,7 @@ export default async function ProducersPage() {
       <header className="mb-8">
         <h1 className="font-display text-3xl font-bold">Quién cultiva tu café</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Cada café del catálogo tiene detrás una finca, una cooperativa o un tostador con
+          Cada lote del catálogo tiene detrás una finca, una cooperativa o un tostador con
           nombre propio. Estos son los que hoy venden en MONK GRAIN.
         </p>
       </header>

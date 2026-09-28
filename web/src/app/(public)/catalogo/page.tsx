@@ -16,9 +16,9 @@ import { cn } from "@/lib/utils";
 import type { CatalogFilters as Filters, Page, ProductListItem } from "@/types/catalog";
 
 export const metadata: Metadata = {
-  title: "Catálogo de cafés",
+  title: "Catálogo de pergamino",
   description:
-    "Explora cafés colombianos de origen, filtrados por región, variedad, proceso y puntaje de catación.",
+    "Lotes de café pergamino seco de origen colombiano, con su factor de rendimiento, humedad y análisis físico. Filtra por región, variedad, proceso, factor y volumen disponible.",
 };
 
 interface PageProps {
@@ -56,14 +56,21 @@ function parseFilters(params: Record<string, string | string[] | undefined>): Fi
     q: single("q"),
     region: single("region"),
     department: single("department"),
-    state: single("state") as Filters["state"],
     process: single("process") as Filters["process"],
-    roast: single("roast") as Filters["roast"],
     variety: single("variety"),
     certification: single("certification"),
+    // Precios por kilogramo.
     min_price: single("min_price") ? Number(single("min_price")) : undefined,
     max_price: single("max_price") ? Number(single("max_price")) : undefined,
-    min_score: single("min_score") ? Number(single("min_score")) : undefined,
+    max_yield_factor: single("max_yield_factor")
+      ? Number(single("max_yield_factor"))
+      : undefined,
+    max_moisture_pct: single("max_moisture_pct")
+      ? Number(single("max_moisture_pct"))
+      : undefined,
+    min_available_kg: single("min_available_kg")
+      ? Number(single("min_available_kg"))
+      : undefined,
     sort: (single("sort") ?? "newest") as Filters["sort"],
     page: single("page") ? Number(single("page")) : 1,
     page_size: 12,
@@ -78,9 +85,10 @@ export default async function CatalogPage({ searchParams }: PageProps) {
   return (
     <div className="container-page py-10">
       <header className="mb-8">
-        <h1 className="font-display text-3xl font-bold">Catálogo de cafés</h1>
+        <h1 className="font-display text-3xl font-bold">Catálogo de pergamino</h1>
         <p className="mt-2 text-muted-foreground">
-          Cafés de origen colombiano, directamente de quienes los cultivan.
+          Lotes de pergamino seco, directamente de quienes los cultivan. Los precios son
+          por kilogramo.
         </p>
       </header>
 
@@ -120,7 +128,7 @@ export default async function CatalogPage({ searchParams }: PageProps) {
               </>
             ) : (
               <EmptyState
-                title="Ningún café coincide con tu búsqueda"
+                title="Ningún lote coincide con tu búsqueda"
                 description="Prueba ampliando los criterios: quita algún filtro o busca por otra región."
                 action={
                   <Link

@@ -6,7 +6,7 @@ import { X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PROCESS_LABELS, ROAST_LABELS, COFFEE_STATE_LABELS } from "@/types/catalog";
+import { PROCESS_LABELS } from "@/types/catalog";
 
 const REGIONS = [
   { value: "huila", label: "Huila" },
@@ -29,23 +29,40 @@ const CERTIFICATIONS = [
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Más recientes" },
-  { value: "price_asc", label: "Precio: menor a mayor" },
-  { value: "price_desc", label: "Precio: mayor a menor" },
-  { value: "score", label: "Puntaje de catación" },
+  { value: "price_asc", label: "Precio por kilo: menor a mayor" },
+  { value: "price_desc", label: "Precio por kilo: mayor a menor" },
+  // Ascendente: en el factor de rendimiento, menos es mejor.
+  { value: "yield_factor", label: "Mejor factor de rendimiento" },
   { value: "rating", label: "Mejor calificados" },
   { value: "popular", label: "Más vendidos" },
+];
+
+/** Techos de factor que se ofrecen como atajo, siguiendo la práctica comercial:
+ *  94 es el estándar de la Federación y por debajo de 90 se paga sobreprecio. */
+const YIELD_FACTOR_LIMITS = [
+  { value: "89", label: "≤ 89", hint: "Excepcional" },
+  { value: "92", label: "≤ 92", hint: "De exportación" },
+  { value: "94", label: "≤ 94", hint: "Estándar" },
+];
+
+/** Volúmenes frecuentes, en cargas de 125 kg. */
+const VOLUME_OPTIONS = [
+  { value: "125", label: "1 carga" },
+  { value: "625", label: "5 cargas" },
+  { value: "1250", label: "10 cargas" },
+  { value: "6250", label: "50 cargas" },
 ];
 
 /** Etiquetas legibles de los filtros activos, para poder retirarlos uno a uno. */
 const FILTER_LABELS: Record<string, (value: string) => string> = {
   q: (v) => `"${v}"`,
   region: (v) => REGIONS.find((r) => r.value === v)?.label ?? v,
-  state: (v) => COFFEE_STATE_LABELS[v as keyof typeof COFFEE_STATE_LABELS] ?? v,
   process: (v) => PROCESS_LABELS[v as keyof typeof PROCESS_LABELS] ?? v,
-  roast: (v) => ROAST_LABELS[v as keyof typeof ROAST_LABELS] ?? v,
   certification: (v) => CERTIFICATIONS.find((c) => c.value === v)?.label ?? v,
-  min_score: (v) => `Puntaje ≥ ${v}`,
-  max_price: (v) => `Hasta $${Number(v).toLocaleString("es-CO")}`,
+  max_yield_factor: (v) => `Factor ≤ ${v}`,
+  max_moisture_pct: (v) => `Humedad ≤ ${v} %`,
+  min_available_kg: (v) => `Desde ${Number(v).toLocaleString("es-CO")} kg`,
+  max_price: (v) => `Hasta $${Number(v).toLocaleString("es-CO")}/kg`,
 };
 
 export function CatalogFilters() {
@@ -115,15 +132,8 @@ export function CatalogFilters() {
         onSelect={(value) => setFilter("region", value)}
       />
 
-      <FilterGroup
-        label="Tipo de café"
-        options={Object.entries(COFFEE_STATE_LABELS).map(([value, label]) => ({
-          value,
-          label,
-        }))}
-        selected={searchParams.get("state")}
-        onSelect={(value) => setFilter("state", value)}
-      />
+      {/* No hay filtro por tipo de café: todo el catálogo es pergamino seco. Lo
+          que distingue un lote de otro es su factor y su humedad. */}
 
       <FilterGroup
         label="Proceso"
@@ -136,13 +146,6 @@ export function CatalogFilters() {
       />
 
       <FilterGroup
-        label="Nivel de tueste"
-        options={Object.entries(ROAST_LABELS).map(([value, label]) => ({ value, label }))}
-        selected={searchParams.get("roast")}
-        onSelect={(value) => setFilter("roast", value)}
-      />
-
-      <FilterGroup
         label="Certificación"
         options={CERTIFICATIONS}
         selected={searchParams.get("certification")}
@@ -150,27 +153,88 @@ export function CatalogFilters() {
       />
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold">Puntaje de catación</h2>
+        <h2 className="mb-1 text-sm font-semibold">Factor de rendimiento</h2>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Kilos de pergamino por saco de 70 kg de excelso. Más bajo es mejor.
+        </p>
         <div className="flex flex-wrap gap-2">
-          {["80", "84", "86", "88"].map((score) => (
-            <button
-              key={score}
-              type="button"
-              onClick={() =>
-                setFilter(
-                  "min_score",
-                  searchParams.get("min_score") === score ? null : score,
-                )
-              }
-              className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
-                searchParams.get("min_score") === score
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted"
-              }`}
-            >
-              ≥ {score}
-            </button>
-          ))}
+          {YIELD_FACTOR_LIMITS.map((limit) => {
+            const isSelected = searchParams.get("max_yield_factor") === limit.value;
+            return (
+              <button
+                key={limit.value}
+                type="button"
+                title={limit.hint}
+                aria-pressed={isSelected}
+                onClick={() =>
+                  setFilter("max_yield_factor", isSelected ? null : limit.value)
+                }
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                {limit.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-1 text-sm font-semibold">Humedad máxima</h2>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Por encima del 12 % hay riesgo de hongos.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {["11", "11.5", "12"].map((limit) => {
+            const isSelected = searchParams.get("max_moisture_pct") === limit;
+            return (
+              <button
+                key={limit}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => setFilter("max_moisture_pct", isSelected ? null : limit)}
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                ≤ {limit.replace(".", ",")} %
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-1 text-sm font-semibold">Volumen disponible</h2>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Oculta los lotes que no alcanzan para lo que necesitas.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {VOLUME_OPTIONS.map((option) => {
+            const isSelected = searchParams.get("min_available_kg") === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() =>
+                  setFilter("min_available_kg", isSelected ? null : option.value)
+                }
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
