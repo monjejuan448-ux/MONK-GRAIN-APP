@@ -207,10 +207,22 @@ export default function CheckoutPage() {
                   </ul>
                 </fieldset>
               ) : (
-                <p className="rounded-md bg-muted px-4 py-3 text-sm text-muted-foreground">
-                  Aún no tienes direcciones registradas. Agrega una desde tu perfil para
-                  poder recibir el pedido.
-                </p>
+                <div className="rounded-md bg-muted px-4 py-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Aún no tienes direcciones registradas. Necesitas una para recibir el
+                    pedido.
+                  </p>
+                  {/* El enlace lleva el parámetro de regreso para volver aquí en
+                      cuanto la dirección quede guardada: es el único paso que
+                      impide terminar la compra. */}
+                  <Link
+                    href="/mi-cuenta/direcciones?volver=checkout"
+                    className={cn(buttonVariants({ size: "sm" }), "mt-3")}
+                  >
+                    <MapPin className="size-4" aria-hidden="true" />
+                    Agregar dirección de entrega
+                  </Link>
+                </div>
               )}
             </CardContent>
           </Card>

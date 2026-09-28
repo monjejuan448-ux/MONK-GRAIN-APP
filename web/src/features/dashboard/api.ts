@@ -33,6 +33,7 @@ export interface ProducerOrder {
   subtotal: string;
   net_amount: string;
   item_count: number;
+  shipping_city: string | null;
   created_at: string;
 }
 
@@ -104,6 +105,34 @@ export const adminApi = {
       { approve, reason },
       { token },
     ),
+};
+
+/**
+ * Avances que la interfaz ofrece al vendedor en cada estado.
+ *
+ * Es un espejo parcial de `ALLOWED_SUB_ORDER_TRANSITIONS` del backend, que es
+ * quien decide de verdad: aquí solo se decide qué botón pintar. Se omite a
+ * propósito el paso a `refunded`, que el grafo permite pero que no se hace a
+ * mano: un reembolso pasa por el módulo de devoluciones, con su plazo, su
+ * motivo y su constancia.
+ */
+export const SELLER_NEXT_STATUSES: Record<string, string[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["prepared", "cancelled"],
+  prepared: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  cancelled: [],
+  refunded: [],
+};
+
+/** Verbo con el que se le ofrece al vendedor cada avance. */
+export const STATUS_ACTION_LABELS: Record<string, string> = {
+  confirmed: "Confirmar",
+  prepared: "Marcar como preparado",
+  shipped: "Despachar",
+  delivered: "Marcar como entregado",
+  cancelled: "Cancelar",
 };
 
 /** Estados de sub-orden con su etiqueta en español y su color. */

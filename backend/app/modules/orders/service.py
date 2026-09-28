@@ -489,6 +489,16 @@ class OrderService:
 
         self._transition(sub_order, new_status, note=note, actor_id=producer_user.id)
 
+        if new_status == SubOrderStatus.CANCELLED:
+            # El inventario retenido vuelve al catálogo, igual que cuando cancela
+            # el comprador. Sin esto, una cancelación del vendedor dejaba las
+            # unidades reservadas para siempre: invendibles y sin pedido que las
+            # justifique.
+            sub_order.cancellation_reason = note
+            for item in sub_order.items:
+                if item.variant_id:
+                    self._release_reserved_stock(item.variant_id, item.quantity)
+
         if new_status == SubOrderStatus.SHIPPED:
             self._register_shipment(sub_order, carrier, tracking_number)
 

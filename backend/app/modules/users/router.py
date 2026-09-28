@@ -1,6 +1,7 @@
 """Perfil del usuario y direcciones de entrega."""
 
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -29,6 +30,25 @@ class AddressCreate(BaseModel):
     neighborhood: str | None = Field(default=None, max_length=100)
     notes: str | None = Field(default=None, max_length=500)
     is_default: bool = False
+
+
+class AddressUpdate(BaseModel):
+    """Cambios sobre una dirección ya registrada.
+
+    Todos los campos son opcionales y solo se aplican los que vengan en la
+    petición: se distinguen con `model_fields_set`, porque para `label`,
+    `neighborhood` y `notes` un `null` explícito significa «bórralo» y no puede
+    confundirse con «no lo mandé».
+    """
+
+    label: str | None = Field(default=None, max_length=50)
+    recipient_name: str | None = Field(default=None, min_length=3, max_length=150)
+    phone: str | None = Field(default=None, min_length=7, max_length=30)
+    municipality_id: int | None = None
+    street_address: str | None = Field(default=None, min_length=5, max_length=255)
+    neighborhood: str | None = Field(default=None, max_length=100)
+    notes: str | None = Field(default=None, max_length=500)
+    is_default: bool | None = None
 
 
 class AddressResponse(ORMModel):
@@ -103,6 +123,73 @@ def create_address(
     return AddressResponse.model_validate(address)
 
 
+def _owned_address(session: Session, user_id: uuid.UUID, address_id: uuid.UUID) -> Address:
+    """Busca una dirección del usuario o falla con 404.
+
+    Se filtra por `user_id` en la misma consulta y no después: preguntar primero
+    por el identificador y comprobar el dueño más tarde revelaría, por la
+    diferencia entre 404 y 403, qué direcciones existen en otras cuentas.
+    """
+    address = session.scalar(
+        select(Address).where(
+            Address.id == address_id,
+            Address.user_id == user_id,
+            Address.deleted_at.is_(None),
+        )
+    )
+    if address is None:
+        raise NotFoundError("No encontramos esta dirección.")
+    return address
+
+
+@router.patch(
+    "/me/addresses/{address_id}",
+    response_model=AddressResponse,
+    summary="Editar una dirección",
+)
+def update_address(
+    address_id: uuid.UUID,
+    payload: AddressUpdate,
+    user: CurrentUser,
+    session: SessionDep,
+) -> AddressResponse:
+    """Actualiza los datos de una dirección de entrega.
+
+    Los pedidos ya realizados no se ven afectados: cada uno guarda su copia
+    inmutable de la dirección con la que se despachó (HU-CC-03, CA4). Corregir
+    un teléfono hoy no reescribe lo que decía una guía de hace un mes.
+    """
+    address = _owned_address(session, user.id, address_id)
+    changes = payload.model_dump(exclude_unset=True)
+
+    # El departamento se deriva del municipio, igual que al crear: recibirlo
+    # aparte permitiría guardar una combinación imposible.
+    if "municipality_id" in changes:
+        municipality = session.get(Municipality, changes["municipality_id"])
+        if municipality is None:
+            raise NotFoundError("El municipio indicado no existe.")
+        address.department_id = municipality.department_id
+
+    if changes.get("is_default") is True:
+        # El índice parcial de la base de datos solo admite una predeterminada
+        # por usuario, así que se retira la anterior antes de marcar esta.
+        session.execute(
+            update(Address)
+            .where(
+                Address.user_id == user.id,
+                Address.is_default.is_(True),
+                Address.id != address.id,
+            )
+            .values(is_default=False)
+        )
+
+    for field, value in changes.items():
+        setattr(address, field, value)
+
+    session.commit()
+    return AddressResponse.model_validate(address)
+
+
 @router.delete(
     "/me/addresses/{address_id}",
     response_model=MessageResponse,
@@ -116,18 +203,7 @@ def delete_address(
     La baja es lógica: los pedidos que la usaron conservan su copia inmutable,
     pero la dirección no debe desaparecer de la base de datos (HU-CC-03, CA4).
     """
-    address = session.scalar(
-        select(Address).where(
-            Address.id == address_id,
-            Address.user_id == user.id,
-            Address.deleted_at.is_(None),
-        )
-    )
-    if address is None:
-        raise NotFoundError("No encontramos esta dirección.")
-
-    from datetime import UTC, datetime
-
+    address = _owned_address(session, user.id, address_id)
     address.deleted_at = datetime.now(UTC)
     address.is_default = False
     session.commit()

@@ -17,6 +17,7 @@ from app.models.enums import (
     RequestStatus,
     SubOrderStatus,
 )
+from app.models.geo import Municipality
 from app.models.messaging import CommercialRequest
 from app.models.order import Order, OrderItem, SubOrder
 from app.models.payment import Commission
@@ -231,11 +232,25 @@ class ProducerService:
 
         sub_orders, total = paginate_query(self.session, statement, params)
 
+        orders = {
+            sub_order.id: self.session.get(Order, sub_order.order_id) for sub_order in sub_orders
+        }
+        # El destino se resuelve para toda la página de una vez: la copia
+        # inmutable de la dirección guarda el identificador del municipio, no su
+        # nombre, y preguntarlo fila por fila sería una consulta por pedido.
+        municipality_names = self._municipality_names(
+            {
+                municipality_id
+                for order in orders.values()
+                if (municipality_id := self._snapshot_municipality_id(order)) is not None
+            }
+        )
+
         items: list[ProducerOrderItem] = []
         for sub_order in sub_orders:
-            order = self.session.get(Order, sub_order.order_id)
+            order = orders[sub_order.id]
             buyer = self.session.get(User, order.user_id) if order else None
-            snapshot = order.shipping_address_snapshot if order else {}
+            municipality_id = self._snapshot_municipality_id(order)
 
             items.append(
                 ProducerOrderItem(
@@ -247,12 +262,37 @@ class ProducerService:
                     subtotal=sub_order.subtotal,
                     net_amount=sub_order.net_amount,
                     item_count=len(sub_order.items),
-                    shipping_city=snapshot.get("neighborhood") if snapshot else None,
+                    # El municipio, no el barrio: es lo que el vendedor necesita
+                    # para cotizar el envío y elegir transportadora. El barrio,
+                    # además, es opcional, de modo que el campo llegaba vacío en
+                    # la mayoría de los pedidos.
+                    shipping_city=(
+                        municipality_names.get(municipality_id)
+                        if municipality_id is not None
+                        else None
+                    ),
                     created_at=sub_order.created_at,
                 )
             )
 
         return Page.create(items, total, params)
+
+    @staticmethod
+    def _snapshot_municipality_id(order: Order | None) -> int | None:
+        """Municipio al que se despacha, según la copia guardada en el pedido."""
+        if order is None:
+            return None
+        raw = (order.shipping_address_snapshot or {}).get("municipality_id")
+        return int(raw) if raw is not None else None
+
+    def _municipality_names(self, municipality_ids: set[int]) -> dict[int, str]:
+        """Nombre de cada municipio pedido, en una sola consulta."""
+        if not municipality_ids:
+            return {}
+        rows = self.session.execute(
+            select(Municipality.id, Municipality.name).where(Municipality.id.in_(municipality_ids))
+        ).all()
+        return {int(row.id): str(row.name) for row in rows}
 
     # ------------------------------------------------------------------
     # Productos e inventario
