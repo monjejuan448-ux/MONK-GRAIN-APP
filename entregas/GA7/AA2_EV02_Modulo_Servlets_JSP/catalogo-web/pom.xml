@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MONK GRAIN — Capa web del catálogo de pergamino
+  GA7-220501096-AA2-EV02
+
+  Depende del módulo `catalogo-pergamino` de la evidencia anterior: los
+  servlets no repiten el acceso a datos ni las reglas de negocio, los
+  reutilizan. Eso es lo que hace que la división en capas valga la pena.
+
+  Jakarta Servlet 6.0 y no javax: Tomcat 10 cambió de espacio de nombres,
+  y mezclar los dos produce un 404 sin explicación al desplegar.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>co.monkgrain</groupId>
+  <artifactId>catalogo-web</artifactId>
+  <version>1.0.0</version>
+  <packaging>war</packaging>
+
+  <name>MONK GRAIN - Catalogo de pergamino (web)</name>
+
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- El modulo de la evidencia anterior: modelo, DAO y servicio -->
+    <dependency>
+      <groupId>co.monkgrain</groupId>
+      <artifactId>catalogo-pergamino</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
+    <!-- API de servlets. `provided`: la aporta Tomcat, no el WAR -->
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>6.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- JSTL, para las iteraciones y condicionales de las JSP -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>catalogo-pergamino</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.4.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

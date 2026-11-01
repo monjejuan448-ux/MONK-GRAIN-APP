@@ -31,8 +31,21 @@ Los artefactos académicos (GUIA N1-N3) quedan como insumo histórico de context
 - **Compradores:** empresas y personas naturales, de modo que se conservan reseñas, favoritos y derecho de retracto.
 - **Dos sentidos del mercado:** el vendedor publica lotes y el comprador publica solicitudes de compra.
 
+### Decisión de alcance — la aplicación móvil queda fuera (1 de noviembre de 2026)
+
+> El directorio `mobile/` estaba vacío mientras este documento declaraba React Native +
+> Expo, de modo que figuraba un entregable sin trabajo asignado. **Se retira del alcance
+> del proyecto**: la aplicación web es *responsive* y verificada de 360 px a 1920 px, que
+> es lo que cubre el uso real de caficultores y compradores desde el teléfono.
+>
+> No es un aplazamiento indefinido disfrazado: si en algún momento se decide construirla,
+> será un proyecto nuevo con su propio análisis, no la continuación de una casilla que
+> llevaba meses abierta. Las menciones a Expo que quedan en este documento y en
+> [03](03-arquitectura-y-datos.md) se conservan como registro de lo que se pensó, no como
+> compromiso.
+
 **Decisiones técnicas que siguen vigentes sin cambios:**
-- **Stack tecnológico:** Next.js + TypeScript + Tailwind (web), React Native + Expo (móvil), FastAPI + Python (backend), PostgreSQL + SQLAlchemy + Alembic + Redis (datos), Docker + Nginx + GitHub Actions (infraestructura).
+- **Stack tecnológico:** Next.js + TypeScript + Tailwind (web *responsive*, sin app nativa — ver la decisión de alcance de arriba), FastAPI + Python (backend), PostgreSQL + SQLAlchemy + Alembic + Redis (datos), Docker + Nginx + GitHub Actions (infraestructura).
 - **Pagos/logística en el MVP:** el MVP incluye checkout **simulado** y creación de órdenes; la integración real con pasarelas de pago (Wompi, Mercado Pago, PayU, PSE) y con operadores logísticos queda **arquitectónicamente preparada pero no activa** hasta una fase posterior.
 
 ---
@@ -74,7 +87,7 @@ MONK GRAIN es una plataforma multilateral: cada segmento tiene necesidades y flu
 - Panel del productor (productos, inventario, pedidos recibidos, ventas, documentos/certificaciones).
 - Panel administrativo (usuarios, aprobación de productores, catálogo, pedidos, reseñas, contenido, métricas básicas).
 - Sistema de reseñas y calificaciones.
-- Diseño responsive (web) — la app móvil nativa se prepara en fase 2 (ver sección 13 del brief original).
+- Diseño responsive (web), verificado de 360 px a 1920 px. **Sin app móvil nativa**: retirada del alcance.
 - Datos de prueba realistas (cafés, fincas y regiones colombianas).
 - Documentación de instalación local.
 
@@ -82,7 +95,7 @@ MONK GRAIN es una plataforma multilateral: cada segmento tiene necesidades y flu
 
 - Pagos reales (Wompi/Mercado Pago/PayU/PSE) — arquitectura de webhooks e integración de proveedor lista, sin credenciales activas.
 - Integración con transportadoras colombianas — modelo de datos de envíos y guías listo, sin conexión real a un operador.
-- App móvil completa (React Native/Expo) — se agenda como fase posterior al MVP web.
+- App móvil nativa — **fuera del alcance**, no aplazada: la web responsive cubre el uso desde el teléfono.
 - Chat en tiempo real comprador-vendedor.
 - Sistema de cotizaciones B2B avanzado (negociación, repetición de pedidos, múltiples usuarios por empresa).
 - Multiidioma completo (solo español en MVP, inglés preparado a nivel de i18n).
@@ -190,7 +203,7 @@ MONK GRAIN es una plataforma multilateral: cada segmento tiene necesidades y flu
 | RNF-05 | Protección de datos | Cumplimiento de la Ley 1581 de 2012 (Colombia): consentimiento explícito, política de tratamiento de datos, no exposición de ubicación exacta de fincas ni datos financieros completos |
 | RNF-06 | Usabilidad | Diseño responsive verificado en viewport móvil (360px) a escritorio (1920px); mensajes de error comprensibles; estados de carga y vacío en toda vista con datos remotos |
 | RNF-07 | Accesibilidad | Cumplimiento de contraste WCAG AA como mínimo, navegación por teclado en flujos críticos (checkout, registro) |
-| RNF-08 | Compatibilidad | Web responsive en navegadores modernos (Chrome, Safari, Firefox, Edge); app móvil preparada para Android e iOS vía Expo |
+| RNF-08 | Compatibilidad | Web responsive en navegadores modernos (Chrome, Safari, Firefox, Edge), incluidos los de Android e iOS |
 | RNF-09 | Internacionalización | Arquitectura de i18n activa desde el MVP aunque solo se publique contenido en español; moneda y localización (COP, departamentos/municipios) parametrizadas, no hardcodeadas, para permitir expansión futura |
 | RNF-10 | Mantenibilidad | Cobertura de pruebas en módulos críticos (auth, pedidos, pagos) ≥ 70%; linting y formateo automatizados en CI |
 | RNF-11 | Auditabilidad | Toda acción administrativa sensible y todo evento de pago quedan registrados con actor, fecha y detalle, sin posibilidad de edición retroactiva |

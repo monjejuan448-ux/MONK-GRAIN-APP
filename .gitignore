@@ -27,10 +27,6 @@ build/
 .eslintcache
 coverage/
 
-# Expo / React Native
-.expo/
-.expo-shared/
-
 # Docker y datos locales
 docker-data/
 *.pid
@@ -50,3 +46,12 @@ yarn-error.log*
 # Archivos subidos en desarrollo
 uploads/
 media/
+
+# Evidencias: el repositorio del ejercicio AA1-EV05 tiene su propio historial
+# y se publica aparte; incluirlo aquí crearía un submódulo accidental.
+entregas/GA7/AA1_EV05_Programa_Git/Programa-Git/
+
+# Artefactos de compilación de los módulos Java de las evidencias. El código
+# fuente y el pom.xml sí se versionan; los .class y los .jar se regeneran con
+# `mvn package` y versionarlos solo añade binarios al historial.
+entregas/**/target/

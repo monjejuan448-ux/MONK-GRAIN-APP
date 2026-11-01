@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Banknote,
   Coffee,
   DollarSign,
   Flag,
@@ -154,6 +155,13 @@ export default function AdminDashboardPage() {
                 {data.reported_reviews}
               </Badge>
             )}
+          </Link>
+          <Link
+            href="/admin/liquidaciones"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            <Banknote className="mr-1.5 size-4" aria-hidden="true" />
+            Liquidaciones
           </Link>
           <Link
             href="/admin/auditoria"

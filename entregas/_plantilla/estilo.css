@@ -1,0 +1,235 @@
+/* ============================================================
+   MONK GRAIN — Estilo de los documentos de evidencia
+   ============================================================
+   Reproduce el formato de portada que el aprendiz ya venía
+   usando: título centrado con filete, programa, institución,
+   nombre y fecha; secciones numeradas con filete; bloques de
+   código sobre fondo oscuro.
+
+   Se mantiene igual en las 23 evidencias para que el conjunto
+   se lea como un solo cuerpo de trabajo y no como documentos
+   sueltos.
+   ============================================================ */
+
+@page {
+  size: letter;
+  margin: 2.4cm 2.2cm 2.2cm 2.2cm;
+
+  @bottom-center {
+    content: string(doc-title) " — Página " counter(page);
+    font-family: "DejaVu Serif", Georgia, serif;
+    font-size: 8pt;
+    color: #8a7a6d;
+  }
+}
+
+/* La portada no lleva pie: es la carátula. */
+@page :first {
+  @bottom-center { content: ""; }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: #241a14;
+  margin: 0;
+  hyphens: auto;
+}
+
+/* ---------- Portada ---------- */
+.portada {
+  text-align: center;
+  margin-bottom: 1.6cm;
+}
+
+.portada h1 {
+  string-set: doc-title content();
+  font-size: 17pt;
+  font-weight: bold;
+  line-height: 1.25;
+  margin: 0 0 0.35cm;
+  color: #1a1209;
+}
+
+/* El filete bajo el título, en café tostado: es la marca visual
+   que distingue estos documentos de un informe cualquiera. */
+.portada .filete {
+  border: none;
+  border-top: 1.6pt solid #6F4E37;
+  margin: 0 0 0.6cm;
+}
+
+.portada p {
+  margin: 0.12cm 0;
+  font-size: 11pt;
+}
+
+.portada .fecha { margin-top: 0.45cm; }
+
+/* ---------- Secciones ---------- */
+h2 {
+  font-size: 13pt;
+  font-weight: bold;
+  color: #1a1209;
+  margin: 0.75cm 0 0.1cm;
+  padding-bottom: 0.12cm;
+  border-bottom: 1pt solid #6F4E37;
+  /* Un encabezado solo al final de la página es ruido: que
+     arrastre al menos dos líneas de su contenido. */
+  break-after: avoid;
+}
+
+h3 {
+  font-size: 11pt;
+  font-weight: bold;
+  color: #3B2417;
+  margin: 0.5cm 0 0.12cm;
+  break-after: avoid;
+}
+
+h4 {
+  font-size: 10.5pt;
+  font-weight: bold;
+  color: #5a463a;
+  margin: 0.38cm 0 0.1cm;
+  break-after: avoid;
+}
+
+p { margin: 0.22cm 0; text-align: justify; }
+
+ul, ol { margin: 0.22cm 0; padding-left: 0.65cm; }
+li { margin: 0.1cm 0; text-align: justify; }
+
+strong { color: #1a1209; }
+
+a { color: #6F4E37; text-decoration: none; }
+
+/* ---------- Código ---------- */
+code {
+  font-family: "DejaVu Sans Mono", "Courier New", monospace;
+  font-size: 8.8pt;
+  background: #f0ebe4;
+  padding: 0.04cm 0.12cm;
+  border-radius: 2px;
+}
+
+pre {
+  font-family: "DejaVu Sans Mono", "Courier New", monospace;
+  font-size: 8.3pt;
+  line-height: 1.45;
+  background: #2b1d14;
+  color: #ede3d7;
+  padding: 0.35cm 0.42cm;
+  margin: 0.28cm 0;
+  border-radius: 3px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  /* Un bloque de código partido entre dos páginas se vuelve
+     ilegible; si no cabe entero, que salte. */
+  break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Salida de consola: se distingue del código fuente para que no
+   parezca que forma parte del programa. */
+pre.salida {
+  background: #f6f3ef;
+  color: #2b1d14;
+  border-left: 2.5pt solid #6F4E37;
+  border-radius: 0;
+}
+
+/* ---------- Tablas ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.3cm 0;
+  font-size: 9.3pt;
+  break-inside: avoid;
+}
+
+th {
+  background: #efe8df;
+  color: #1a1209;
+  text-align: left;
+  font-weight: bold;
+  padding: 0.16cm 0.2cm;
+  border-bottom: 1pt solid #6F4E37;
+}
+
+td {
+  padding: 0.14cm 0.2cm;
+  border-bottom: 0.5pt solid #ddd3c7;
+  vertical-align: top;
+}
+
+td code { font-size: 8.4pt; }
+
+/* ---------- Avisos ---------- */
+.nota {
+  background: #f6f3ef;
+  border-left: 2.5pt solid #6F4E37;
+  padding: 0.25cm 0.35cm;
+  margin: 0.3cm 0;
+  font-size: 9.8pt;
+  break-inside: avoid;
+}
+
+.nota p { margin: 0.1cm 0; }
+
+/* Lo que el aprendiz debe aportar: se marca distinto para que no
+   se confunda con el contenido ya resuelto. */
+.pendiente {
+  background: #fdf6e3;
+  border-left: 2.5pt solid #C79A55;
+  padding: 0.25cm 0.35cm;
+  margin: 0.3cm 0;
+  font-size: 9.8pt;
+  break-inside: avoid;
+}
+
+.pendiente p { margin: 0.1cm 0; }
+
+.pendiente .titulo {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.1cm;
+  color: #6b4e14;
+}
+
+/* Hueco donde va una captura de pantalla del aprendiz. */
+.captura {
+  border: 1pt dashed #b5a697;
+  background: #faf8f5;
+  padding: 1.1cm 0.4cm;
+  margin: 0.3cm 0;
+  text-align: center;
+  font-size: 9.3pt;
+  color: #7a6a5d;
+  break-inside: avoid;
+}
+
+.captura .rotulo {
+  display: block;
+  font-weight: bold;
+  color: #5a463a;
+  margin-bottom: 0.12cm;
+}
+
+figure { margin: 0.3cm 0; break-inside: avoid; }
+figure img { max-width: 100%; }
+figcaption {
+  font-size: 9pt;
+  color: #7a6a5d;
+  text-align: center;
+  margin-top: 0.12cm;
+}

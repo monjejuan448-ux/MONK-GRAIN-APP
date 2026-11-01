@@ -1,0 +1,104 @@
+/* ============================================================
+   MONK GRAIN — Hoja de estilo del módulo web
+   ============================================================
+   Deliberadamente sencilla y sin dependencias externas: la
+   evidencia es sobre servlets y JSP, no sobre CSS, y un marco de
+   terceros escondería qué genera cada JSP.
+   ============================================================ */
+
+:root {
+  --cafe: #6F4E37;
+  --cafe-oscuro: #3B2417;
+  --crema: #F4EBDD;
+  --bosque: #1F4D3A;
+  --borde: #DDD3C7;
+  --texto: #241A14;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--texto);
+  background: #FFFDF8;
+  line-height: 1.6;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--cafe-oscuro);
+  color: var(--crema);
+  flex-wrap: wrap;
+}
+
+.marca { font-weight: 700; letter-spacing: 0.08em; color: var(--crema); text-decoration: none; }
+.barra nav { display: flex; gap: 1.2rem; }
+.barra a { color: var(--crema); text-decoration: none; font-size: 0.95rem; }
+.barra a:hover { text-decoration: underline; }
+
+.contenido { max-width: 62rem; margin: 0 auto; padding: 1.5rem; }
+
+h1 { font-size: 1.7rem; margin: 0.4rem 0 0.8rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; border-bottom: 1px solid var(--borde);
+     padding-bottom: 0.3rem; }
+
+.guia { color: #6B5A4D; font-size: 0.93rem; max-width: 46rem; }
+.resumen { font-size: 1.05rem; }
+.vacio { background: var(--crema); padding: 1rem; border-left: 3px solid var(--cafe); }
+
+.mensaje { background: #E6F2EA; border-left: 3px solid var(--bosque);
+           padding: 0.7rem 1rem; color: var(--bosque); }
+.error { background: #F7E4E4; border-left: 3px solid #96272B;
+         padding: 0.7rem 1rem; color: #96272B; }
+
+/* --- Filtro --- */
+.filtro { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+          background: var(--crema); padding: 0.9rem 1rem; margin: 1rem 0; }
+.filtro label { font-weight: 600; font-size: 0.92rem; }
+.filtro input { padding: 0.4rem 0.6rem; border: 1px solid var(--borde); width: 11rem; }
+.limpiar { font-size: 0.9rem; color: var(--cafe); }
+
+/* --- Tabla --- */
+.tabla { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; }
+.tabla th { text-align: left; background: var(--crema); padding: 0.55rem 0.7rem;
+            border-bottom: 2px solid var(--cafe); }
+.tabla td { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+.tabla .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla th.num { text-align: right; }
+.tabla code { background: #F0EBE4; padding: 0.1rem 0.3rem; font-size: 0.9em; }
+
+.etiqueta { display: inline-block; background: #EFE8DF; padding: 0.1rem 0.5rem;
+            font-size: 0.85rem; }
+.etiqueta.ok { background: #DEEDE5; color: var(--bosque); }
+.aviso { color: #96272B; font-weight: 700; cursor: help; }
+
+/* --- Formularios --- */
+.formulario { max-width: 34rem; margin: 1rem 0 2rem; }
+.formulario fieldset { border: 1px solid var(--borde); padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+.formulario legend { font-weight: 700; padding: 0 0.4rem; }
+.formulario label { display: block; font-weight: 600; font-size: 0.92rem; margin-top: 0.8rem; }
+.formulario input[type=text],
+.formulario input[type=number],
+.formulario input[type=date],
+.formulario select { width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--borde); }
+.formulario small { display: block; color: #6B5A4D; font-size: 0.84rem; margin-top: 0.2rem; }
+.formulario .casilla { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; }
+.formulario .casilla input { width: auto; }
+.formulario.compacto fieldset { border: none; padding: 0; }
+
+button { background: var(--cafe); color: #fff; border: none; padding: 0.55rem 1.2rem;
+         font-size: 0.95rem; cursor: pointer; }
+button:hover { background: var(--cafe-oscuro); }
+button.peligro { background: #96272B; padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+
+/* --- Ficha --- */
+.ficha { display: grid; grid-template-columns: 14rem 1fr; gap: 0.4rem 1rem; margin: 1.2rem 0; }
+.ficha dt { font-weight: 600; color: #5A463A; }
+.ficha dd { margin: 0; }
+
+.pie { border-top: 1px solid var(--borde); margin-top: 3rem; padding: 1.2rem 1.5rem;
+       color: #6B5A4D; font-size: 0.88rem; text-align: center; }

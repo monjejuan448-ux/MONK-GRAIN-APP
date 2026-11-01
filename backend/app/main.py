@@ -19,6 +19,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.cart.router import router as cart_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.orders.router import router as orders_router
+from app.modules.payments.router import router as settlements_router
 from app.modules.producers.router import router as producers_router
 from app.modules.returns.router import router as returns_router
 from app.modules.reviews.router import router as reviews_router
@@ -213,6 +214,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(users_router, prefix=settings.api_v1_prefix)
     app.include_router(producers_router, prefix=settings.api_v1_prefix)
     app.include_router(admin_router, prefix=settings.api_v1_prefix)
+    app.include_router(settlements_router, prefix=settings.api_v1_prefix)
 
     @app.get("/health", tags=["sistema"], summary="Comprobación de estado")
     async def health_check() -> dict[str, str]:

@@ -60,6 +60,14 @@ jobs:
       SECRET_KEY: clave_solo_para_integracion_continua_no_usar_jamas_en_produccion
       APP_ENV: development
       CORS_ORIGINS: http://localhost:3000
+      # Almacenamiento de objetos. Las pruebas de evidencias de devolución
+      # suben una foto, y sin esto fallaban con EndpointConnectionError: el
+      # flujo declaraba postgres y redis, pero no el almacenamiento.
+      S3_ENDPOINT_URL: http://localhost:9090
+      S3_ACCESS_KEY: pruebas
+      S3_SECRET_KEY: pruebas
+      S3_BUCKET: monkgrain
+      S3_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +86,60 @@ jobs:
             libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libffi8
 
       - name: Instalar el proyecto
-        run: pip install -e ".[dev]"
+        # Con las versiones exactas del lock, para que el CI valide lo mismo que
+        # corre en la imagen y no lo que resuelvan hoy los rangos.
+        run: pip install -c requirements.lock -e ".[dev]"
+
+      - name: Levantar el almacenamiento de objetos
+        # Las pruebas de evidencias de devolución suben una foto, y sin
+        # almacenamiento fallaban con EndpointConnectionError: el flujo
+        # declaraba postgres y redis, pero no dónde guardar archivos.
+        #
+        # Se usa `adobe/s3mock` y no MinIO por una razón práctica: MinIO dejó
+        # de permitir el descargue anónimo de sus imágenes, tanto en Docker Hub
+        # («pull access denied») como en quay.io («401 UNAUTHORIZED»), y los
+        # ejecutores de GitHub no tienen credenciales. s3mock implementa la
+        # misma API de S3 y está pensado justamente para pruebas.
+        #
+        # No puede declararse en `services:` porque hace falta esperar a que
+        # responda y crear el bucket: arrancar las pruebas antes produciría
+        # fallos que no son del producto.
+        run: |
+          docker run -d --name s3mock \
+            -p 9090:9090 \
+            adobe/s3mock:latest
+
+          for intento in $(seq 1 30); do
+            if curl -sf http://localhost:9090/ > /dev/null 2>&1; then
+              echo "El almacenamiento responde tras $intento intento(s)."
+              break
+            fi
+            if [ "$intento" -eq 30 ]; then
+              echo "El almacenamiento no respondió en 60 segundos." >&2
+              docker logs s3mock >&2
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # El bucket se crea aquí porque la aplicación no lo crea al
+          # arrancar: `ensure_bucket()` solo lo invoca la carga de imágenes de
+          # demostración, que en el CI no se ejecuta.
+          # boto3 ya está instalado: es dependencia del proyecto y el paso
+          # «Instalar el proyecto» corre antes que este.
+          python - <<'PYTHON'
+          import boto3
+
+          cliente = boto3.client(
+              "s3",
+              endpoint_url="http://localhost:9090",
+              aws_access_key_id="pruebas",
+              aws_secret_access_key="pruebas",
+              region_name="us-east-1",
+          )
+          cliente.create_bucket(Bucket="monkgrain")
+          print("Bucket 'monkgrain' creado.")
+          PYTHON
 
       - name: Crear las extensiones de PostgreSQL
         # El esquema usa CITEXT y unaccent; deben existir antes de migrar.

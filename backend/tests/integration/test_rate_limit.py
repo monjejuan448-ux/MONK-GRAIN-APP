@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.rate_limit import is_internal_caller
+from app.core.rate_limit import client_identifier, is_internal_caller
 from app.db.session import get_session
 from app.main import app
 from app.models.catalog import ProductVariant
@@ -144,6 +144,120 @@ class TestPerEndpointLimits:
         # El contador es por cliente, no por correo: el segundo intento también
         # cae, y eso es lo correcto.
         assert response.status_code == 429
+
+    def test_rotating_the_client_identity_does_not_buy_more_login_attempts(
+        self, client: TestClient
+    ) -> None:
+        """El agujero que esta prueba cierra.
+
+        Antes, `client_identifier` tomaba el **primer** elemento de
+        `X-Forwarded-For` —que lo escribe quien hace la petición—, de modo que
+        cambiarlo en cada intento estrenaba cupo: doce intentos seguidos de
+        inicio de sesión devolvían 401 y ninguno 429. El tope por cuenta pone
+        techo al ensayo de contraseñas aunque el atacante se reparta entre
+        direcciones, porque no mira ninguna cabecera.
+        """
+        objetivo = {"email": "victima@ejemplo.co", "password": "ContrasenaCualquiera1"}
+        tope = settings.rate_limit_login_per_account_per_minute
+
+        # Cada intento se presenta como un cliente distinto, así que el límite
+        # por cliente no llega a dispararse nunca.
+        for intento in range(tope):
+            respuesta = client.post(
+                f"{API}/auth/login",
+                json=objetivo,
+                headers={"X-Real-IP": f"181.49.20.{intento}"},
+            )
+            assert respuesta.status_code != 429, f"el intento {intento} no debía estar limitado"
+
+        bloqueado = client.post(
+            f"{API}/auth/login",
+            json=objetivo,
+            headers={"X-Real-IP": "181.49.20.200"},
+        )
+
+        assert bloqueado.status_code == 429
+
+    def test_the_account_ceiling_does_not_block_other_accounts(self, client: TestClient) -> None:
+        """Agotar el cupo de una cuenta no debe dejar fuera a las demás: si no,
+        bastaría con ensayar contra el correo de alguien para impedirle entrar."""
+        for intento in range(settings.rate_limit_login_per_account_per_minute + 1):
+            client.post(
+                f"{API}/auth/login",
+                json={"email": "victima@ejemplo.co", "password": "ContrasenaCualquiera1"},
+                headers={"X-Real-IP": f"181.49.20.{intento}"},
+            )
+
+        otra = client.post(
+            f"{API}/auth/login",
+            json={"email": "ajena@ejemplo.co", "password": "ContrasenaCualquiera1"},
+            headers={"X-Real-IP": "200.1.2.3"},
+        )
+
+        assert otra.status_code != 429
+
+
+class TestClientIdentity:
+    """A quién se le cuenta cada petición.
+
+    Es la decisión de la que dependía el agujero: Nginx compone
+    `X-Forwarded-For` con `$proxy_add_x_forwarded_for`, que **añade** la
+    dirección real al final de lo que mandó el cliente. Leer el primer elemento
+    era leer un dato que escribe el atacante.
+    """
+
+    @staticmethod
+    def _request(host: str | None, **headers: str) -> Request:
+        scope = {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/auth/login",
+            "headers": [
+                (nombre.lower().replace("_", "-").encode(), valor.encode())
+                for nombre, valor in headers.items()
+            ],
+            "client": (host, 12345) if host else None,
+            "query_string": b"",
+        }
+        return Request(scope)
+
+    def test_the_last_hop_wins_because_that_is_the_one_nginx_added(self) -> None:
+        """Lo que el cliente inventa queda delante; lo que puso el proxy, detrás."""
+        peticion = self._request("172.18.0.2", x_forwarded_for="1.2.3.4, 181.49.20.10")
+
+        assert client_identifier(peticion) == "181.49.20.10"
+
+    def test_spoofing_the_first_hop_does_not_change_the_identity(self) -> None:
+        """Dos peticiones del mismo cliente real cuentan en el mismo cupo, por
+        mucho que la cabecera diga otra cosa en cada una."""
+        primera = self._request("172.18.0.2", x_forwarded_for="9.9.9.9, 181.49.20.10")
+        segunda = self._request("172.18.0.2", x_forwarded_for="8.8.8.8, 181.49.20.10")
+
+        assert client_identifier(primera) == client_identifier(segunda) == "181.49.20.10"
+
+    def test_x_real_ip_wins_over_the_forwarded_chain(self) -> None:
+        """Nginx la **sobreescribe** en cada petición, así que es la más fiable
+        de las dos."""
+        peticion = self._request(
+            "172.18.0.2", x_real_ip="181.49.20.10", x_forwarded_for="1.2.3.4, 5.6.7.8"
+        )
+
+        assert client_identifier(peticion) == "181.49.20.10"
+
+    def test_the_headers_are_ignored_when_the_peer_is_not_our_proxy(self) -> None:
+        """Si la conexión no viene de nuestra red, nadie garantiza esas
+        cabeceras: se cuenta la dirección real y se descarta el relato."""
+        peticion = self._request("181.49.20.10", x_real_ip="10.0.0.1", x_forwarded_for="10.0.0.1")
+
+        assert client_identifier(peticion) == "181.49.20.10"
+
+    def test_without_any_proxy_header_the_peer_is_the_identity(self) -> None:
+        assert client_identifier(self._request("172.18.0.7")) == "172.18.0.7"
+
+    def test_an_empty_forwarded_header_falls_back_to_the_peer(self) -> None:
+        """Una cabecera presente pero vacía no debe producir un identificador
+        vacío, que metería a clientes distintos en el mismo cupo."""
+        assert client_identifier(self._request("172.18.0.2", x_forwarded_for=" , ")) == "172.18.0.2"
 
 
 class TestInternalDetection:

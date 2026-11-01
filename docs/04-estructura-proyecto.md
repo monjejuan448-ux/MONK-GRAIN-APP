@@ -17,7 +17,6 @@ MONK-GRAIN-APP/
 ├── docs/                      Documentación funcional y técnica (español)
 ├── backend/                   API FastAPI
 ├── web/                       Aplicación web Next.js
-├── mobile/                    App React Native + Expo (fase 2)
 ├── infra/                     Nginx, inicialización de PostgreSQL
 └── .github/workflows/         Integración continua
 ```

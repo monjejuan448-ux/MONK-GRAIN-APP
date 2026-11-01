@@ -1,0 +1,221 @@
+<!-- GA7-220501096-AA1-EV05 · Guion del video -->
+<header class="portada">
+  <h1>Guion del Video: Herramienta de Versionamiento Instalada y Configurada</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia se entrega como <strong>video MP4</strong>. El ejercicio ya está
+  ejecutado y publicado; lo que este documento aporta es el guion para grabarlo: qué
+  decir, qué comando ejecutar en cada momento y qué debe verse en pantalla.
+</p>
+
+<p>
+  El repositorio del ejercicio está en
+  <strong>https://github.com/monjejuan448-ux/Programa-Git</strong> y su copia local, en
+  la carpeta <code>Programa-Git/</code> junto a este documento.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Demostrar en video que la herramienta de versionamiento quedó instalada y configurada,
+  ejecutando los tres pasos que pide la guía: asociar un repositorio remoto público,
+  enviar los cambios y verlos en GitHub, y registrar un archivo nuevo con el mensaje
+  indicado.
+</p>
+
+<div class="pendiente">
+  <span class="titulo">Lo que debes hacer tú</span>
+  <p>
+    <strong>Grabar el video.</strong> Duración estimada: 5 a 7 minutos. Empieza
+    presentándote con tu nombre, como pide la guía, y explica cada requerimiento
+    mientras lo ejecutas. Cualquier grabador sirve: OBS Studio, SimpleScreenRecorder o
+    el grabador del sistema. Guarda el archivo como <code>AA1_EV05_Video.mp4</code> en
+    esta misma carpeta.
+  </p>
+</div>
+
+<h2>3. Preparación antes de grabar</h2>
+
+<ul>
+  <li>Abre la terminal en la carpeta <code>Programa-Git/</code>.</li>
+  <li>Aumenta el tamaño de letra de la terminal: lo que no se lee en el video no cuenta como evidencia.</li>
+  <li>Ten abierto el navegador en <code>https://github.com/monjejuan448-ux/Programa-Git</code>.</li>
+  <li>Cierra lo que no vayas a mostrar.</li>
+</ul>
+
+<div class="nota">
+  <p>
+    <strong>Si quieres grabar el ejercicio desde cero.</strong> Los pasos ya están
+    ejecutados, así que al repetirlos Git dirá que no hay nada que enviar. Para grabarlo
+    en limpio, borra el archivo <code>kotlin.txt</code> y la última versión antes de
+    empezar:
+  </p>
+  <pre class="salida">$ git reset --hard HEAD~1
+$ git push --force github main</pre>
+  <p>Así el paso 3 vuelve a ser real durante la grabación.</p>
+</div>
+
+<h2>4. Guion</h2>
+
+<h3>Bloque 1 — Presentación (30 segundos)</h3>
+
+<p>
+  <em>A cámara o en voz sobre la pantalla:</em>
+</p>
+
+<div class="nota">
+  <p>
+    «Buenas. Mi nombre es Eliana Chacon, del programa Análisis y Desarrollo de Software
+    del SENA. En este video voy a demostrar la herramienta de versionamiento Git
+    instalada y configurada, ejecutando los tres requerimientos de la evidencia
+    AA1-EV05 sobre el repositorio Programa-Git.»
+  </p>
+</div>
+
+<p>Muestra que el entorno está listo:</p>
+
+<pre class="salida">$ git --version
+git version 2.43.0
+
+$ git config --global --list
+user.name=Eliana Chacon
+user.email=juanmo1082@hotmail.com
+init.defaultbranch=main</pre>
+
+<h3>Bloque 2 — Primer requerimiento: asociar el remoto y listarlo (1 a 2 minutos)</h3>
+
+<div class="nota">
+  <p>
+    «El primer requerimiento pide crear un repositorio público llamado Programa-Git,
+    añadirlo al repositorio local y mostrar los remotos configurados.»
+  </p>
+</div>
+
+<p>Muestra primero el repositorio ya creado en el navegador, y señala que es público. Luego, en la terminal:</p>
+
+<pre class="salida">$ git remote add github https://github.com/monjejuan448-ux/Programa-Git.git
+
+$ git remote -v
+github  https://github.com/monjejuan448-ux/Programa-Git.git (fetch)
+github  https://github.com/monjejuan448-ux/Programa-Git.git (push)</pre>
+
+<p><em>Qué explicar mientras se ejecuta:</em></p>
+
+<ul>
+  <li>Que <code>github</code> es solo un nombre corto para no escribir la URL completa cada vez.</li>
+  <li>Que aparecen dos líneas porque Git distingue de dónde lee (<em>fetch</em>) y a dónde escribe (<em>push</em>), aunque aquí sea la misma dirección.</li>
+</ul>
+
+<h3>Bloque 3 — Segundo requerimiento: subir y ver el historial (1 a 2 minutos)</h3>
+
+<div class="nota">
+  <p>
+    «El segundo requerimiento pide subir los cambios al remoto y mostrar el historial de
+    versiones en GitHub.»
+  </p>
+</div>
+
+<pre class="salida">$ git push github main</pre>
+
+<p>
+  <em>Aquí conviene explicar algo que la guía no dice y el instructor agradece:</em> la
+  guía usa <code>master</code> porque era el nombre antiguo de la rama principal; este
+  repositorio usa <code>main</code>, que es el nombre por defecto actual de GitHub, y
+  por eso el comando lleva <code>main</code>.
+</p>
+
+<p>Pasa al navegador, recarga y muestra:</p>
+
+<ul>
+  <li>Los archivos ya publicados.</li>
+  <li>El historial de versiones (pestaña <em>Commits</em>), con su mensaje, autor y fecha.</li>
+</ul>
+
+<h3>Bloque 4 — Tercer requerimiento: kotlin.txt y «Añadido datos» (2 minutos)</h3>
+
+<div class="nota">
+  <p>
+    «El tercer requerimiento pide crear un archivo kotlin.txt con mi nombre y correo,
+    prepararlo, registrarlo con el mensaje "Añadido datos" y subirlo al remoto.»
+  </p>
+</div>
+
+<pre class="salida">$ echo "Eliana Chacon" &gt; kotlin.txt
+$ echo "juanmo1082@hotmail.com" &gt;&gt; kotlin.txt
+$ cat kotlin.txt
+Eliana Chacon
+juanmo1082@hotmail.com
+
+$ git status
+$ git add .
+$ git commit -m "Añadido datos"
+$ git push github main</pre>
+
+<p><em>Qué explicar:</em></p>
+
+<ul>
+  <li>Que <code>git status</code> muestra el archivo como no seguido antes de <code>add</code>, y preparado después: son las tres áreas de Git.</li>
+  <li>Que <code>git commit</code> registra la versión <strong>en el equipo</strong>, y que hasta <code>git push</code> ese trabajo no ha salido del disco.</li>
+</ul>
+
+<p>Cierra mostrando el historial final:</p>
+
+<pre class="salida">$ git log --oneline
+569eb02 Añadido datos
+276bfa8 Repositorio del ejercicio de versionamiento</pre>
+
+<p>Y en el navegador, el archivo <code>kotlin.txt</code> ya publicado con su contenido.</p>
+
+<h3>Bloque 5 — Cierre (30 segundos)</h3>
+
+<div class="nota">
+  <p>
+    «Con esto quedan demostrados los tres requerimientos: el repositorio remoto público
+    asociado al local, el historial de versiones publicado en GitHub, y el archivo
+    kotlin.txt registrado con el mensaje "Añadido datos". Gracias.»
+  </p>
+</div>
+
+<h2>5. Lista de comprobación antes de entregar</h2>
+
+<table>
+  <thead>
+    <tr><th>Requisito de la guía</th><th>Dónde queda demostrado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Presentación con tu nombre</td><td>Bloque 1</td></tr>
+    <tr><td>Repositorio público <code>Programa-Git</code></td><td>Bloque 2, en el navegador</td></tr>
+    <tr><td><code>git remote add</code></td><td>Bloque 2</td></tr>
+    <tr><td><code>git remote -v</code></td><td>Bloque 2</td></tr>
+    <tr><td><code>git push</code> al remoto</td><td>Bloque 3</td></tr>
+    <tr><td>Historial de versiones visible en GitHub</td><td>Bloque 3, en el navegador</td></tr>
+    <tr><td><code>kotlin.txt</code> con nombre y correo</td><td>Bloque 4</td></tr>
+    <tr><td><code>git add .</code></td><td>Bloque 4</td></tr>
+    <tr><td>Versión con el mensaje «Añadido datos»</td><td>Bloque 4</td></tr>
+    <tr><td>Envío final al remoto</td><td>Bloque 4</td></tr>
+    <tr><td>Explicación de cada requerimiento</td><td>Bloques 2, 3 y 4</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Estado del ejercicio</h2>
+
+<p>El ejercicio está ejecutado y publicado. Lo verificado:</p>
+
+<pre class="salida">$ gh repo view monjejuan448-ux/Programa-Git
+  https://github.com/monjejuan448-ux/Programa-Git  ·  PUBLIC  ·  rama main
+
+$ git log --oneline
+569eb02 Añadido datos
+276bfa8 Repositorio del ejercicio de versionamiento</pre>
+
+<p>
+  Queda por grabar el video, que es la entrega que pide la evidencia.
+</p>

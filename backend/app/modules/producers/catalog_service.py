@@ -371,8 +371,8 @@ class ProducerCatalogService:
         if variant.inventory is not None:
             if payload.stock_qty < variant.inventory.reserved_qty:
                 raise BusinessRuleError(
-                    f"No puedes dejar el stock por debajo de las "
-                    f"{variant.inventory.reserved_qty} unidades ya reservadas."
+                    f"No puedes dejar las existencias por debajo de los "
+                    f"{variant.inventory.reserved_qty} kg ya reservados."
                 )
             variant.inventory.stock_qty = payload.stock_qty
             variant.inventory.low_stock_threshold = payload.low_stock_threshold
@@ -396,7 +396,7 @@ class ProducerCatalogService:
 
         if variant.inventory is not None and variant.inventory.reserved_qty > 0:
             raise BusinessRuleError(
-                "Esta presentación tiene unidades reservadas en pedidos en curso. "
+                "Esta oferta tiene kilos reservados en pedidos en curso. "
                 "Podrás retirarla cuando esos pedidos se completen."
             )
 

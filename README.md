@@ -6,7 +6,7 @@ Conecta a los caficultores, fincas y cooperativas del país con quienes compran 
 
 Cada lote se publica con lo que decide su valor: **factor de rendimiento**, humedad, almendra sana, pasilla, daño por broca y granulometría, además de su origen y su código de lote. Los precios son **por kilogramo** y las cantidades, kilos.
 
-Orientado al mercado colombiano: pesos colombianos, departamentos y municipios con códigos DANE, operadores logísticos nacionales y medios de pago disponibles en el país.
+Orientado al mercado colombiano: pesos colombianos, los 33 departamentos y las 1.122 entidades municipales del DANE, operadores logísticos nacionales y medios de pago disponibles en el país.
 
 ---
 
@@ -59,8 +59,10 @@ El proyecto **fue** un marketplace minorista de café tostado hasta el pivote de
 | 15 | Oferta y demanda entre comprador y vendedor | ✅ [docs/15](docs/15-oferta-demanda.md) |
 | 16 | Panel de administración completo | ✅ |
 | 17 | Pruebas del frontend y límite de peticiones | ✅ |
+| 18 | Auditoría de estado y corrección de sus hallazgos | ✅ [docs/17](docs/17-auditoria-correcciones.md) |
+| 19 | Liquidación y pago al vendedor | ✅ [docs/18](docs/18-liquidaciones.md) |
 
-**390 pruebas del backend con 87 % de cobertura, más 38 del frontend**, verificado en ejecución contra PostgreSQL real.
+**453 pruebas del backend con 87 % de cobertura, más 41 del frontend**, verificado en ejecución contra PostgreSQL real el 1 de noviembre de 2026.
 
 ---
 
@@ -73,7 +75,7 @@ El proyecto **fue** un marketplace minorista de café tostado hasta el pivote de
 | Datos | PostgreSQL 16, Redis 7, almacenamiento compatible con S3 |
 | Infraestructura | Docker, Docker Compose, Nginx |
 
-Dimensión: 16.300 líneas de Python, 16.700 de TypeScript, 100 operaciones de API, 41 páginas, 54 tablas.
+Dimensión: 18.400 líneas de Python, 17.700 de TypeScript, 107 operaciones de API, 43 páginas, 54 tablas.
 
 ---
 
@@ -114,7 +116,7 @@ Crea el esquema de la base de datos:
 docker compose exec backend alembic upgrade head
 ```
 
-Carga roles, permisos y la geografía cafetera de Colombia:
+Carga roles, permisos y la división político-administrativa completa del país (33 departamentos, 1.122 municipios):
 
 ```bash
 docker compose exec backend python -m app.db.seed
@@ -141,7 +143,7 @@ docker compose exec backend python -m app.db.demo_data
 docker compose exec backend python -m app.db.demo_images
 ```
 
-Incluye una finca del Huila, una cooperativa de Nariño, una hacienda del Quindío, un centro de acopio del Cauca y un caficultor de Antioquia, con factores de rendimiento de 86 a 96, humedades de 10,5 % a 11,8 %, análisis físico completo, códigos de lote y precios de 16.800 a 31.000 el kilo. Un lote queda sin existencias a propósito, para poder ver cómo se muestra un lote agotado. Las fincas, las personas y los lotes son ficticios.
+Incluye una finca del Huila, una cooperativa de Nariño, una hacienda del Quindío, un centro de acopio del Cauca y un caficultor de Antioquia, con factores de rendimiento de 86 a 96, humedades de 10,5 % a 11,8 %, análisis físico completo, códigos de lote y precios de 16.800 a 31.000 el kilo. **Las fincas, las personas, los lotes y los precios son inventados**: sirven para recorrer la plataforma, no como referencia de mercado. Un lote queda sin existencias a propósito, para poder ver cómo se muestra un lote agotado.
 
 **Credenciales de los vendedores de prueba:**
 
@@ -254,10 +256,10 @@ Registro con verificación de correo, carrito en kilogramos que se conserva al i
 Perfil empresarial verificado, acceso a precios por volumen, solicitud de muestras.
 
 ### Vendedor
-Registro con validación administrativa, perfil de finca, publicación de lotes con su análisis del pergamino y su trazabilidad, control de inventario en kilos con alertas, **bandeja de pedidos recibidos** con avance de estado y guía de despacho, **posturas** sobre las solicitudes de compra que sus lotes pueden atender, y resumen de liquidaciones.
+Registro con validación administrativa, perfil de finca, publicación de lotes con su análisis del pergamino y su trazabilidad, control de inventario en kilos con alertas, **bandeja de pedidos recibidos** con avance de estado y guía de despacho, **posturas** sobre las solicitudes de compra que sus lotes pueden atender, **detalle de los lotes por reponer**, **cuenta bancaria cifrada** y **liquidaciones con su estado y su referencia de pago**.
 
 ### Administrador
-Aprobación de vendedores, métricas de la plataforma, **búsqueda y suspensión de cuentas**, **moderación de reseñas denunciadas** y **registro de auditoría inmutable**.
+Aprobación de vendedores, métricas de la plataforma, **búsqueda y suspensión de cuentas**, **moderación de reseñas denunciadas**, **cierre de periodos y registro de los pagos a vendedores**, y **registro de auditoría inmutable**.
 
 ---
 
@@ -280,7 +282,9 @@ Aprobación de vendedores, métricas de la plataforma, **búsqueda y suspensión
 | [13 — Comprobante](docs/13-comprobante.md) | Constancia del pedido en PDF, con los datos del artículo 53 |
 | [14 — Pergamino](docs/14-pergamino.md) | **El dominio: factor de rendimiento, análisis, unidades y el pivote** |
 | [15 — Oferta y demanda](docs/15-oferta-demanda.md) | **El mercado de dos lados: solicitudes, posturas y precio acordado** |
-| [16 — Correcciones](docs/16-correcciones.md) | **Los defectos encontrados y corregidos, con su verificación** |
+| [16 — Correcciones](docs/16-correcciones.md) | Los defectos del desbloqueo de compra y despacho, con su verificación |
+| [17 — Auditoría y correcciones](docs/17-auditoria-correcciones.md) | La auditoría del 1-nov-2026: lo medido, lo corregido y lo que queda |
+| [18 — Liquidaciones](docs/18-liquidaciones.md) | **El pago al vendedor: comisión, cuenta cifrada, cierre de periodo y desembolso** |
 
 ---
 
@@ -303,6 +307,8 @@ Aprobación de vendedores, métricas de la plataforma, **búsqueda y suspensión
 **La ubicación exacta de las fincas no sale del servidor.** Se publica el municipio y una coordenada aproximada. Exponer la coordenada real de una finca rural es un riesgo de seguridad física para el vendedor.
 
 **Ningún endpoint revela qué correos están registrados.** Registro, inicio de sesión y recuperación de contraseña responden igual exista o no la cuenta.
+
+**El inicio de sesión tiene dos topes, no uno.** Uno por cliente y otro por cuenta. El segundo existe porque el primero no basta: el cliente se identifica por una cabecera que pone el proxy, y quien rotaba esa cabecera estrenaba cupo en cada intento. Contar también por cuenta pone techo al ensayo de contraseñas sin depender de ninguna cabecera. El cliente se identifica por `X-Real-IP` —que Nginx sobreescribe— y nunca por el primer elemento de `X-Forwarded-For`, que lo escribe quien hace la petición.
 
 **La auditoría es inmutable.** No existe endpoint para editarla ni borrarla, y el rol de aplicación en PostgreSQL solo tiene permisos de inserción y lectura sobre esa tabla. Hay una prueba que recorre las rutas declaradas para que añadir un endpoint de escritura sobre la auditoría la rompa.
 
@@ -327,13 +333,13 @@ En ningún caso se almacenan datos completos de tarjetas: solo referencias y tok
 docker compose exec backend pytest
 ```
 
-**Backend — 390 pruebas:** 319 de integración contra PostgreSQL real y 71 unitarias. Cobertura global del **87 %**.
+**Backend — 453 pruebas:** 365 de integración contra PostgreSQL real y 88 unitarias. Cobertura global del **87 %**.
 
 ```bash
 docker compose exec web npm test
 ```
 
-**Frontend — 38 pruebas** con Vitest y Testing Library, sobre el formateo del dominio, la lectura del análisis y el componente de compra. Consultan por lo que el usuario percibe —texto accesible, estado deshabilitado— y no por la estructura interna que React produjo.
+**Frontend — 41 pruebas** con Vitest y Testing Library, sobre el formateo del dominio, la lectura del análisis, el componente de compra y la navegación global. Consultan por lo que el usuario percibe —texto accesible, estado deshabilitado— y no por la estructura interna que React produjo.
 
 Las pruebas de integración usan PostgreSQL, no SQLite: el esquema depende de tipos específicos (CITEXT, JSONB, ENUM nativos, índices parciales) que SQLite no reproduce, y una prueba que pase contra otro motor daría una falsa sensación de seguridad.
 
@@ -343,13 +349,99 @@ Entre lo que verifican: que el checkout sea atómico; que los kilos se reserven 
 
 ## Lo que falta
 
-Lo que sigue pendiente, sin adornos:
+Lo que sigue pendiente, sin adornos. El pago al vendedor —que encabezaba esta lista tras la auditoría del 1 de noviembre de 2026— **ya está construido**: ver [docs/18](docs/18-liquidaciones.md). El detalle de lo corregido está en [docs/17](docs/17-auditoria-correcciones.md).
 
-- **Los tokens viven en `sessionStorage`**, no en cookies `httpOnly`. Aceptable para el MVP, no para producción: quedan expuestos a cualquier script que se cuele en la página. Migrarlos exige además protección CSRF y middleware: es un cambio de arquitectura, no una corrección puntual, y es el pendiente de mayor peso que queda.
+- **Los tokens viven en `sessionStorage`**, no en cookies `httpOnly`. Aceptable para el MVP, no para producción: quedan expuestos a cualquier script que se cuele en la página. Migrarlos exige además protección CSRF y middleware: es un cambio de arquitectura, no una corrección puntual.
 - **No hay proceso en segundo plano.** Nada vigila el vencimiento de las certificaciones ni los plazos de las devoluciones, que la revisión legal dejó anotado.
-- **Ocho páginas de contenido sin escribir**, enlazadas desde la navegación: `/regiones`, `/blog`, `/nosotros`, `/trazabilidad`, `/sostenibilidad`, `/ayuda`, `/contacto` y `/envios`.
-- **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino.
+- **Ocho páginas de contenido sin escribir:** `/regiones`, `/blog`, `/nosotros`, `/trazabilidad`, `/sostenibilidad`, `/ayuda`, `/contacto` y `/envios`. **Ya no están enlazadas**, porque prometerlas en las 41 páginas del sitio era peor que no tenerlas; sus enlaces vuelven cuando exista el texto. Una prueba vigila que no reaparezcan antes.
+- **Hay esquema sin código detrás:** `conversations` y `messages` (mensajería), `blog_posts` y los cupones, que el carrito consume pero ningún endpoint crea. Construirlo o retirarlo es una decisión de alcance.
+- **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino. Quedan once decisiones de negocio sin resolver en [docs/10](docs/10-revision-legal.md); la que más urge es **D-7**, quién recauda el dinero, porque condiciona el punto primero de esta lista.
+- **El repositorio no tiene remoto.** Todo el historial vive en un solo disco, y el CI nunca se ha ejecutado: está escrito, no probado.
 - **El precio no está indexado al precio interno de referencia de la FNC.** Fue una decisión, no un olvido: exigía una fuente del precio diario y decidir quién la mantiene.
+
+---
+
+## Evidencias de formación (GA7 y GA8)
+
+Las guías GA7-220501096 y GA8 piden 23 evidencias construidas sobre este proyecto. Viven en [`entregas/`](entregas/), una subcarpeta por evidencia con el nombre que pide cada guía.
+
+Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`— y de ahí salen los PDF:
+
+```bash
+./entregas/_plantilla/construir.sh                        # todos
+./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
+```
+
+**Estado: 7 de 23 construidas.** GA7-AA1 y GA7-AA2, completas.
+
+### GA7 — AP7 Codificar los módulos del software
+
+| Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
+|---|---|---|---|---|
+| AA1-EV01 Plan de trabajo | Git, GitHub Actions, Docker | [`entregas/GA7/AA1_EV01_Plan_Trabajo/`](entregas/GA7/AA1_EV01_Plan_Trabajo/) | ✅ PDF, 5 pág. | — |
+| AA1-EV02 Estándares de codificación | `docs/04` §4 y §6 | [`entregas/GA7/AA1_EV02_Estandares_Codificacion/`](entregas/GA7/AA1_EV02_Estandares_Codificacion/) | ✅ PDF, 8 pág. | — |
+| AA1-EV03 Git local vs remoto | — (teórico) | [`entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/`](entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/) | ✅ PDF, 6 pág. | — |
+| AA1-EV04 Instalación de Git | entorno real del equipo | [`entregas/GA7/AA1_EV04_Instalacion_Git/`](entregas/GA7/AA1_EV04_Instalacion_Git/) | ✅ PDF, 7 pág. | **7 capturas de pantalla**, marcadas en el documento |
+| AA1-EV05 Git configurado | repo `Programa-Git` | [`entregas/GA7/AA1_EV05_Programa_Git/`](entregas/GA7/AA1_EV05_Programa_Git/) | ✅ ejercicio hecho y publicado · guion listo | **Grabar el video** (5-7 min), guion en el PDF |
+| AA2-EV01 Módulo JDBC | **`catalogo-pergamino`** (Java 17 + JDBC + PostgreSQL) | [`entregas/GA7/AA2_EV01_Modulo_JDBC/`](entregas/GA7/AA2_EV01_Modulo_JDBC/) | ✅ PDF 10 pág. · 13 pruebas · CRUD verificado contra PostgreSQL | — |
+| AA2-EV02 Servlets y JSP | **`catalogo-web`** (Jakarta Servlet 6 + JSP + JSTL, sobre `catalogo-pergamino`) | [`entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/`](entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/) | ✅ PDF 8 pág. · WAR desplegado y probado por HTTP en Tomcat 10 | — |
+| AA3-EV01 Framework Java | `negociacion-pergamino` (Spring) | `entregas/GA7/AA3_EV01_Modulo_Framework/` | ⬜ pendiente | — |
+| AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |
+| AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
+| AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | `entregas/GA7/AA4_EV02_Componentes_Front/` | ⬜ pendiente | — |
+| AA4-EV03 Componente del proyecto | módulo **`trading`** | `entregas/GA7/AA4_EV03_Componente_Proyecto/` | ⬜ pendiente | — |
+| AA5-EV01 Servicio registro/login | módulo **`auth`** (10 endpoints) | `entregas/GA7/AA5_EV01_API_Registro_Login/` | ⬜ pendiente | — |
+| AA5-EV02 Postman sobre EV01 | colección de `auth` | `entregas/GA7/AA5_EV02_Postman_API/` | ⬜ pendiente | Video del testing |
+| AA5-EV03 API del proyecto | los 107 endpoints + `docs/06` | `entregas/GA7/AA5_EV03_APIs_Proyecto/` | ⬜ pendiente | — |
+| AA5-EV04 Postman del proyecto | colección completa | `entregas/GA7/AA5_EV04_Postman_Proyecto/` | ⬜ pendiente | Video del testing |
+
+### GA8 — Integración y tecnologías emergentes
+
+| Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
+|---|---|---|---|---|
+| AA1-EV01 Integrar módulos web | **MONK GRAIN completo** | `entregas/GA8/AA1_EV01_Integracion_Modulos/` | ⬜ pendiente | — |
+| AA1-EV02 Módulos integrados | lo anterior + informes de pruebas | `entregas/GA8/AA1_EV02_Modulos_Integrados/` | ⬜ pendiente | URL de despliegue |
+| AA2-EV01 Taller Android | — (teórico) | `entregas/GA8/AA2_EV01_Taller_Android/` | ⬜ pendiente | **Android Studio**: instalar, crear la app y capturar |
+| AA2-EV02 APK móvil | app mínima contra la API real | `entregas/GA8/AA2_EV02_APK_Movil/` | ⬜ pendiente | Compilar el APK |
+| AA2-EV03 Taller disruptivas | — (teórico) | `entregas/GA8/AA2_EV03_Taller_Disruptivas/` | ⬜ pendiente | Elegir 3 tecnologías |
+| AA2-EV04 Video machine learning | — | `entregas/GA8/AA2_EV04_Video_Machine_Learning/` | ⬜ pendiente | **Grabar el video** (10 min) |
+| AA2-EV05 Texto blockchain | — | `entregas/GA8/AA2_EV05_Texto_Blockchain/` | ⬜ pendiente | — |
+
+### Cómo construir los módulos Java
+
+Maven y Tomcat no están instalados en el sistema; se usan los de la carpeta de herramientas:
+
+```bash
+export MVN="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-maven-3.9.16/bin/mvn"
+export CATALINA_HOME="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-tomcat-10.1.61"
+```
+
+Los módulos Java usan la base `monkgrain_java` del mismo PostgreSQL del proyecto, **no** la de la aplicación: un módulo de aprendizaje que inserta y borra no debe tocar los datos de demostración.
+
+```bash
+docker compose exec -T postgres psql -U monkgrain -d postgres -c "CREATE DATABASE monkgrain_java;"
+docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
+  < entregas/GA7/AA2_EV01_Modulo_JDBC/catalogo-pergamino/src/main/resources/esquema.sql
+```
+
+### Repositorios
+
+- **Proyecto:** <https://github.com/monjejuan448-ux/MONK-GRAIN-APP> — público, con `main` y `correcciones-auditoria`, y la [PR #1](https://github.com/monjejuan448-ux/MONK-GRAIN-APP/pull/1) abierta para revisión.
+- **Ejercicio AA1-EV05:** <https://github.com/monjejuan448-ux/Programa-Git>
+
+### El CI, ejecutado por fin
+
+Estaba escrito desde el principio y **nunca se había ejecutado**. Al publicar el repositorio falló tres veces seguidas, cada una por un motivo distinto, y todas las causas eran reales:
+
+1. **Faltaba el almacenamiento de objetos.** El flujo declaraba postgres y redis, pero no dónde guardar archivos: las dos pruebas que suben una foto de evidencia fallaban con `EndpointConnectionError`.
+2. **El lockfile del frontend solo servía para Alpine.** Se generó en el contenedor de desarrollo, que es musl, y los ejecutores de GitHub son glibc: `npm ci` no encontraba `@rollup/rollup-linux-x64-gnu`. Ahora las dos variantes se declaran como `optionalDependencies`.
+3. **MinIO ya no se puede descargar sin credenciales**, ni de Docker Hub ni de quay.io. Se usa `adobe/s3mock`, que implementa la misma API y está pensado para pruebas.
+
+**Verde desde la cuarta vuelta**: 453 pruebas de backend, 41 de frontend, imágenes de producción construidas y escaneo de secretos sin hallazgos.
+
+### Nota sobre Java en GA7
+
+- **AA2 y AA3 de GA7 exigen Java**, que este proyecto no tiene. Se construirán módulos nuevos sobre el dominio del pergamino, reutilizando la arquitectura de la línea Java previa (paquete `co.monkgrain.*`, separación `modelo / dao / servicio / util`) pero no su modelo de datos, que es el de exportación por quintal y quedó obsoleto con el pivote.
 
 ---
 
