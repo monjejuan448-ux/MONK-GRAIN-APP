@@ -361,6 +361,59 @@ Lo que sigue pendiente, sin adornos. El pago al vendedor —que encabezaba esta 
 
 ---
 
+## Evidencias de formación (GA7 y GA8)
+
+Las guías GA7-220501096 y GA8 piden 23 evidencias construidas sobre este proyecto. Viven en [`entregas/`](entregas/), una subcarpeta por evidencia con el nombre que pide cada guía.
+
+Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`— y de ahí salen los PDF:
+
+```bash
+./entregas/_plantilla/construir.sh                        # todos
+./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
+```
+
+**Estado: 5 de 23 construidas.**
+
+### GA7 — AP7 Codificar los módulos del software
+
+| Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
+|---|---|---|---|---|
+| AA1-EV01 Plan de trabajo | Git, GitHub Actions, Docker | [`entregas/GA7/AA1_EV01_Plan_Trabajo/`](entregas/GA7/AA1_EV01_Plan_Trabajo/) | ✅ PDF, 5 pág. | — |
+| AA1-EV02 Estándares de codificación | `docs/04` §4 y §6 | [`entregas/GA7/AA1_EV02_Estandares_Codificacion/`](entregas/GA7/AA1_EV02_Estandares_Codificacion/) | ✅ PDF, 8 pág. | — |
+| AA1-EV03 Git local vs remoto | — (teórico) | [`entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/`](entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/) | ✅ PDF, 6 pág. | — |
+| AA1-EV04 Instalación de Git | entorno real del equipo | [`entregas/GA7/AA1_EV04_Instalacion_Git/`](entregas/GA7/AA1_EV04_Instalacion_Git/) | ✅ PDF, 7 pág. | **7 capturas de pantalla**, marcadas en el documento |
+| AA1-EV05 Git configurado | repo `Programa-Git` | [`entregas/GA7/AA1_EV05_Programa_Git/`](entregas/GA7/AA1_EV05_Programa_Git/) | ✅ ejercicio hecho y publicado · guion listo | **Grabar el video** (5-7 min), guion en el PDF |
+| AA2-EV01 Módulo JDBC | `catalogo-pergamino` (nuevo) | `entregas/GA7/AA2_EV01_Modulo_JDBC/` | ⬜ pendiente | — |
+| AA2-EV02 Servlets y JSP | el mismo módulo, capa web | `entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/` | ⬜ pendiente | — |
+| AA3-EV01 Framework Java | `negociacion-pergamino` (Spring) | `entregas/GA7/AA3_EV01_Modulo_Framework/` | ⬜ pendiente | — |
+| AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |
+| AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
+| AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | `entregas/GA7/AA4_EV02_Componentes_Front/` | ⬜ pendiente | — |
+| AA4-EV03 Componente del proyecto | módulo **`trading`** | `entregas/GA7/AA4_EV03_Componente_Proyecto/` | ⬜ pendiente | — |
+| AA5-EV01 Servicio registro/login | módulo **`auth`** (10 endpoints) | `entregas/GA7/AA5_EV01_API_Registro_Login/` | ⬜ pendiente | — |
+| AA5-EV02 Postman sobre EV01 | colección de `auth` | `entregas/GA7/AA5_EV02_Postman_API/` | ⬜ pendiente | Video del testing |
+| AA5-EV03 API del proyecto | los 107 endpoints + `docs/06` | `entregas/GA7/AA5_EV03_APIs_Proyecto/` | ⬜ pendiente | — |
+| AA5-EV04 Postman del proyecto | colección completa | `entregas/GA7/AA5_EV04_Postman_Proyecto/` | ⬜ pendiente | Video del testing |
+
+### GA8 — Integración y tecnologías emergentes
+
+| Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
+|---|---|---|---|---|
+| AA1-EV01 Integrar módulos web | **MONK GRAIN completo** | `entregas/GA8/AA1_EV01_Integracion_Modulos/` | ⬜ pendiente | — |
+| AA1-EV02 Módulos integrados | lo anterior + informes de pruebas | `entregas/GA8/AA1_EV02_Modulos_Integrados/` | ⬜ pendiente | URL de despliegue |
+| AA2-EV01 Taller Android | — (teórico) | `entregas/GA8/AA2_EV01_Taller_Android/` | ⬜ pendiente | **Android Studio**: instalar, crear la app y capturar |
+| AA2-EV02 APK móvil | app mínima contra la API real | `entregas/GA8/AA2_EV02_APK_Movil/` | ⬜ pendiente | Compilar el APK |
+| AA2-EV03 Taller disruptivas | — (teórico) | `entregas/GA8/AA2_EV03_Taller_Disruptivas/` | ⬜ pendiente | Elegir 3 tecnologías |
+| AA2-EV04 Video machine learning | — | `entregas/GA8/AA2_EV04_Video_Machine_Learning/` | ⬜ pendiente | **Grabar el video** (10 min) |
+| AA2-EV05 Texto blockchain | — | `entregas/GA8/AA2_EV05_Texto_Blockchain/` | ⬜ pendiente | — |
+
+### Lo que está bloqueado
+
+- **El repositorio remoto del proyecto no se ha podido crear**: la acción quedó bloqueada por el control de permisos del asistente. Casi todas las evidencias piden el enlace del repositorio, así que conviene resolverlo pronto. El repositorio del ejercicio AA1-EV05 sí está publicado: <https://github.com/monjejuan448-ux/Programa-Git>.
+- **AA2 y AA3 de GA7 exigen Java**, que este proyecto no tiene. Se construirán módulos nuevos sobre el dominio del pergamino, reutilizando la arquitectura de la línea Java previa (paquete `co.monkgrain.*`, separación `modelo / dao / servicio / util`) pero no su modelo de datos, que es el de exportación por quintal y quedó obsoleto con el pivote.
+
+---
+
 ## Licencia
 
 Proyecto privado. Todos los derechos reservados.

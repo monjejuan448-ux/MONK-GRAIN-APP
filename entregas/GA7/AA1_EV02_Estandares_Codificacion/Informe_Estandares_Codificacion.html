@@ -1,0 +1,326 @@
+<!-- GA7-220501096-AA1-EV02 · Estándares de codificación -->
+<header class="portada">
+  <h1>Informe Técnico: Estándares de Codificación del Proyecto MONK GRAIN</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Un estándar de codificación es el acuerdo sobre cómo se escribe el código de un
+  proyecto: cómo se nombran las variables, cómo se declaran las clases y los métodos,
+  cómo se ordenan los archivos y qué se comenta. Su valor no es estético. Un proyecto
+  que se escribe de una sola manera se lee más rápido, se corrige con menos riesgo y
+  permite que alguien que llega después entienda la intención sin preguntar.
+</p>
+
+<p>
+  Este documento recoge los estándares que rigen <strong>MONK GRAIN</strong>, la
+  plataforma de compra y venta de café pergamino seco. No son una propuesta: son las
+  reglas que el proyecto aplica hoy sobre 99 archivos de Python y 83 de TypeScript, y
+  que verifican automáticamente seis herramientas en cada envío al repositorio.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Definir el estándar de codificación de la plataforma según las tecnologías elegidas,
+  especificando el nombramiento de variables, la declaración de clases, la declaración
+  de métodos, la organización de los archivos y las reglas de comentario, y dejando
+  constancia de cómo se hace cumplir cada regla.
+</p>
+
+<h2>3. Plataforma y estándares base adoptados</h2>
+
+<p>
+  El proyecto combina dos lenguajes, y cada uno adopta el estándar de su comunidad en
+  lugar de inventar uno propio. Escribir Python como si fuera Java —o al revés— produce
+  código que nadie del ecosistema reconoce:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Capa</th><th>Tecnología</th><th>Estándar base</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Backend</td><td>Python 3.12, FastAPI, SQLAlchemy 2</td><td><strong>PEP 8</strong> y <strong>PEP 257</strong> (docstrings)</td></tr>
+    <tr><td>Frontend web</td><td>TypeScript, React 19, Next.js 15</td><td>Convenciones de la comunidad de React y TypeScript</td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL 16</td><td><code>snake_case</code>, tablas en plural</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Nombramiento de variables y elementos</h2>
+
+<p>La tabla de convenciones que rige todo el repositorio:</p>
+
+<table>
+  <thead>
+    <tr><th>Elemento</th><th>Convención</th><th>Ejemplo del proyecto</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Archivos y módulos Python</td><td><code>snake_case</code></td><td><code>catalog_service.py</code></td></tr>
+    <tr><td>Clases Python</td><td><code>PascalCase</code></td><td><code>SettlementService</code></td></tr>
+    <tr><td>Funciones y variables Python</td><td><code>snake_case</code></td><td><code>create_sub_orders()</code></td></tr>
+    <tr><td>Constantes Python</td><td><code>SCREAMING_SNAKE_CASE</code></td><td><code>SETTLEMENT_HOLD_BUSINESS_DAYS</code></td></tr>
+    <tr><td>Métodos internos</td><td><code>snake_case</code> con guion bajo inicial</td><td><code>_reserve_stock()</code></td></tr>
+    <tr><td>Tablas y columnas</td><td><code>snake_case</code>, tabla en plural</td><td><code>sub_orders</code>, <code>producer_id</code></td></tr>
+    <tr><td>Componentes React</td><td><code>PascalCase</code></td><td><code>ProductCard.tsx</code></td></tr>
+    <tr><td>Hooks de React</td><td><code>camelCase</code> con prefijo <code>use</code></td><td><code>useCart.ts</code></td></tr>
+    <tr><td>Rutas de la API</td><td>plural, en minúscula</td><td><code>/api/v1/products</code></td></tr>
+    <tr><td>Variables de entorno</td><td><code>SCREAMING_SNAKE_CASE</code></td><td><code>DATABASE_URL</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4.1 Idioma de los identificadores</h3>
+
+<p>
+  El código se escribe en <strong>inglés</strong> y se comenta en
+  <strong>español</strong>. La razón es práctica: los marcos de trabajo, las librerías y
+  el propio lenguaje están en inglés, y mezclar idiomas dentro de una misma expresión
+  produce híbridos difíciles de leer como <code>getProductosCafe()</code>. Las
+  explicaciones, en cambio, se escriben en el idioma en que se piensa el problema.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Excepción deliberada.</strong> Los mensajes dirigidos al usuario van en
+    español, porque los lee una persona en Colombia: <em>«Solo quedan 40 kg
+    disponibles.»</em>
+  </p>
+</div>
+
+<h2>5. Declaración de clases</h2>
+
+<p>
+  Una clase se declara con su nombre en <code>PascalCase</code> y una
+  <em>docstring</em> inmediatamente debajo que explica qué representa y, cuando la
+  decisión no es obvia, por qué está hecha así. El ejemplo es un modelo real del
+  proyecto:
+</p>
+
+<pre><code>class Commission(Base, UUIDPrimaryKeyMixin):
+    """Comisión de la plataforma sobre una sub-orden.
+
+    `rate_applied` guarda la tasa vigente en el momento de confirmar: cambiar la
+    comisión no altera pedidos ya calculados (HU-ADM-05, CA2).
+    """
+
+    __tablename__ = "commissions"
+
+    sub_order_id: Mapped[uuid.UUID] = mapped_column(
+        PgUUID(as_uuid=True),
+        ForeignKey("sub_orders.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    rate_applied: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
+    base_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)</code></pre>
+
+<p>Reglas que ilustra este fragmento:</p>
+
+<ul>
+  <li>Nombre de clase en singular: una instancia es <em>una</em> comisión; la tabla, en plural.</li>
+  <li><em>Docstring</em> obligatoria, con la trazabilidad a la historia de usuario entre paréntesis.</li>
+  <li>Atributos con anotación de tipo explícita (<code>Mapped[Decimal]</code>), no inferidos.</li>
+  <li>Los importes monetarios usan <code>Decimal</code> y <code>Numeric</code>, nunca punto flotante.</li>
+</ul>
+
+<h2>6. Declaración de métodos</h2>
+
+<p>
+  Un método declara el tipo de cada parámetro y el tipo de retorno. No es decoración:
+  <code>mypy</code> rechaza el envío si falta una anotación o si un tipo no cuadra.
+</p>
+
+<pre><code>def _reserve_stock(self, variant_id: uuid.UUID, quantity: int) -> None:
+    """Reserva kilos bloqueando la fila de inventario.
+
+    `FOR UPDATE` serializa las compras concurrentes de la misma variante: sin
+    él, dos checkouts simultáneos podrían leer el mismo stock y venderlo dos
+    veces (HU-PRO-05, CA4).
+
+    La reserva no descuenta el stock: lo retiene hasta que el pago se
+    confirme. Un pago rechazado lo devuelve al catálogo.
+    """
+    inventory = self.session.scalar(
+        select(Inventory).where(Inventory.variant_id == variant_id).with_for_update()
+    )
+    if inventory is None:
+        raise NotFoundError("Esta presentación ya no está disponible.")
+
+    if inventory.available_qty &lt; quantity:
+        raise InsufficientStockError(
+            f"Solo quedan {inventory.available_qty} kg disponibles.",
+            details={"variant_id": str(variant_id), "available": inventory.available_qty},
+        )
+
+    inventory.reserved_qty += quantity
+    self.session.flush()</code></pre>
+
+<table>
+  <thead>
+    <tr><th>Regla</th><th>Cómo se ve en el ejemplo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Nombre en <code>snake_case</code>, verbo primero</td><td><code>_reserve_stock</code> — dice qué hace</td></tr>
+    <tr><td>Guion bajo inicial si es interno</td><td><code>_reserve_stock</code> no es parte de la interfaz pública</td></tr>
+    <tr><td>Tipos en parámetros y retorno</td><td><code>variant_id: uuid.UUID</code>, <code>-&gt; None</code></td></tr>
+    <tr><td>Errores con excepción propia, no código de retorno</td><td><code>NotFoundError</code>, <code>InsufficientStockError</code></td></tr>
+    <tr><td>Mensaje de error en español y accionable</td><td>Dice cuántos kilos quedan, no solo que falló</td></tr>
+  </tbody>
+</table>
+
+<h2>7. Organización de archivos y regla de dependencias</h2>
+
+<p>
+  El backend se organiza por <strong>módulo de dominio</strong>, no por tipo de archivo.
+  Cada módulo agrupa lo suyo, y entre capas rige una dirección única:
+</p>
+
+<pre class="salida">router → service → repository → models</pre>
+
+<ul>
+  <li>El <strong>router</strong> no consulta la base de datos ni contiene reglas de negocio: valida la entrada, resuelve la autorización y delega.</li>
+  <li>El <strong>service</strong> es el único lugar donde se abren y confirman transacciones.</li>
+  <li>El <strong>repository</strong> no conoce HTTP ni esquemas de entrada; solo entidades y consultas.</li>
+  <li>Los <strong>models</strong> no importan nada de <code>modules/</code>.</li>
+</ul>
+
+<p>
+  Un módulo puede llamar al <em>service</em> de otro módulo, <strong>nunca</strong> a su
+  <em>repository</em>. Esa restricción es la que permite extraer un módulo a un servicio
+  independiente sin desenredar consultas cruzadas.
+</p>
+
+<p>El frontend refleja esa organización: <code>web/src/features/</code> tiene una carpeta por dominio, en espejo con los módulos del backend.</p>
+
+<h2>8. Comentarios</h2>
+
+<p>
+  La regla del proyecto es que <strong>un comentario explica el porqué, no el qué</strong>.
+  El código ya dice qué hace; lo que no puede decir es qué alternativa se descartó y por
+  qué razón. Un comentario que repite el código envejece mal y estorba.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Sobra</th><th>Sirve</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code># Incrementa la cantidad reservada</code><br><code>inventory.reserved_qty += quantity</code></td>
+      <td><em>«La reserva no descuenta el stock: lo retiene hasta que el pago se confirme.»</em></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Además, tres reglas de comentario obligatorias:</p>
+
+<ol>
+  <li><strong>Toda clase, módulo y método público lleva <em>docstring</em></strong> (PEP 257).</li>
+  <li><strong>Trazabilidad a la historia de usuario</strong> entre paréntesis cuando la regla viene de un criterio de aceptación: <code>(HU-PRO-05, CA4)</code>.</li>
+  <li><strong>Una supresión de regla se justifica en la misma línea</strong>: <code># noqa: S105 — credencial de pruebas</code>.</li>
+</ol>
+
+<h2>9. Mensajes de versión</h2>
+
+<p>
+  El historial también se escribe, y también tiene estándar. Una primera línea corta que
+  dice qué cambió en lenguaje llano, y un cuerpo que explica por qué. Ejemplo real del
+  repositorio:
+</p>
+
+<pre class="salida">El porcentaje de la comisión, con su espacio
+
+`Intl` con `style: "percent"` devuelve «2,5%» pegado en es-CO, y en español el
+signo va separado del número. El resto del proyecto ya lo escribe así —«8 %»,
+«87 % de cobertura»—, de modo que al centralizar la cifra en una constante se
+había colado una incoherencia tipográfica en los dos sitios que la muestran.</pre>
+
+<h2>10. Cómo se hace cumplir el estándar</h2>
+
+<p>
+  Un estándar que solo vive en un documento se incumple sin que nadie lo note. Estas
+  herramientas lo verifican en cada envío al repositorio, y el envío se rechaza si
+  alguna falla:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Herramienta</th><th>Ámbito</th><th>Qué verifica</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>ruff check</code></td><td>Backend</td><td>Estilo PEP 8, nombres, importaciones ordenadas, seguridad, simplificaciones</td></tr>
+    <tr><td><code>ruff format</code></td><td>Backend</td><td>Formato uniforme: no se discute dónde va un salto de línea</td></tr>
+    <tr><td><code>mypy</code></td><td>Backend</td><td>Tipos correctos en los 99 archivos</td></tr>
+    <tr><td><code>pytest</code></td><td>Backend</td><td>453 pruebas</td></tr>
+    <tr><td><code>eslint</code></td><td>Web</td><td>Reglas de React y TypeScript</td></tr>
+    <tr><td><code>tsc --noEmit</code></td><td>Web</td><td>Tipos en modo estricto</td></tr>
+    <tr><td><code>vitest</code></td><td>Web</td><td>41 pruebas</td></tr>
+  </tbody>
+</table>
+
+<h3>10.1 Reglas activadas en el analizador</h3>
+
+<p>La configuración vive en <code>backend/pyproject.toml</code>, en un solo lugar:</p>
+
+<pre><code>[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "W",    # warnings
+    "F",    # pyflakes
+    "I",    # isort — importaciones ordenadas
+    "N",    # pep8-naming — nombres
+    "UP",   # pyupgrade
+    "B",    # bugbear — errores frecuentes
+    "C4",   # comprehensions
+    "SIM",  # simplify
+    "S",    # bandit — seguridad
+    "T20",  # sin print()
+]</code></pre>
+
+<p>
+  Dos supresiones están declaradas con su motivo, porque una excepción sin explicación
+  es indistinguible de un descuido: <code>B008</code>, porque
+  <code>Depends()</code> en argumentos por defecto es el patrón propio de FastAPI, y
+  <code>N811</code>, porque importar <code>UUID as PgUUID</code> es el modismo estándar
+  para no chocar con <code>uuid.UUID</code>.
+</p>
+
+<h3>10.2 Estado actual</h3>
+
+<pre class="salida">$ ruff check app tests
+All checks passed!
+
+$ ruff format --check app tests
+126 files already formatted
+
+$ mypy app
+Success: no issues found in 99 source files
+
+$ npx tsc --noEmit
+(sin salida: sin errores)</pre>
+
+<h2>11. Conclusión</h2>
+
+<p>
+  El estándar de MONK GRAIN adopta las convenciones propias de cada tecnología —PEP 8 en
+  Python, las de la comunidad de React en TypeScript— en lugar de inventar reglas
+  nuevas, y añade tres acuerdos propios del proyecto: código en inglés y comentarios en
+  español, comentarios que explican el porqué y no el qué, y trazabilidad explícita a la
+  historia de usuario cuando una regla proviene de un criterio de aceptación.
+</p>
+
+<p>
+  Lo que convierte este documento en un estándar y no en una intención es la última
+  sección: seis herramientas verifican cada regla en cada envío, y hoy todas pasan sin
+  hallazgos.
+</p>

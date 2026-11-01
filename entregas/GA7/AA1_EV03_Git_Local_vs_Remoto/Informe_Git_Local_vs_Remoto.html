@@ -1,0 +1,230 @@
+<!-- GA7-220501096-AA1-EV03 · Identifica herramientas de versionamiento -->
+<header class="portada">
+  <h1>Informe Técnico: Git Local y Git Remoto</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Git es un sistema de control de versiones <strong>distribuido</strong>. Esa palabra
+  explica la diferencia que este documento desarrolla: en Git no hay una copia
+  privilegiada del proyecto y otras subordinadas, sino copias completas que se
+  sincronizan entre sí. Lo que llamamos «repositorio local» y «repositorio remoto» son
+  dos de esas copias, y lo que las distingue es el papel que cumplen, no su naturaleza.
+</p>
+
+<p>
+  Confundirlas es la causa del malentendido más común entre quien empieza: creer que
+  <code>git commit</code> sube el trabajo a internet. No lo hace. Registra la versión en
+  el equipo, y hasta que no se ejecuta <code>git push</code> ese trabajo existe en un
+  solo disco.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Establecer las diferencias entre el repositorio Git local y el repositorio Git remoto,
+  describiendo las características de cada uno, y documentar los comandos básicos que
+  operan sobre ambos.
+</p>
+
+<h2>3. Diferencias entre Git local y Git remoto</h2>
+
+<table>
+  <thead>
+    <tr><th>Característica</th><th>Git local</th><th>Git remoto</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Dónde reside</strong></td>
+      <td>En el equipo del desarrollador, dentro de la carpeta oculta <code>.git/</code></td>
+      <td>En un servidor accesible por red: GitHub, GitLab, Bitbucket o un servidor propio</td>
+    </tr>
+    <tr>
+      <td><strong>Necesita conexión</strong></td>
+      <td>No. Registrar versiones, crear ramas y consultar el historial funcionan sin internet</td>
+      <td>Sí. Toda operación contra él requiere red</td>
+    </tr>
+    <tr>
+      <td><strong>Quién accede</strong></td>
+      <td>Solo quien usa ese equipo</td>
+      <td>Todo el equipo de trabajo, según los permisos configurados</td>
+    </tr>
+    <tr>
+      <td><strong>Contenido</strong></td>
+      <td>Historial completo, área de preparación y copia de trabajo</td>
+      <td>Historial completo, sin copia de trabajo ni área de preparación</td>
+    </tr>
+    <tr>
+      <td><strong>Función principal</strong></td>
+      <td>Desarrollar: escribir, probar y registrar versiones</td>
+      <td>Respaldar, compartir y servir de punto de encuentro del equipo</td>
+    </tr>
+    <tr>
+      <td><strong>Velocidad</strong></td>
+      <td>Inmediata: todo ocurre en disco</td>
+      <td>Depende de la red y del tamaño de lo transferido</td>
+    </tr>
+    <tr>
+      <td><strong>Riesgo si se pierde</strong></td>
+      <td>Se pierde solo lo que aún no se envió al remoto</td>
+      <td>Se recupera desde cualquier copia local, que tiene el historial completo</td>
+    </tr>
+    <tr>
+      <td><strong>Cómo se crea</strong></td>
+      <td><code>git init</code> o <code>git clone</code></td>
+      <td>Desde la interfaz del servicio, o con <code>gh repo create</code></td>
+    </tr>
+    <tr>
+      <td><strong>Integración continua</strong></td>
+      <td>No la ejecuta</td>
+      <td>Dispara las verificaciones automáticas al recibir cambios</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>La consecuencia práctica.</strong> Un repositorio local sin remoto es
+    trabajo que vive en un solo disco. Es exactamente la situación en la que estuvo
+    este proyecto: trece versiones registradas, con todo su historial, sin ninguna copia
+    fuera del equipo.
+  </p>
+</div>
+
+<h2>4. Las tres áreas del repositorio local</h2>
+
+<p>
+  Antes de los comandos conviene nombrar las tres áreas por las que pasa un cambio,
+  porque casi todos los comandos básicos mueven archivos de una a otra:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Área</th><th>Qué contiene</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Copia de trabajo</strong></td><td>Los archivos tal como se editan</td></tr>
+    <tr><td><strong>Área de preparación</strong> (<em>staging</em>)</td><td>Lo que se ha marcado para entrar en la próxima versión</td></tr>
+    <tr><td><strong>Repositorio</strong></td><td>Las versiones ya registradas, en <code>.git/</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  <code>git add</code> mueve de la copia de trabajo a la preparación;
+  <code>git commit</code>, de la preparación al repositorio; <code>git push</code>, del
+  repositorio local al remoto.
+</p>
+
+<h2>5. Comandos básicos del repositorio local</h2>
+
+<table>
+  <thead>
+    <tr><th>Comando</th><th>Descripción</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>git init</code></td><td>Crea un repositorio nuevo en la carpeta actual: genera <code>.git/</code> y empieza a seguir el proyecto</td></tr>
+    <tr><td><code>git config --global user.name "nombre"</code></td><td>Define el nombre que firmará las versiones</td></tr>
+    <tr><td><code>git config --global user.email "correo"</code></td><td>Define el correo asociado a las versiones</td></tr>
+    <tr><td><code>git status</code></td><td>Muestra qué archivos cambiaron, cuáles están preparados y en qué rama se está</td></tr>
+    <tr><td><code>git add archivo</code></td><td>Prepara un archivo para la próxima versión</td></tr>
+    <tr><td><code>git add .</code></td><td>Prepara todos los cambios de la carpeta actual hacia abajo</td></tr>
+    <tr><td><code>git commit -m "mensaje"</code></td><td>Registra una versión con lo preparado y su mensaje descriptivo</td></tr>
+    <tr><td><code>git log</code></td><td>Muestra el historial de versiones con autor, fecha y mensaje</td></tr>
+    <tr><td><code>git log --oneline</code></td><td>El mismo historial, una línea por versión</td></tr>
+    <tr><td><code>git diff</code></td><td>Muestra las diferencias aún no preparadas</td></tr>
+    <tr><td><code>git diff --staged</code></td><td>Muestra las diferencias ya preparadas, antes de registrarlas</td></tr>
+    <tr><td><code>git branch</code></td><td>Lista las ramas; con un nombre, crea una nueva</td></tr>
+    <tr><td><code>git switch rama</code></td><td>Cambia a otra rama</td></tr>
+    <tr><td><code>git switch -c rama</code></td><td>Crea una rama y cambia a ella en un solo paso</td></tr>
+    <tr><td><code>git merge rama</code></td><td>Integra en la rama actual los cambios de otra</td></tr>
+    <tr><td><code>git restore archivo</code></td><td>Descarta los cambios no preparados de un archivo</td></tr>
+    <tr><td><code>git revert versión</code></td><td>Crea una versión nueva que deshace otra, sin borrar el historial</td></tr>
+    <tr><td><code>git tag nombre</code></td><td>Marca una versión con una etiqueta, para señalar entregas</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Comandos básicos del repositorio remoto</h2>
+
+<table>
+  <thead>
+    <tr><th>Comando</th><th>Descripción</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>git remote add nombre url</code></td><td>Asocia un repositorio remoto al local, bajo un nombre corto (habitualmente <code>origin</code>)</td></tr>
+    <tr><td><code>git remote -v</code></td><td>Lista los remotos configurados con sus URL de lectura y escritura</td></tr>
+    <tr><td><code>git remote remove nombre</code></td><td>Desvincula un remoto</td></tr>
+    <tr><td><code>git clone url</code></td><td>Descarga un repositorio remoto completo y configura <code>origin</code> automáticamente</td></tr>
+    <tr><td><code>git push remoto rama</code></td><td>Envía al remoto las versiones registradas localmente</td></tr>
+    <tr><td><code>git push -u origin main</code></td><td>Envía y además deja la rama local enlazada a la remota, para poder usar <code>git push</code> a secas después</td></tr>
+    <tr><td><code>git fetch remoto</code></td><td>Trae del remoto las versiones nuevas <strong>sin</strong> aplicarlas a la copia de trabajo</td></tr>
+    <tr><td><code>git pull remoto rama</code></td><td>Trae del remoto y además integra los cambios en la rama actual</td></tr>
+    <tr><td><code>git branch -r</code></td><td>Lista las ramas que existen en el remoto</td></tr>
+    <tr><td><code>git push remoto --delete rama</code></td><td>Elimina una rama del remoto</td></tr>
+    <tr><td><code>git push --tags</code></td><td>Envía al remoto las etiquetas creadas localmente</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong><code>fetch</code> frente a <code>pull</code>.</strong> Es la distinción que
+    más confusión causa. <code>fetch</code> solo descarga: deja el trabajo intacto y
+    permite mirar qué llegó antes de decidir. <code>pull</code> descarga
+    <em>e integra</em>, y puede producir conflictos en mitad de algo que se estaba
+    escribiendo. Ante la duda, <code>fetch</code> primero.
+  </p>
+</div>
+
+<h2>7. Flujo completo: del equipo al remoto</h2>
+
+<p>La secuencia habitual de trabajo, con las tres áreas de por medio:</p>
+
+<pre class="salida">$ git status                     # ¿qué cambió?
+$ git add .                      # preparar los cambios
+$ git commit -m "mensaje"        # registrar la versión (local)
+$ git push origin main           # enviarla al remoto</pre>
+
+<p>Y la secuencia para empezar a trabajar con un repositorio ya existente:</p>
+
+<pre class="salida">$ git clone https://github.com/usuario/proyecto.git
+$ cd proyecto
+$ git switch -c mi-rama          # aislar el trabajo nuevo
+  ... editar, probar, registrar versiones ...
+$ git push -u origin mi-rama     # publicar la rama</pre>
+
+<h2>8. Aplicación en el proyecto MONK GRAIN</h2>
+
+<p>
+  El proyecto emplea las dos ramas que ilustra este documento: <code>main</code>
+  conserva la última versión verificada, y las correcciones se desarrollan aparte hasta
+  que pasan las comprobaciones automáticas.
+</p>
+
+<pre class="salida">$ git branch
+  correcciones-auditoria
+* main
+
+$ git log --oneline -3
+e02eed6 El porcentaje de la comisión, con su espacio
+360ea1d Auditoría del estado y corrección de sus hallazgos
+00db999 Rastros del producto anterior en la interfaz</pre>
+
+<h2>9. Conclusión</h2>
+
+<p>
+  El repositorio local y el remoto no son dos herramientas distintas, sino dos copias
+  del mismo proyecto con papeles complementarios: el local es donde se trabaja y se
+  registra la historia sin depender de la red; el remoto es donde esa historia queda
+  respaldada, se comparte con el equipo y dispara las verificaciones automáticas.
+</p>
+
+<p>
+  Entender que <code>git commit</code> no sube nada, y que hasta <code>git push</code>
+  el trabajo vive en un solo disco, es lo que evita la pérdida más común y más evitable
+  de un proyecto.
+</p>

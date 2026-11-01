@@ -1,0 +1,269 @@
+<!-- GA7-220501096-AA1-EV01 · Informe técnico de plan de trabajo -->
+<header class="portada">
+  <h1>Informe Técnico: Plan de Trabajo para la Construcción del Software</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este informe especifica las herramientas y tecnologías de versionamiento que se
+  emplean en la construcción de <strong>MONK GRAIN</strong>, una plataforma de compra y
+  venta de café pergamino seco en Colombia que conecta a caficultores, fincas y
+  cooperativas con compradores por volumen —trilladoras, exportadoras y tostadoras—.
+</p>
+
+<p>
+  La selección no es un ejercicio teórico: las herramientas que aquí se describen son
+  las que el proyecto usa hoy, sobre un repositorio con 13 versiones registradas y una
+  canalización de integración continua de tres trabajos. Donde una decisión se tomó por
+  una razón concreta del proyecto, esa razón queda escrita, porque un plan de trabajo
+  que solo enumera herramientas no explica por qué esas y no otras.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Especificar las herramientas y tecnologías de versionamiento que se utilizarán en la
+  construcción del software, de acuerdo con las características del proyecto MONK GRAIN:
+  su tamaño, la cantidad de lenguajes que coexisten, la necesidad de reproducir el
+  entorno en cualquier equipo y la exigencia de poder volver atrás sin perder trabajo.
+</p>
+
+<h2>3. Características del software que condicionan la elección</h2>
+
+<p>
+  Las herramientas se eligen por lo que el software es, no al revés. Estas son las
+  características que pesaron en la decisión:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Característica</th><th>Medida</th><th>Qué exige del versionamiento</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dos lenguajes en un mismo repositorio</td>
+      <td>99 archivos Python · 83 TypeScript</td>
+      <td>Una herramienta agnóstica del lenguaje, que no imponga un ecosistema</td>
+    </tr>
+    <tr>
+      <td>Base de datos con esquema versionado</td>
+      <td>54 tablas · 7 migraciones</td>
+      <td>Las migraciones viajan con el código: el esquema es parte de la versión</td>
+    </tr>
+    <tr>
+      <td>Suite de pruebas amplia</td>
+      <td>453 pruebas de backend · 41 de frontend</td>
+      <td>Verificación automática en cada cambio, no a mano</td>
+    </tr>
+    <tr>
+      <td>Entorno reproducible</td>
+      <td>6 servicios en contenedores</td>
+      <td>La definición del entorno se versiona junto al código</td>
+    </tr>
+    <tr>
+      <td>Trabajo por fases largas</td>
+      <td>13 versiones registradas</td>
+      <td>Ramas para aislar el trabajo en curso de lo que ya funciona</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Herramienta de control de versiones: Git</h2>
+
+<p>
+  Se selecciona <strong>Git</strong> como sistema de control de versiones. Las razones,
+  en orden de peso para este proyecto:
+</p>
+
+<h3>4.1 Es distribuido</h3>
+
+<p>
+  Cada copia del repositorio contiene el historial completo. En un proyecto formativo
+  que se trabaja desde un equipo personal y sin conexión permanente, poder registrar
+  versiones, consultar el historial y crear ramas sin servidor es determinante. Un
+  sistema centralizado como Subversion exigiría estar conectado para cada operación.
+</p>
+
+<h3>4.2 Es agnóstico del lenguaje</h3>
+
+<p>
+  MONK GRAIN combina Python, TypeScript, SQL, HTML y archivos de configuración en un
+  mismo árbol. Git versiona archivos, no proyectos de un lenguaje concreto, de modo que
+  una sola herramienta cubre todo el repositorio.
+</p>
+
+<h3>4.3 Las ramas son baratas</h3>
+
+<p>
+  Crear una rama en Git es escribir un archivo con un identificador, no copiar el
+  proyecto. Eso permite aislar un trabajo largo sin bloquear lo que ya funciona. En este
+  proyecto se usa ahora mismo: la rama <code>main</code> conserva la última versión
+  estable y <code>correcciones-auditoria</code> contiene las correcciones en revisión.
+</p>
+
+<pre class="salida">$ git branch
+  correcciones-auditoria
+* main
+
+$ git log --oneline -3
+e02eed6 El porcentaje de la comisión, con su espacio
+360ea1d Auditoría del estado y corrección de sus hallazgos
+00db999 Rastros del producto anterior en la interfaz</pre>
+
+<h3>4.4 Permite volver atrás con precisión</h3>
+
+<p>
+  Cada versión registra qué cambió, quién lo hizo y cuándo. Ante un error introducido,
+  <code>git revert</code> deshace un cambio concreto sin borrar el historial, y
+  <code>git bisect</code> localiza en qué versión apareció un defecto buscando por
+  bisección en lugar de revisando una por una.
+</p>
+
+<h2>5. Plataforma de alojamiento remoto: GitHub</h2>
+
+<p>
+  Git resuelve el versionamiento local. El respaldo fuera del equipo y la entrega al
+  instructor necesitan además un alojamiento remoto. Se selecciona
+  <strong>GitHub</strong>:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Criterio</th><th>Razón de la elección</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Respaldo fuera del equipo</td>
+      <td>El historial deja de depender de un solo disco. Sin remoto, un fallo del equipo borra el proyecto completo y su historia</td>
+    </tr>
+    <tr>
+      <td>Entrega de las evidencias</td>
+      <td>Las guías GA7 y GA8 exigen el enlace del repositorio en cada evidencia; una URL pública lo resuelve</td>
+    </tr>
+    <tr>
+      <td>Integración continua incluida</td>
+      <td>GitHub Actions ejecuta las pruebas en cada envío sin contratar otro servicio</td>
+    </tr>
+    <tr>
+      <td>Revisión por diferencias</td>
+      <td>Las <em>pull requests</em> muestran el cambio línea a línea antes de integrarlo</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Herramientas complementarias del flujo de versionamiento</h2>
+
+<h3>6.1 Integración continua: GitHub Actions</h3>
+
+<p>
+  El archivo <code>.github/workflows/ci.yml</code> define tres trabajos que se ejecutan
+  en cada envío a <code>main</code> o <code>develop</code> y en cada <em>pull
+  request</em>:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Trabajo</th><th>Qué verifica</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Backend</strong></td>
+      <td>Linting y formato (<code>ruff</code>), verificación de tipos (<code>mypy</code>), aplicación de migraciones, comprobación de que no falten migraciones (<code>alembic check</code>) y pruebas con cobertura</td>
+    </tr>
+    <tr>
+      <td><strong>Frontend</strong></td>
+      <td>Verificación de tipos (<code>tsc</code>), linting (<code>eslint</code>), formato, pruebas y compilación de producción</td>
+    </tr>
+    <tr>
+      <td><strong>Docker</strong></td>
+      <td>Que las imágenes de producción se construyan</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  La verificación de que no falten migraciones merece mención aparte: detecta el olvido
+  más común del proyecto —cambiar un modelo sin generar la migración correspondiente—,
+  que de otro modo solo aparecería al desplegar.
+</p>
+
+<h3>6.2 Reproducibilidad del entorno: Docker y archivos de versiones fijas</h3>
+
+<p>
+  Versionar el código no basta si cada equipo instala versiones distintas de las
+  librerías. El proyecto versiona también la definición del entorno:
+</p>
+
+<ul>
+  <li><code>docker-compose.yml</code> y los <code>Dockerfile</code>, que describen los seis servicios.</li>
+  <li><code>backend/requirements.lock</code>, con las 78 versiones exactas de Python, incluidas las transitivas.</li>
+  <li><code>web/package-lock.json</code>, con el equivalente para Node.</li>
+</ul>
+
+<div class="nota">
+  <p>
+    <strong>Por qué los archivos de versiones fijas.</strong> Las dependencias estaban
+    declaradas solo con <code>&gt;=</code>, y una reconstrucción de la imagen trajo
+    versiones mayores nuevas sin avisar: SQLAlchemy 2.1 cambió la firma de
+    <code>select()</code> y rompió la verificación de tipos de nueve archivos a la vez.
+    Fijar las versiones hace que el entorno se reproduzca igual hoy y dentro de seis
+    meses.
+  </p>
+</div>
+
+<h3>6.3 Convención de mensajes de versión</h3>
+
+<p>
+  Un historial solo sirve si se puede leer. Los mensajes de este proyecto siguen una
+  convención: una primera línea corta que dice <em>qué cambió</em> en lenguaje llano, y
+  un cuerpo que explica <em>por qué</em>. El detalle está en la evidencia AA1-EV02.
+</p>
+
+<h2>7. Flujo de trabajo adoptado</h2>
+
+<ol>
+  <li><strong>Rama por trabajo.</strong> Cada fase o corrección se desarrolla en su propia rama, nunca directamente sobre <code>main</code>.</li>
+  <li><strong>Versiones pequeñas y con sentido.</strong> Un cambio por versión, con su mensaje explicando el motivo.</li>
+  <li><strong>Verificación antes de integrar.</strong> La canalización debe pasar en verde: linting, tipos, migraciones y pruebas.</li>
+  <li><strong>Integración a <code>main</code>.</strong> Solo cuando la rama está verificada.</li>
+  <li><strong>Envío al remoto.</strong> Tras cada integración, para que el respaldo no se retrase.</li>
+</ol>
+
+<h2>8. Resumen de la selección</h2>
+
+<table>
+  <thead>
+    <tr><th>Necesidad</th><th>Herramienta</th><th>Versión / referencia</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Control de versiones local</td><td>Git</td><td>2.x</td></tr>
+    <tr><td>Alojamiento remoto</td><td>GitHub</td><td>github.com</td></tr>
+    <tr><td>Integración continua</td><td>GitHub Actions</td><td><code>.github/workflows/ci.yml</code></td></tr>
+    <tr><td>Reproducibilidad del entorno</td><td>Docker y Docker Compose</td><td><code>docker-compose.yml</code></td></tr>
+    <tr><td>Versiones fijas de Python</td><td>Archivo de restricciones de pip</td><td><code>backend/requirements.lock</code></td></tr>
+    <tr><td>Versiones fijas de Node</td><td>npm</td><td><code>web/package-lock.json</code></td></tr>
+    <tr><td>Calidad verificada en cada envío</td><td>ruff · mypy · eslint · tsc · pytest · vitest</td><td>Configurados en la canalización</td></tr>
+  </tbody>
+</table>
+
+<h2>9. Conclusión</h2>
+
+<p>
+  Las herramientas seleccionadas responden a las características concretas de MONK
+  GRAIN: Git por ser distribuido y agnóstico del lenguaje, en un repositorio donde
+  conviven Python y TypeScript; GitHub por el respaldo fuera del equipo y la entrega de
+  las evidencias; GitHub Actions por verificar cada cambio sin intervención manual; y
+  Docker junto a los archivos de versiones fijas porque versionar el código sin
+  versionar el entorno deja el proyecto a merced de lo que cada equipo tenga instalado.
+</p>
+
+<p>
+  El conjunto ya está en funcionamiento sobre el repositorio del proyecto, y es el que
+  sostiene las evidencias siguientes de esta guía.
+</p>

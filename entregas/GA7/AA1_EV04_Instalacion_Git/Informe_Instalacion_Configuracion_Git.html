@@ -1,0 +1,291 @@
+<!-- GA7-220501096-AA1-EV04 · Instalación y configuración de la herramienta -->
+<header class="portada">
+  <h1>Informe Técnico: Instalación y Configuración de Git Local y Remoto</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este documento registra, paso a paso, la instalación y configuración del control de
+  versiones empleado en el proyecto <strong>MONK GRAIN</strong>: Git en el equipo local
+  y su vinculación con GitHub como repositorio remoto.
+</p>
+
+<p>
+  Los comandos y las salidas que aparecen son los del equipo real donde se desarrolla el
+  proyecto, no ejemplos de manual. El entorno es <strong>Linux Mint 22.3</strong>, de
+  modo que la instalación usa <code>apt</code>; al final se indican los equivalentes
+  para Windows y macOS.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Instalar y configurar la herramienta de control de versiones en sus dos ámbitos —local
+  y web— dejando constancia de cada paso, de modo que el procedimiento pueda repetirse
+  en otro equipo y el entorno quede verificado antes de empezar a versionar el proyecto.
+</p>
+
+<h2>3. Entorno de trabajo</h2>
+
+<table>
+  <thead>
+    <tr><th>Componente</th><th>Versión</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Sistema operativo</td><td>Linux Mint 22.3</td></tr>
+    <tr><td>Núcleo</td><td>Linux 7.0.0-42-generic</td></tr>
+    <tr><td>Git</td><td>2.43.0</td></tr>
+    <tr><td>GitHub CLI</td><td>2.45.0</td></tr>
+    <tr><td>Servicio remoto</td><td>github.com</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Paso 1 — Instalación de Git</h2>
+
+<p>Se actualiza el índice de paquetes y se instala Git:</p>
+
+<pre class="salida">$ sudo apt update
+$ sudo apt install git</pre>
+
+<p>Se comprueba que quedó instalado consultando su versión:</p>
+
+<pre class="salida">$ git --version
+git version 2.43.0</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 1 — Instalación de Git</span>
+  Terminal mostrando <code>sudo apt install git</code> y la salida de
+  <code>git --version</code>
+</div>
+
+<h2>5. Paso 2 — Configuración de la identidad</h2>
+
+<p>
+  Git firma cada versión con un nombre y un correo. Sin ellos se niega a registrar la
+  primera versión, y con ellos mal puestos el historial atribuye el trabajo a quien no
+  es. Se configuran de forma global, para todos los repositorios del equipo:
+</p>
+
+<pre class="salida">$ git config --global user.name "Eliana Chacon"
+$ git config --global user.email "juanmo1082@hotmail.com"</pre>
+
+<p>
+  Se configura además que la rama inicial se llame <code>main</code>. Es el nombre que
+  usan hoy GitHub y GitLab por defecto, y evita la incoherencia de tener repositorios
+  con <code>master</code> y otros con <code>main</code>:
+</p>
+
+<pre class="salida">$ git config --global init.defaultBranch main</pre>
+
+<p>Se verifica la configuración:</p>
+
+<pre class="salida">$ git config --global --list
+user.name=Eliana Chacon
+user.email=juanmo1082@hotmail.com
+init.defaultbranch=main</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 2 — Identidad configurada</span>
+  Terminal mostrando los tres comandos <code>git config</code> y la salida de
+  <code>git config --global --list</code>
+</div>
+
+<h2>6. Paso 3 — Creación del repositorio local</h2>
+
+<p>Dentro de la carpeta del proyecto se inicializa el repositorio:</p>
+
+<pre class="salida">$ cd ~/Desktop/ANALISIS\ Y\ DESARROLLO\ DE\ SOFTWARE/MONK-GRAIN-APP
+$ git init
+Initialized empty Git repository in .../MONK-GRAIN-APP/.git/</pre>
+
+<p>
+  Antes de registrar nada se define qué <strong>no</strong> debe versionarse, en el
+  archivo <code>.gitignore</code>. Es un paso que conviene hacer primero: una vez que un
+  archivo entra en el historial, sacarlo exige reescribirlo.
+</p>
+
+<pre class="salida"># Entorno
+.env
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/</pre>
+
+<div class="nota">
+  <p>
+    <strong>Por qué <code>.env</code> queda excluido y <code>.env.example</code> no.</strong>
+    El primero contiene las claves reales del entorno —contraseña de la base de datos,
+    clave de firma de los tokens, clave de cifrado— y no debe salir del equipo. El
+    segundo tiene las mismas variables con valores de ejemplo, y sirve para que
+    cualquiera sepa qué configurar.
+  </p>
+</div>
+
+<p>Se comprueba el estado y se registra la primera versión:</p>
+
+<pre class="salida">$ git status
+$ git add .
+$ git commit -m "Línea base del proyecto"</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 3 — Repositorio local inicializado</span>
+  Terminal mostrando <code>git init</code>, <code>git status</code> y la primera versión
+  registrada con <code>git commit</code>
+</div>
+
+<h2>7. Paso 4 — Instalación del cliente de GitHub</h2>
+
+<p>
+  Para crear y vincular el repositorio remoto desde la terminal se instala la
+  herramienta oficial de GitHub:
+</p>
+
+<pre class="salida">$ sudo apt install gh
+$ gh --version
+gh version 2.45.0</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 4 — GitHub CLI instalado</span>
+  Terminal mostrando la instalación y la salida de <code>gh --version</code>
+</div>
+
+<h2>8. Paso 5 — Autenticación con el servicio remoto</h2>
+
+<p>
+  Se inicia la autenticación. El asistente pregunta el servicio
+  (<em>GitHub.com</em>), el protocolo (<em>HTTPS</em>) y el método; al elegir el
+  navegador, muestra un código de un solo uso que se introduce en la página que abre:
+</p>
+
+<pre class="salida">$ gh auth login
+? What account do you want to log into?  GitHub.com
+? What is your preferred protocol for Git operations?  HTTPS
+? Authenticate Git with your GitHub credentials?  Yes
+? How would you like to authenticate GitHub CLI?  Login with a web browser
+
+! First copy your one-time code: XXXX-XXXX
+- Press Enter to open github.com in your browser...
+✓ Authentication complete.</pre>
+
+<p>Se verifica que la sesión quedó establecida:</p>
+
+<pre class="salida">$ gh auth status
+github.com
+  ✓ Logged in to github.com account monjejuan448-ux (keyring)
+  - Active account: true
+  - Git operations protocol: https
+  - Token scopes: 'gist', 'read:org', 'repo', 'workflow'</pre>
+
+<p>
+  El permiso <code>repo</code> es el que permite crear repositorios y enviar cambios;
+  <code>workflow</code>, el que permite que el archivo de integración continua viaje con
+  el código.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 5 — Autenticación completada</span>
+  Terminal mostrando el proceso de <code>gh auth login</code> y la salida de
+  <code>gh auth status</code>
+</div>
+
+<h2>9. Paso 6 — Creación del repositorio remoto y vinculación</h2>
+
+<p>Se crea el repositorio en GitHub y se vincula con el local en un solo comando:</p>
+
+<pre class="salida">$ gh repo create MONK-GRAIN-APP --public --source=. --remote=origin</pre>
+
+<p>Se comprueba que el remoto quedó asociado:</p>
+
+<pre class="salida">$ git remote -v
+origin  https://github.com/monjejuan448-ux/MONK-GRAIN-APP.git (fetch)
+origin  https://github.com/monjejuan448-ux/MONK-GRAIN-APP.git (push)</pre>
+
+<p>Y se envía el historial completo:</p>
+
+<pre class="salida">$ git push -u origin main</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 6 — Repositorio remoto creado y vinculado</span>
+  Terminal mostrando <code>gh repo create</code>, <code>git remote -v</code> y
+  <code>git push</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 7 — El repositorio en GitHub</span>
+  Navegador mostrando el repositorio publicado, con sus archivos y el historial de
+  versiones visible
+</div>
+
+<h2>10. Equivalencias para otros sistemas operativos</h2>
+
+<p>
+  Los pasos 2 a 6 son idénticos en cualquier sistema: lo único que cambia es cómo se
+  instalan Git y el cliente de GitHub.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Sistema</th><th>Instalación de Git</th><th>Instalación de GitHub CLI</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Linux (Debian, Ubuntu, Mint)</td>
+      <td><code>sudo apt install git</code></td>
+      <td><code>sudo apt install gh</code></td>
+    </tr>
+    <tr>
+      <td>Windows</td>
+      <td>Instalador de <em>Git for Windows</em> desde git-scm.com</td>
+      <td><code>winget install GitHub.cli</code></td>
+    </tr>
+    <tr>
+      <td>macOS</td>
+      <td><code>brew install git</code></td>
+      <td><code>brew install gh</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>11. Verificación final del entorno</h2>
+
+<p>Con estos cuatro comandos se comprueba que todo quedó operativo:</p>
+
+<table>
+  <thead>
+    <tr><th>Comando</th><th>Qué confirma</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>git --version</code></td><td>Git está instalado</td></tr>
+    <tr><td><code>git config --global --list</code></td><td>La identidad está configurada</td></tr>
+    <tr><td><code>gh auth status</code></td><td>Hay sesión activa contra GitHub</td></tr>
+    <tr><td><code>git remote -v</code></td><td>El repositorio local está vinculado al remoto</td></tr>
+  </tbody>
+</table>
+
+<h2>12. Conclusión</h2>
+
+<p>
+  El entorno de versionamiento queda instalado y configurado en sus dos ámbitos: Git
+  2.43 en el equipo, con la identidad del aprendiz y <code>main</code> como rama
+  inicial, y GitHub como repositorio remoto vinculado mediante GitHub CLI 2.45 con
+  autenticación por navegador.
+</p>
+
+<p>
+  El orden importa y por eso se documenta así: definir <code>.gitignore</code>
+  <em>antes</em> de la primera versión evita que las claves del entorno entren en un
+  historial del que después cuesta sacarlas.
+</p>
