@@ -424,9 +424,23 @@ docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
   < entregas/GA7/AA2_EV01_Modulo_JDBC/catalogo-pergamino/src/main/resources/esquema.sql
 ```
 
-### Lo que está bloqueado
+### Repositorios
 
-- **El repositorio remoto del proyecto no se ha podido crear**: la acción quedó bloqueada por el control de permisos del asistente. Casi todas las evidencias piden el enlace del repositorio, así que conviene resolverlo pronto. El repositorio del ejercicio AA1-EV05 sí está publicado: <https://github.com/monjejuan448-ux/Programa-Git>.
+- **Proyecto:** <https://github.com/monjejuan448-ux/MONK-GRAIN-APP> — público, con `main` y `correcciones-auditoria`, y la [PR #1](https://github.com/monjejuan448-ux/MONK-GRAIN-APP/pull/1) abierta para revisión.
+- **Ejercicio AA1-EV05:** <https://github.com/monjejuan448-ux/Programa-Git>
+
+### El CI, ejecutado por fin
+
+Estaba escrito desde el principio y **nunca se había ejecutado**. Al publicar el repositorio falló tres veces seguidas, cada una por un motivo distinto, y todas las causas eran reales:
+
+1. **Faltaba el almacenamiento de objetos.** El flujo declaraba postgres y redis, pero no dónde guardar archivos: las dos pruebas que suben una foto de evidencia fallaban con `EndpointConnectionError`.
+2. **El lockfile del frontend solo servía para Alpine.** Se generó en el contenedor de desarrollo, que es musl, y los ejecutores de GitHub son glibc: `npm ci` no encontraba `@rollup/rollup-linux-x64-gnu`. Ahora las dos variantes se declaran como `optionalDependencies`.
+3. **MinIO ya no se puede descargar sin credenciales**, ni de Docker Hub ni de quay.io. Se usa `adobe/s3mock`, que implementa la misma API y está pensado para pruebas.
+
+**Verde desde la cuarta vuelta**: 453 pruebas de backend, 41 de frontend, imágenes de producción construidas y escaneo de secretos sin hallazgos.
+
+### Nota sobre Java en GA7
+
 - **AA2 y AA3 de GA7 exigen Java**, que este proyecto no tiene. Se construirán módulos nuevos sobre el dominio del pergamino, reutilizando la arquitectura de la línea Java previa (paquete `co.monkgrain.*`, separación `modelo / dao / servicio / util`) pero no su modelo de datos, que es el de exportación por quintal y quedó obsoleto con el pivote.
 
 ---
