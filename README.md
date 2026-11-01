@@ -374,6 +374,19 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 
 **Estado: 7 de 23 construidas.** GA7-AA1 y GA7-AA2, completas.
 
+### ⚠️ Pendientes que solo puede hacer el aprendiz
+
+Estas cuatro cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
+
+| Qué | Dónde | Detalle |
+|---|---|---|
+| **7 capturas de pantalla** | AA1-EV04 | Marcadas una a una en el PDF, con lo que debe verse en cada una |
+| **Grabar el video** (5–7 min) | AA1-EV05 | Guion completo en el PDF, bloque por bloque, con lo que decir en cada paso |
+| **Android Studio** | GA8 AA2-EV01 | Instalarlo, crear la primera app y capturar el proceso |
+| **Grabar el video** (10 min) | GA8 AA2-EV04 | Sobre *machine learning*. El guion se escribirá al llegar a esa evidencia |
+
+Las demás evidencias con video o captura —AA3-EV02, AA5-EV02, AA5-EV04— se irán añadiendo aquí a medida que se construyan.
+
 ### GA7 — AP7 Codificar los módulos del software
 
 | Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
