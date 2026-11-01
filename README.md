@@ -372,7 +372,7 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
 ```
 
-**Estado: 5 de 23 construidas.**
+**Estado: 6 de 23 construidas.**
 
 ### GA7 — AP7 Codificar los módulos del software
 
@@ -383,7 +383,7 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 | AA1-EV03 Git local vs remoto | — (teórico) | [`entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/`](entregas/GA7/AA1_EV03_Git_Local_vs_Remoto/) | ✅ PDF, 6 pág. | — |
 | AA1-EV04 Instalación de Git | entorno real del equipo | [`entregas/GA7/AA1_EV04_Instalacion_Git/`](entregas/GA7/AA1_EV04_Instalacion_Git/) | ✅ PDF, 7 pág. | **7 capturas de pantalla**, marcadas en el documento |
 | AA1-EV05 Git configurado | repo `Programa-Git` | [`entregas/GA7/AA1_EV05_Programa_Git/`](entregas/GA7/AA1_EV05_Programa_Git/) | ✅ ejercicio hecho y publicado · guion listo | **Grabar el video** (5-7 min), guion en el PDF |
-| AA2-EV01 Módulo JDBC | `catalogo-pergamino` (nuevo) | `entregas/GA7/AA2_EV01_Modulo_JDBC/` | ⬜ pendiente | — |
+| AA2-EV01 Módulo JDBC | **`catalogo-pergamino`** (Java 17 + JDBC + PostgreSQL) | [`entregas/GA7/AA2_EV01_Modulo_JDBC/`](entregas/GA7/AA2_EV01_Modulo_JDBC/) | ✅ PDF 10 pág. · 13 pruebas · CRUD verificado contra PostgreSQL | — |
 | AA2-EV02 Servlets y JSP | el mismo módulo, capa web | `entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/` | ⬜ pendiente | — |
 | AA3-EV01 Framework Java | `negociacion-pergamino` (Spring) | `entregas/GA7/AA3_EV01_Modulo_Framework/` | ⬜ pendiente | — |
 | AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |

@@ -1,0 +1,440 @@
+<!-- GA7-220501096-AA2-EV01 · Codificación de módulos del software -->
+<header class="portada">
+  <h1>Informe Técnico: Módulo de Catálogo de Pergamino con Acceso JDBC</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia codifica un módulo del proyecto <strong>MONK GRAIN</strong> con
+  conexión a base de datos por <strong>JDBC</strong>, implementando las cuatro
+  operaciones que pide la guía: inserción, consulta, actualización y eliminación.
+</p>
+
+<p>
+  El módulo elegido es el <strong>catálogo de lotes de café pergamino</strong>, que es
+  el corazón del producto: lo que un caficultor publica y lo que un comprador examina
+  antes de decidir. Se construye sobre los artefactos previos del proyecto —el diagrama
+  de clases, las historias de usuario y el modelo de datos— y respeta los estándares de
+  codificación definidos en la evidencia AA1-EV02.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar un módulo del software con conexión a base de datos mediante JDBC, que
+  implemente inserción, consulta, actualización y eliminación, cumpliendo los estándares
+  de nombres de variables, métodos, clases y paquetes, y versionándolo con Git.
+</p>
+
+<h2>3. El dominio: por qué el catálogo de pergamino</h2>
+
+<p>
+  El pergamino seco es el café despulpado, fermentado, lavado y secado que todavía
+  conserva la película que envuelve la almendra y <strong>no ha pasado por trilla</strong>.
+  Es el producto con el que un caficultor colombiano sale de su finca.
+</p>
+
+<p>
+  Esa distinción no es terminológica, es económica: un lote de pergamino
+  <strong>no se describe por cómo sabe en taza</strong>, sino por cuánto café exportable
+  rinde al trillarlo. De ahí que el atributo que gobierna su valor sea el
+  <strong>factor de rendimiento</strong> y no un puntaje de catación.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Factor</th><th>Lectura</th><th>Significado comercial</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>≤ 89</td><td>Excepcional</td><td>Rinde mucho más que el estándar; se paga sobreprecio</td></tr>
+    <tr><td>90 – 92</td><td>De exportación</td><td>Por debajo del estándar; apto para trilla de excelso</td></tr>
+    <tr><td>93 – 96</td><td>Estándar</td><td>El rango de la compra corriente</td></tr>
+    <tr><td>≥ 97</td><td>Bajo rendimiento</td><td>Hay que trillar más pergamino para el mismo excelso</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Menos es mejor.</strong> Es la inversión que más se presta a equivocarse al
+    programar: un factor <em>más bajo</em> debe producir una etiqueta <em>mejor</em>, y
+    el filtro del comprador acota el <strong>techo</strong> que acepta, no el mínimo. Hay
+    una prueba dedicada a fijar esa inversión.
+  </p>
+</div>
+
+<h2>4. Arquitectura del módulo</h2>
+
+<p>
+  Se aplica una separación en capas con una dirección única de dependencias, la misma
+  que rige el resto del proyecto:
+</p>
+
+<pre class="salida">MainCatalog  →  CatalogService  →  DAO  →  JDBC  →  PostgreSQL
+ (interfaz)     (reglas de          (SQL)
+                 negocio)</pre>
+
+<table>
+  <thead>
+    <tr><th>Paquete</th><th>Responsabilidad</th><th>Qué NO hace</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>model</code></td>
+      <td>Objetos de dominio y lecturas derivadas (factor, humedad, cargas)</td>
+      <td>No conoce JDBC ni pantallas</td>
+    </tr>
+    <tr>
+      <td><code>dao</code></td>
+      <td>La <strong>única</strong> capa que escribe SQL</td>
+      <td>No contiene reglas de negocio</td>
+    </tr>
+    <tr>
+      <td><code>service</code></td>
+      <td>Reglas del negocio y validación</td>
+      <td>No sabe que detrás hay SQL</td>
+    </tr>
+    <tr>
+      <td><code>util</code></td>
+      <td>Conexión y excepciones propias</td>
+      <td>No depende del dominio</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Esa división permite probar las reglas de negocio <strong>sin levantar
+  PostgreSQL</strong> —las 13 pruebas del módulo no tocan la base— y cambiar el motor o
+  pasar a un ORM sin tocar una sola regla.
+</p>
+
+<h2>5. Modelo de datos</h2>
+
+<p>
+  Dos tablas, en una base propia (<code>monkgrain_java</code>) y no la de la aplicación:
+  un módulo de aprendizaje que inserta y borra no debe tocar los datos de demostración
+  del producto.
+</p>
+
+<pre><code>CREATE TABLE pergamino_lots (
+    lot_id            SERIAL        PRIMARY KEY,
+    producer_id       INTEGER       NOT NULL,
+    lot_code          VARCHAR(60)   NOT NULL,
+    variety           VARCHAR(80),
+
+    -- Análisis físico. Todo opcional: exigirlo para publicar
+    -- dejaría fuera a la mayoría de caficultores pequeños.
+    yield_factor      NUMERIC(5,2),
+    moisture_pct      NUMERIC(4,2),
+    healthy_bean_pct  NUMERIC(5,2),
+    pasilla_pct       NUMERIC(5,2),
+    borer_damage_pct  NUMERIC(5,2),
+
+    price_per_kg      NUMERIC(14,2) NOT NULL,
+    available_kg      INTEGER       NOT NULL,
+    harvest_date      DATE,
+    published         BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_lot_producer FOREIGN KEY (producer_id)
+        REFERENCES producers (producer_id) ON DELETE RESTRICT,
+
+    CONSTRAINT uq_lot_code_per_producer UNIQUE (producer_id, lot_code),
+
+    -- Fuera del rango 80-130 no existe café comercializable.
+    CONSTRAINT ck_yield_factor_range
+        CHECK (yield_factor IS NULL OR yield_factor BETWEEN 80 AND 130),
+
+    CONSTRAINT ck_price_non_negative     CHECK (price_per_kg >= 0),
+    CONSTRAINT ck_available_non_negative CHECK (available_kg >= 0)
+);</code></pre>
+
+<h3>5.1 Decisiones del modelo y su motivo</h3>
+
+<table>
+  <thead>
+    <tr><th>Decisión</th><th>Por qué</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>NUMERIC</code> y nunca <code>FLOAT</code> para precios</td>
+      <td>En coma flotante, 0,1 + 0,2 no es 0,3. Sobre una carga de 125 kg ese error se vuelve dinero real</td>
+    </tr>
+    <tr>
+      <td>Todo el análisis físico es opcional</td>
+      <td>Exigirlo para poder publicar dejaría fuera a la mayoría de caficultores pequeños, que no han mandado su café a un laboratorio</td>
+    </tr>
+    <tr>
+      <td><code>CHECK</code> en la base, no solo en Java</td>
+      <td>La regla se cumple venga la escritura de donde venga, incluso desde una consola SQL</td>
+    </tr>
+    <tr>
+      <td><code>UNIQUE (producer_id, lot_code)</code></td>
+      <td>El código identifica el lote dentro de la finca; repetirlo haría ambigua cualquier reclamación</td>
+    </tr>
+    <tr>
+      <td><code>ON DELETE RESTRICT</code></td>
+      <td>Borrar un vendedor con lotes publicados dejaría lotes huérfanos</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Las cuatro operaciones</h2>
+
+<h3>6.1 Inserción</h3>
+
+<p>
+  Con <code>PreparedStatement</code> y parámetros, nunca concatenación de cadenas.
+  <code>RETURN_GENERATED_KEYS</code> evita la consulta adicional que haría falta para
+  averiguar el identificador recién creado:
+</p>
+
+<pre><code>public int insert(PergaminoLot lot) {
+    try (Connection connection = DatabaseConnection.open();
+         PreparedStatement statement =
+                 connection.prepareStatement(INSERT_SQL, Statement.RETURN_GENERATED_KEYS)) {
+
+        statement.setInt(1, lot.getProducerId());
+        statement.setString(2, lot.getLotCode());
+        setDecimal(statement, 4, lot.getYieldFactor());
+        statement.setBigDecimal(9, lot.getPricePerKg());
+        statement.setInt(10, lot.getAvailableKg());
+        statement.executeUpdate();
+
+        try (ResultSet keys = statement.getGeneratedKeys()) {
+            if (keys.next()) {
+                int id = keys.getInt(1);
+                lot.setLotId(id);
+                return id;
+            }
+        }
+        throw new DataAccessException("La base de datos no devolvió el identificador generado.");
+
+    } catch (SQLException e) {
+        throw new DataAccessException(
+                "No fue posible registrar el lote " + lot.getLotCode() + ".", e);
+    }
+}</code></pre>
+
+<h3>6.2 Consulta con filtro</h3>
+
+<p>
+  El filtro del catálogo acota el factor por su <strong>máximo</strong>. El mismo
+  parámetro viaja dos veces —una para el <code>IS NULL</code> que desactiva el filtro y
+  otra para la comparación—, de modo que una sola consulta sirve con filtro y sin él:
+</p>
+
+<pre><code>SELECT ... FROM pergamino_lots
+WHERE published = TRUE AND available_kg &gt; 0
+  AND (? IS NULL OR yield_factor &lt;= ?)
+ORDER BY yield_factor ASC NULLS LAST, price_per_kg ASC</code></pre>
+
+<p>
+  El orden es ascendente porque menos es mejor, y los lotes sin factor declarado quedan
+  al final: un lote que no declara nada no puede afirmar que cumple nada.
+</p>
+
+<h3>6.3 Actualización</h3>
+
+<p>
+  No se permite cambiar el productor ni el código del lote: son su identidad comercial, y
+  moverlos dejaría sin sentido las reclamaciones ya presentadas contra él. El método
+  devuelve si la fila existía:
+</p>
+
+<pre><code>public boolean update(PergaminoLot lot) {
+    try (Connection connection = DatabaseConnection.open();
+         PreparedStatement statement = connection.prepareStatement(UPDATE_SQL)) {
+        ...
+        return statement.executeUpdate() &gt; 0;
+    } catch (SQLException e) {
+        throw new DataAccessException(
+                "No fue posible actualizar el lote " + lot.getLotId() + ".", e);
+    }
+}</code></pre>
+
+<h3>6.4 Eliminación</h3>
+
+<pre><code>public boolean delete(int lotId) {
+    try (Connection connection = DatabaseConnection.open();
+         PreparedStatement statement = connection.prepareStatement(DELETE_SQL)) {
+
+        statement.setInt(1, lotId);
+        return statement.executeUpdate() &gt; 0;
+
+    } catch (SQLException e) {
+        throw new DataAccessException("No fue posible eliminar el lote " + lotId + ".", e);
+    }
+}</code></pre>
+
+<h2>7. Prácticas de JDBC aplicadas</h2>
+
+<table>
+  <thead>
+    <tr><th>Práctica</th><th>Por qué</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>PreparedStatement</code> con parámetros, <strong>siempre</strong></td>
+      <td>Concatenar la entrada del usuario dentro del SQL es exactamente lo que permite una inyección, y basta con que se olvide una vez</td>
+    </tr>
+    <tr>
+      <td><code>try-with-resources</code> en cada operación</td>
+      <td>Cierra conexión y sentencia aunque haya excepción. Una conexión que se queda abierta agota el cupo del servidor y el fallo aparece después, en una operación que no tiene la culpa</td>
+    </tr>
+    <tr>
+      <td><code>setNull</code> con el tipo explícito</td>
+      <td><code>setBigDecimal(null)</code> funciona en PostgreSQL pero no en todos los controladores</td>
+    </tr>
+    <tr>
+      <td>Excepciones propias que envuelven <code>SQLException</code></td>
+      <td>Las capas superiores no tienen que declararla en cada firma; y se conserva siempre la causa original, sin la cual depurar es adivinar</td>
+    </tr>
+    <tr>
+      <td><code>Optional</code> en vez de <code>null</code></td>
+      <td>Obliga a decidir qué hacer cuando no existe, en vez de dejar que aparezca un <code>NullPointerException</code> tres capas más arriba</td>
+    </tr>
+    <tr>
+      <td>Credenciales fuera del código</td>
+      <td>Una credencial dentro de una clase viaja al repositorio y no se cambia sin recompilar</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>8. Estándares de codificación aplicados</h2>
+
+<p>Los definidos en AA1-EV02, en su equivalencia para Java:</p>
+
+<table>
+  <thead>
+    <tr><th>Elemento</th><th>Convención</th><th>Ejemplo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Paquetes</td><td>minúsculas, dominio invertido</td><td><code>co.monkgrain.catalog.dao</code></td></tr>
+    <tr><td>Clases</td><td><code>PascalCase</code></td><td><code>PergaminoLotDao</code></td></tr>
+    <tr><td>Métodos y variables</td><td><code>camelCase</code>, verbo primero</td><td><code>findPublished()</code></td></tr>
+    <tr><td>Constantes</td><td><code>SCREAMING_SNAKE_CASE</code></td><td><code>KILOS_PER_CARGA</code></td></tr>
+    <tr><td>Tablas y columnas</td><td><code>snake_case</code>, tabla en plural</td><td><code>pergamino_lots</code></td></tr>
+    <tr><td>Idioma</td><td>código en inglés, comentarios en español</td><td><code>getYieldFactorLabel()</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los comentarios explican <strong>el porqué, no el qué</strong>. El código ya dice qué
+  hace; lo que no puede decir es qué alternativa se descartó y por qué razón.
+</p>
+
+<h2>9. Ejecución verificada</h2>
+
+<p>Compilación y pruebas:</p>
+
+<pre class="salida">$ mvn clean package
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Building jar: target/catalogo-pergamino.jar
+[INFO] Building jar: target/catalogo-pergamino-jar-with-dependencies.jar
+[INFO] BUILD SUCCESS</pre>
+
+<p>Ejecución del CRUD completo contra PostgreSQL:</p>
+
+<pre class="salida">$ java -jar target/catalogo-pergamino-jar-with-dependencies.jar
+
+ MONK GRAIN — Catálogo de pergamino (JDBC)
+Base de datos: jdbc:postgresql://localhost:5432/monkgrain_java
+
+ 1. INSERCIÓN — registrar el vendedor
+Vendedor registrado: [1] Finca El Mirador — Pitalito, Huila
+
+ 2. INSERCIÓN — publicar lotes de pergamino
+Lote registrado: [1] MIR-2026-001 — factor 88.50 (Excepcional) — 1250 kg (10 cargas) a 24500.00/kg
+  Lectura del factor : Excepcional
+  Humedad en rango   : sí
+  Valor del lote     : 30625000.00
+Lote registrado: [2] MIR-2026-002 — factor 94.00 (Estándar) — 375 kg (3 cargas) a 19800.00/kg
+Lote registrado: [3] MIR-2026-003 — factor — (Sin declarar) — 80 kg a 17200.00/kg
+  Sin análisis de laboratorio, y aun así publicable.
+
+ 3. CONSULTA — todos los lotes del vendedor
+Lotes registrados: 3
+
+ 4. CONSULTA — catálogo filtrado por factor máximo 92
+Lotes que cumplen: 1
+  [1] MIR-2026-001 — factor 88.50 (Excepcional) — 1250 kg (10 cargas) a 24500.00/kg
+
+ 5. ACTUALIZACIÓN — corregir el precio y descontar una venta
+Antes : [1] MIR-2026-001 — ... a 24500.00/kg
+Después: [1] MIR-2026-001 — ... a 25800.00/kg
+
+Venta de 2 cargas (250 kg):
+  [1] MIR-2026-001 — factor 88.50 (Excepcional) — 1000 kg (8 cargas) a 25800.00/kg</pre>
+
+<h3>9.1 Validaciones ejercidas</h3>
+
+<pre class="salida"> 6. VALIDACIONES — lo que el módulo rechaza
+  [ok] Factor de rendimiento imposible (145)
+       → El factor de rendimiento debe estar entre 80 y 130. Un valor fuera de
+         ese rango es un error de digitación, no un café excepcional.
+  [ok] Código de lote repetido
+       → Ya tienes un lote con el código MIR-2026-001.
+  [ok] Precio negativo
+       → El precio por kilogramo no puede ser negativo.
+  [ok] Humedad del 150 %
+       → La humedad debe estar entre 0 % y 100 %.
+  [ok] Vender más kilos de los que hay
+       → Solo quedan 1000 kg disponibles.</pre>
+
+<h3>9.2 Eliminación y estado final</h3>
+
+<pre class="salida"> 7. ELIMINACIÓN — retirar los lotes de la demostración
+Eliminado: MIR-2026-001
+Eliminado: MIR-2026-002
+Eliminado: MIR-2026-003
+Eliminado el vendedor 1
+
+Lotes restantes      : 0
+Vendedores restantes : 0
+El lote 1 ya no se encuentra: true</pre>
+
+<div class="nota">
+  <p>
+    <strong>La demostración es idempotente.</strong> Deja la base como la encontró, de
+    modo que puede ejecutarse las veces que haga falta sin acumular datos. Comprobado
+    ejecutándola dos veces seguidas: la base queda en 0 vendedores y 0 lotes.
+  </p>
+</div>
+
+<h2>10. Pruebas</h2>
+
+<p>
+  Trece pruebas con JUnit 5 sobre las lecturas del dominio. No tocan la base de datos a
+  propósito: son reglas del negocio y deben poder comprobarse sin levantar PostgreSQL.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Grupo</th><th>Qué fija</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Factor de rendimiento (6)</td><td>Los cuatro tramos, que un lote sin factor no afirme nada, y <strong>que menos sea mejor</strong></td></tr>
+    <tr><td>Humedad (4)</td><td>El rango seguro de 10 % a 12 %, y que sin el dato no se pueda afirmar que está en rango</td></tr>
+    <tr><td>Cantidades y valor (3)</td><td>La lectura en cargas, que por debajo de una no se convierta, y que el valor no use coma flotante</td></tr>
+  </tbody>
+</table>
+
+<h2>11. Conclusión</h2>
+
+<p>
+  El módulo <code>catalogo-pergamino</code> implementa las cuatro operaciones del CRUD
+  sobre el catálogo de lotes mediante JDBC, con separación en capas, validación en dos
+  niveles —aplicación y base de datos— y las prácticas que evitan los dos errores más
+  caros de JDBC: la inyección de SQL y las conexiones que no se cierran.
+</p>
+
+<p>
+  Se verificó en ejecución contra PostgreSQL: 13 pruebas en verde, el ciclo completo
+  recorrido y la base devuelta a su estado inicial.
+</p>

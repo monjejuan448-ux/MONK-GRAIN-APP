@@ -1,0 +1,20 @@
+GA7-220501096-AA2-EV01
+Codificación de módulos del software — módulo con acceso JDBC
+
+Repositorio del proyecto:
+[PENDIENTE — ver la nota en el README del proyecto]
+
+Repositorio del ejercicio de versionamiento (AA1-EV05):
+https://github.com/monjejuan448-ux/Programa-Git
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Módulo entregado:  catalogo-pergamino
+Ruta en el repositorio:
+  entregas/GA7/AA2_EV01_Modulo_JDBC/catalogo-pergamino/
+
+Compilar y ejecutar:
+  mvn clean package
+  java -jar target/catalogo-pergamino-jar-with-dependencies.jar
