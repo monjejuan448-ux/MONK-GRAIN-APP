@@ -5,39 +5,52 @@ description = "API del marketplace de café MONK GRAIN"
 requires-python = ">=3.12"
 license = { text = "Proprietary" }
 
+# Cada dependencia lleva techo de versión mayor. Sin él, una reconstrucción de
+# la imagen traía versiones mayores nuevas sin que nada lo anunciara: SQLAlchemy
+# 2.1 cambió la firma de `select()` y rompió el tipado de nueve archivos de una
+# vez. En los paquetes 0.x el techo va en la minor, porque ahí es donde rompen.
+#
+# El techo evita el salto silencioso; la reproducibilidad exacta la da
+# `requirements.lock`, que es el equivalente del `package-lock.json` del
+# frontend. Al subir un techo conviene reconstruir la imagen y regenerar el
+# lock en el mismo cambio.
 dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.32",
-    "pydantic>=2.9",
-    "pydantic-settings>=2.6",
-    "email-validator>=2.2",
-    "sqlalchemy>=2.0.36",
-    "alembic>=1.14",
-    "psycopg[binary]>=3.2",
-    "redis>=5.2",
-    "argon2-cffi>=23.1",
-    "pyjwt>=2.10",
-    "python-multipart>=0.0.12",
-    "boto3>=1.35",
-    "jinja2>=3.1",
-    "weasyprint>=63.0",
-    "structlog>=24.4",
-    "httpx>=0.28",
+    "fastapi>=0.115,<0.142",
+    "uvicorn[standard]>=0.32,<0.55",
+    "pydantic>=2.9,<3",
+    "pydantic-settings>=2.6,<3",
+    "email-validator>=2.2,<3",
+    "sqlalchemy>=2.0.36,<2.2",
+    "alembic>=1.14,<2",
+    "psycopg[binary]>=3.2,<4",
+    "redis>=5.2,<9",
+    "argon2-cffi>=23.1,<26",
+    "pyjwt>=2.10,<3",
+    "python-multipart>=0.0.12,<0.1",
+    "boto3>=1.35,<2",
+    "jinja2>=3.1,<4",
+    "weasyprint>=63.0,<71",
+    "structlog>=24.4,<27",
+    "httpx>=0.28,<0.29",
+    # Cifrado simétrico de los datos bancarios del vendedor (Fernet). La columna
+    # `bank_account_encrypted` existía desde el principio y los textos legales
+    # prometían el cifrado, pero no había con qué cifrar.
+    "cryptography>=44,<48",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.3",
-    "pytest-asyncio>=0.24",
-    "pytest-cov>=6.0",
-    "ruff>=0.8",
-    "mypy>=1.13",
-    "types-boto3",
-    "faker>=33.0",
+    "pytest>=8.3,<10",
+    "pytest-asyncio>=0.24,<2",
+    "pytest-cov>=6.0,<8",
+    "ruff>=0.8,<0.17",
+    "mypy>=1.13,<3",
+    "types-boto3<2",
+    "faker>=33.0,<41",
     # Solo para las pruebas: permite leer el texto del comprobante generado y
     # comprobar que lleva lo que la ley exige, en vez de dar por bueno que el
     # archivo empieza por «%PDF».
-    "pypdf>=5.1",
+    "pypdf>=5.1,<7",
 ]
 
 [build-system]

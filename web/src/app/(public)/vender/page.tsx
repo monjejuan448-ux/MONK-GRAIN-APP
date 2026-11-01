@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Award, Camera, Coffee, LineChart, Package, ShieldCheck } from "lucide-react";
 
+import { COMMISSION_LABEL } from "@/lib/business";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -122,7 +123,9 @@ export default function SellPage() {
 
           <dl className="mt-10 grid gap-8 sm:grid-cols-3">
             <div className="text-center">
-              <dt className="font-display text-3xl font-bold text-coffee">8 %</dt>
+              <dt className="font-display text-3xl font-bold text-coffee">
+                {COMMISSION_LABEL}
+              </dt>
               <dd className="mt-2 text-sm text-muted-foreground">
                 Comisión por venta. Se calcula al confirmarse el pedido y queda registrada
                 en tu liquidación.

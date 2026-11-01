@@ -1,3 +1,4 @@
+import { COMMISSION_LABEL } from "@/lib/business";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -131,7 +132,8 @@ export default function TermsPage() {
 
       <h3>Comisión</h3>
       <p>
-        MONK GRAIN cobra una comisión del <strong>8 %</strong> calculada sobre el{" "}
+        MONK GRAIN cobra una comisión del <strong>{COMMISSION_LABEL}</strong> calculada
+        sobre el{" "}
         <strong>valor de los productos</strong> de cada venta confirmada,{" "}
         <strong>sin incluir el costo de envío</strong>. Se calcula al confirmarse el pago,
         queda registrada en tu liquidación y se descuenta del monto a transferir. Por esa

@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import date
-from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
@@ -29,6 +28,7 @@ from app.schemas.dashboard import (
     ProducerDashboard,
     ProducerOrderItem,
     ProducerProductItem,
+    SettlementSummary,
 )
 from app.schemas.producer_catalog import (
     ProducerProductDetail,
@@ -94,10 +94,10 @@ def update_inventory(
 
 @router.get(
     "/settlements/summary",
-    response_model=dict[str, Decimal | int],
+    response_model=SettlementSummary,
     summary="Resumen de liquidación pendiente",
 )
-def settlement_summary(producer: ProducerUser, session: SessionDep) -> dict[str, Decimal | int]:
+def settlement_summary(producer: ProducerUser, session: SessionDep) -> SettlementSummary:
     """Ventas brutas, comisión y neto pendiente de pago (HU-PRO-11, CA2)."""
     return ProducerService(session).get_settlement_summary(producer)
 
@@ -232,7 +232,7 @@ def add_variant(
     producer: ProducerUser,
     session: SessionDep,
 ) -> ProducerProductDetail:
-    """Peso, molienda, precio y stock de una presentación concreta."""
+    """Precio por kilo, mínimo de compra y kilos disponibles de una oferta."""
     return ProducerCatalogService(session).add_variant(producer, product_id, payload)
 
 

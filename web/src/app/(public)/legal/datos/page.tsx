@@ -87,10 +87,6 @@ export default function DataPolicyPage() {
         <li>Ubicación de la finca o la sede, y capacidad de producción.</li>
         <li>Historia del productor y fotografías que decida publicar.</li>
         <li>Certificaciones con su número, vigencia y documento de respaldo.</li>
-        <li>
-          Cuenta bancaria de referencia para la liquidación, que se almacena{" "}
-          <strong>cifrada</strong>.
-        </li>
       </ul>
       <p>
         Los tres primeros datos de esta lista no son opcionales: el artículo 53 de la Ley
@@ -153,8 +149,8 @@ export default function DataPolicyPage() {
       </p>
       <p>
         <strong>La ubicación exacta de la finca no se publica nunca.</strong> Tampoco se
-        publican el número de documento, la cuenta bancaria, la dirección de
-        notificaciones, el teléfono ni el correo de quien vende. Los documentos de
+        publican el número de documento, la dirección de notificaciones, el teléfono ni el
+        correo de quien vende. Los documentos de
         certificación son privados: solo los abren su titular y el equipo de MONK GRAIN.
       </p>
       <p>

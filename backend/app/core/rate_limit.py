@@ -6,6 +6,7 @@ un contador en memoria dejaría de servir en cuanto se escale a más de un
 proceso.
 """
 
+import hashlib
 import ipaddress
 from collections.abc import Callable
 
@@ -28,20 +29,60 @@ def get_redis() -> redis.Redis:
     return _redis_client
 
 
+def _peer_is_our_proxy(request: Request) -> bool:
+    """Si quien abrió la conexión es nuestro propio proxy y no un desconocido.
+
+    Es la condición para hacer caso a las cabeceras de reenvío. Nginx vive en la
+    red interna de Docker, así que su dirección es privada; una petición que
+    llega desde una dirección pública no atravesó nuestro proxy y por tanto no
+    puede afirmar en nombre de quién viene.
+    """
+    host = request.client.host if request.client else None
+    if host is None:
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        # `TestClient` reporta `testclient`, que no es una dirección. Las
+        # pruebas ejercen el camino de detrás del proxy, así que se admite.
+        return host == "testclient"
+    return address.is_private or address.is_loopback
+
+
 def client_identifier(request: Request) -> str:
     """Identifica al cliente para contar sus peticiones.
 
-    Detrás del proxy se usa la primera dirección de `X-Forwarded-For`, que es la
-    del cliente real. Solo debe confiarse en esa cabecera cuando el proxy es
-    propio, como ocurre aquí con Nginx.
+    **Nunca se usa el primer elemento de `X-Forwarded-For`.** Nginx la compone
+    con `$proxy_add_x_forwarded_for`, que *añade* la dirección real al final de
+    lo que el cliente haya mandado: el primer elemento es un dato que escribe
+    quien hace la petición, y tomarlo como identidad permitía estrenar cupo en
+    cada intento con solo cambiar la cabecera. Se lee en este orden:
+
+    1. `X-Real-IP`, que Nginx **sobreescribe** en cada petición desde
+       `$remote_addr`. Es la única que el cliente no puede imponer.
+    2. El **último** elemento de `X-Forwarded-For`, que es el que añadió nuestro
+       proxy. Lo anterior es relato del cliente.
+    3. La dirección del par, cuando no hay proxy delante.
+
+    Las dos primeras solo se atienden si quien abrió la conexión es nuestro
+    proxy (`_peer_is_our_proxy`). Si no, cualquiera podría mandar las cabeceras
+    por su cuenta y volveríamos al punto de partida.
 
     El valor puede no ser una IP válida (un cliente de pruebas, un socket Unix):
     para el contador da igual, pero no sirve para la columna `INET`. Ese caso lo
     resuelve `client_ip`.
     """
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    if _peer_is_our_proxy(request):
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip and real_ip.strip():
+            return real_ip.strip()
+
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
+            if hops:
+                return hops[-1]
+
     return request.client.host if request.client else "unknown"
 
 
@@ -98,16 +139,19 @@ def is_internal_caller(request: Request) -> bool:
     entre todos los visitantes del sitio a la vez, y la página dejaría de cargar
     para todo el mundo.
 
-    Se reconocen por dos cosas juntas: no traen `X-Forwarded-For` —que Nginx
-    añade a todo lo que entra de fuera— y su dirección es privada. Una petición
-    externa no puede cumplir ambas en producción.
+    Se reconocen por dos cosas juntas: no traen ninguna cabecera de reenvío
+    —Nginx añade `X-Forwarded-For` y `X-Real-IP` a todo lo que entra de fuera— y
+    su dirección es privada. Una petición externa no puede cumplir ambas en
+    producción.
 
     En desarrollo no hay proxy, así que el navegador también cae aquí. Es
     aceptable: sin proxy delante, limitar por dirección no protege de nada, y el
     límite propio de cada endpoint —el de inicio de sesión, el de subidas— sigue
-    aplicándose porque no consulta esta función.
+    aplicándose porque no consulta esta función. El del inicio de sesión, además,
+    cuenta también por cuenta (`subject_rate_limit`), que no depende de la
+    dirección en absoluto.
     """
-    if request.headers.get("X-Forwarded-For"):
+    if request.headers.get("X-Forwarded-For") or request.headers.get("X-Real-IP"):
         return False
 
     host = request.client.host if request.client else None
@@ -130,3 +174,27 @@ def rate_limit(scope: str, limit: int, window_seconds: int = 60) -> Callable[[Re
             )
 
     return dependency
+
+
+def subject_rate_limit(scope: str, subject: str, limit: int, window_seconds: int = 60) -> None:
+    """Limita los intentos contra **una cuenta concreta**, sea quien los haga.
+
+    El límite por dirección protege de que un cliente ensaye miles de
+    contraseñas, pero no de que mil clientes ensayen contra la misma cuenta
+    —ni de que uno solo se reparta entre direcciones—. Contar también por cuenta
+    pone techo al ataque independientemente de desde dónde venga, y no depende de
+    ninguna cabecera que el atacante pueda escribir.
+
+    El asunto se normaliza y se cuenta su resumen, no su texto: así no quedan
+    correos de usuarios escritos en las claves de Redis.
+
+    No distingue si la cuenta existe: hacerlo convertiría el propio límite en una
+    forma de averiguar qué correos están registrados, que es justo lo que el
+    resto del módulo de autenticación evita.
+    """
+    digest = hashlib.sha256(subject.strip().casefold().encode("utf-8")).hexdigest()[:32]
+    if not consume(f"{scope}:subject", digest, limit, window_seconds):
+        raise RateLimitError(
+            "Demasiados intentos sobre esta cuenta. "
+            "Espera unos minutos antes de volver a intentarlo."
+        )

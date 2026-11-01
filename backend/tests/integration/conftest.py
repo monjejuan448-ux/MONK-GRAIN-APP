@@ -87,7 +87,16 @@ def roles(session: Session) -> dict[str, Role]:
     """Roles y permisos mínimos para ejercitar la autorización."""
     permissions = {
         code: Permission(code=code, resource=code.split(".")[0], action=code.split(".")[1])
-        for code in ("order.create", "order.view_own", "review.create", "product.create")
+        for code in (
+            "order.create",
+            "order.view_own",
+            "review.create",
+            "product.create",
+            # El administrador lo recibe en el seed real; sin él aquí, las
+            # pruebas de liquidación recibirían 403 por una diferencia de la
+            # fixture y no por la regla que pretenden ejercitar.
+            "settlement.manage",
+        )
     }
     session.add_all(permissions.values())
     session.flush()
@@ -96,7 +105,7 @@ def roles(session: Session) -> dict[str, Role]:
     for role_code, permission_codes in (
         (RoleCode.CONSUMER, ("order.create", "order.view_own", "review.create")),
         (RoleCode.PRODUCER, ("product.create",)),
-        (RoleCode.ADMIN, ()),
+        (RoleCode.ADMIN, ("settlement.manage",)),
     ):
         role = Role(code=role_code.value, name=role_code.value.title())
         session.add(role)

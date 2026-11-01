@@ -60,7 +60,7 @@ Cada decisión queda registrada con su justificación, para no repetir el proble
 graph TB
     subgraph clients["Clientes"]
         WEB["Web responsive<br/>Next.js + TypeScript"]
-        MOB["App móvil (fase 2)<br/>React Native + Expo"]
+        MOB["App móvil<br/>(retirada del alcance<br/>el 1-nov-2026)"]
     end
 
     subgraph edge["Borde"]

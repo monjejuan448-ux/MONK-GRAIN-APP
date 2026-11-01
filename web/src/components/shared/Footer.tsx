@@ -2,6 +2,14 @@ import Link from "next/link";
 
 import { Logo } from "@/components/shared/Logo";
 
+// Solo rutas que existen. Las secciones «Conocer» y «Ayuda» enlazaban a siete
+// páginas sin escribir —/blog, /trazabilidad, /sostenibilidad, /nosotros,
+// /ayuda, /contacto, /envios— y este pie sale en las 41 páginas del sitio, de
+// modo que eran siete 404 en todas. El único enlace vivo que tenían,
+// «Cambios y devoluciones», pasó a «Mi cuenta».
+//
+// Cuando esas páginas se escriban, sus enlaces vuelven aquí. Mientras no
+// existan, no anunciarlas es mejor que prometerlas.
 const FOOTER_SECTIONS = [
   {
     title: "Comprar",
@@ -21,20 +29,11 @@ const FOOTER_SECTIONS = [
     ],
   },
   {
-    title: "Conocer",
+    title: "Mi cuenta",
     links: [
-      { href: "/blog", label: "Blog" },
-      { href: "/trazabilidad", label: "Trazabilidad" },
-      { href: "/sostenibilidad", label: "Sostenibilidad" },
-      { href: "/nosotros", label: "Sobre MONK GRAIN" },
-    ],
-  },
-  {
-    title: "Ayuda",
-    links: [
-      { href: "/ayuda", label: "Centro de ayuda" },
-      { href: "/contacto", label: "Contacto" },
-      { href: "/envios", label: "Envíos y entregas" },
+      { href: "/mi-cuenta", label: "Mis pedidos" },
+      { href: "/mi-cuenta/solicitudes", label: "Mis solicitudes de compra" },
+      { href: "/mi-cuenta/devoluciones", label: "Mis devoluciones" },
       { href: "/legal/devoluciones", label: "Cambios y devoluciones" },
     ],
   },

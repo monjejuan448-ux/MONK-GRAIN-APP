@@ -96,6 +96,27 @@ class InventoryAlert(BaseModel):
     low_stock_threshold: int
 
 
+class SettlementSummary(BaseModel):
+    """Lo que la plataforma le debe al vendedor y aún no le ha pagado.
+
+    Se calcula sobre las comisiones pendientes de las sub-órdenes ya realizadas,
+    no sobre la tabla `settlements`: en el MVP no se cierran periodos ni se
+    dispersan fondos, de modo que esto es una **vista de lo acumulado**, no el
+    estado de un pago. Mientras ese cierre no exista, la cifra crece y no baja
+    nunca, y la interfaz debe decirlo con esas palabras para no prometer un
+    desembolso que todavía no ocurre.
+
+    Antes el endpoint devolvía un `dict[str, Decimal | int]` suelto, sin
+    contrato: el frontend no tenía forma de saber qué campos esperar, y de hecho
+    nunca llegó a llamarlo.
+    """
+
+    gross_amount: Decimal
+    commission_total: Decimal
+    net_amount: Decimal
+    sub_orders_count: int
+
+
 class AdminDashboard(BaseModel):
     """Panel administrativo (HU-ADM-08, CA1)."""
 

@@ -30,6 +30,7 @@ from app.schemas.dashboard import (
     ProducerOrderItem,
     ProducerProductItem,
     ProducerSalesPoint,
+    SettlementSummary,
     TopProduct,
 )
 from app.schemas.producer_catalog import (
@@ -402,12 +403,13 @@ class ProducerService:
         if product.producer_id != profile.id:
             raise ForbiddenError("Esta presentación no pertenece a tu catálogo.")
 
-        # El stock no puede quedar por debajo de lo ya reservado por pedidos en
-        # curso: esas unidades están comprometidas con compradores concretos.
+        # Las existencias no pueden quedar por debajo de lo ya reservado por
+        # pedidos en curso: esos kilos están comprometidos con compradores
+        # concretos.
         if stock_qty < inventory.reserved_qty:
             raise ForbiddenError(
-                f"No puedes dejar el stock por debajo de las {inventory.reserved_qty} "
-                "unidades reservadas por pedidos en curso."
+                f"No puedes dejar las existencias por debajo de los "
+                f"{inventory.reserved_qty} kg reservados por pedidos en curso."
             )
 
         inventory.stock_qty = stock_qty
@@ -427,7 +429,7 @@ class ProducerService:
     # ------------------------------------------------------------------
     # Liquidaciones
     # ------------------------------------------------------------------
-    def get_settlement_summary(self, user: User) -> dict[str, Decimal | int]:
+    def get_settlement_summary(self, user: User) -> SettlementSummary:
         """Resumen de lo pendiente de liquidar (HU-PRO-11, CA2)."""
         profile = self._profile(user)
 
@@ -448,12 +450,12 @@ class ProducerService:
         gross = Decimal(str(pending[0]))
         commission = Decimal(str(pending[1]))
 
-        return {
-            "gross_amount": gross,
-            "commission_total": commission,
-            "net_amount": gross - commission,
-            "sub_orders_count": int(pending[2]),
-        }
+        return SettlementSummary(
+            gross_amount=gross,
+            commission_total=commission,
+            net_amount=gross - commission,
+            sub_orders_count=int(pending[2]),
+        )
 
     # ------------------------------------------------------------------
     # Perfil comercial
