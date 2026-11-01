@@ -69,7 +69,6 @@ export default function PrivacyPage() {
           municipio y una posición aproximada, nunca las coordenadas precisas.
         </li>
         <li>El número de documento o NIT.</li>
-        <li>La cuenta bancaria, que además se almacena cifrada.</li>
         <li>
           La dirección física de notificaciones, el correo y el teléfono de contacto.
         </li>

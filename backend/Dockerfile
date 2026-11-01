@@ -24,10 +24,13 @@ WORKDIR /app
 # ------------------------------------------------------------
 FROM base AS development
 
-COPY pyproject.toml README.md alembic.ini ./
+COPY pyproject.toml README.md alembic.ini requirements.lock ./
 COPY app ./app
 COPY migrations ./migrations
-RUN pip install --upgrade pip && pip install -e ".[dev]"
+# `-c requirements.lock` fija las versiones exactas, transitivas incluidas: sin
+# él, cada reconstrucción resolvía los rangos de nuevo y podía traer versiones
+# mayores distintas de las que se probaron.
+RUN pip install --upgrade pip && pip install -c requirements.lock -e ".[dev]"
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -37,11 +40,11 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # ------------------------------------------------------------
 FROM base AS production
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md requirements.lock ./
 COPY app ./app
 COPY migrations ./migrations
 COPY alembic.ini ./
-RUN pip install --upgrade pip && pip install .
+RUN pip install --upgrade pip && pip install -c requirements.lock .
 
 RUN useradd --create-home --shell /bin/bash appuser \
     && chown -R appuser:appuser /app

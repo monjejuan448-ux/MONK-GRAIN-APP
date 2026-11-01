@@ -287,14 +287,14 @@ class TestImageHandling:
 
 
 class TestVariantManagement:
-    def test_stock_cannot_drop_below_reserved_units(
+    def test_stock_cannot_drop_below_the_reserved_kilos(
         self,
         client: TestClient,
         producer_headers: dict[str, str],
         product_variant: ProductVariant,
         session: Session,
     ) -> None:
-        """Esas unidades están comprometidas con pedidos en curso."""
+        """Esos kilos están comprometidos con pedidos en curso."""
         inventory = product_variant.inventory
         inventory.reserved_qty = 3
         session.commit()
@@ -306,7 +306,13 @@ class TestVariantManagement:
         )
 
         assert response.status_code == 422
-        assert "reservadas" in response.json()["error"]["message"]
+        # El mensaje tiene que decir cuántos kilos hay comprometidos, porque es
+        # el dato con el que el vendedor corrige lo que acaba de escribir. Se
+        # comprueba el número y la unidad, no la frase: la redacción puede
+        # cambiar, que el vendedor sepa el límite es lo que no puede perderse.
+        mensaje = response.json()["error"]["message"]
+        assert "3 kg" in mensaje
+        assert "reservad" in mensaje
 
     def test_variant_with_reservations_cannot_be_removed(
         self,

@@ -37,6 +37,105 @@ export interface ProducerOrder {
   created_at: string;
 }
 
+/** Lote del vendedor cuyas existencias bajaron del umbral que él mismo fijó. */
+export interface InventoryAlert {
+  variant_id: string;
+  product_name: string;
+  variant_label: string;
+  /** Kilos libres: descontado lo ya reservado por pedidos en curso. */
+  available_qty: number;
+  low_stock_threshold: number;
+}
+
+/**
+ * Lo acumulado que la plataforma le debe al vendedor.
+ *
+ * No es el estado de un pago: en el MVP no se cierran periodos ni se dispersan
+ * fondos, así que la cifra solo crece. La interfaz lo dice con esas palabras
+ * para no dar a entender un desembolso que todavía no existe.
+ */
+export interface SettlementSummary {
+  gross_amount: string;
+  commission_total: string;
+  net_amount: string;
+  sub_orders_count: number;
+}
+
+/** Estado de una liquidación. */
+export type SettlementStatus = "draft" | "pending_payment" | "paid" | "cancelled";
+
+export const SETTLEMENT_STATUS_META: Record<
+  SettlementStatus,
+  { label: string; variant: "default" | "outline" | "success" | "warning"; hint: string }
+> = {
+  draft: {
+    label: "Borrador",
+    variant: "outline",
+    hint: "Calculada pero todavía sin confirmar.",
+  },
+  pending_payment: {
+    label: "Por pagar",
+    variant: "warning",
+    hint: "Lista para desembolsar.",
+  },
+  paid: {
+    label: "Pagada",
+    variant: "success",
+    hint: "El dinero salió, con su referencia.",
+  },
+  cancelled: {
+    label: "Anulada",
+    variant: "outline",
+    hint: "No se pagará.",
+  },
+};
+
+/** Cuenta donde cobra el vendedor. El número nunca llega completo. */
+export interface BankAccount {
+  bank_name: string;
+  account_type: string;
+  holder_name: string;
+  masked_number: string;
+  updated_at: string | null;
+}
+
+export interface BankAccountInput {
+  bank_name: string;
+  account_type: string;
+  account_number: string;
+  holder_name: string;
+  holder_document: string;
+}
+
+export interface ProducerSettlement {
+  id: string;
+  period_start: string;
+  period_end: string;
+  gross_amount: string;
+  commission_total: string;
+  net_amount: string;
+  status: SettlementStatus;
+  paid_at: string | null;
+  payment_reference: string | null;
+  created_at: string;
+  sub_orders_count: number;
+}
+
+export interface AdminSettlement extends Omit<ProducerSettlement, "sub_orders_count"> {
+  producer_id: string;
+  producer_name: string;
+  sub_orders_count: number;
+  has_bank_account: boolean;
+}
+
+export interface ClosePeriodResult {
+  settlements_created: number;
+  producers_settled: number;
+  sub_orders_settled: number;
+  net_total: string;
+  skipped_without_bank_account: number;
+}
+
 export interface AdminDashboard {
   total_users: number;
   new_users_period: number;
@@ -77,6 +176,19 @@ export interface PageResult<T> {
 export const producerApi = {
   dashboard: (token: string) =>
     api.get<ProducerDashboard>("/producer/dashboard", { token }),
+  /** Qué lotes hay que reponer, no solo cuántos. */
+  inventoryAlerts: (token: string) =>
+    api.get<InventoryAlert[]>("/producer/inventory/alerts", { token }),
+  settlementSummary: (token: string) =>
+    api.get<SettlementSummary>("/producer/settlements/summary", { token }),
+  settlements: (token: string) =>
+    api.get<ProducerSettlement[]>("/producer/settlements", { token }),
+  bankAccount: (token: string) =>
+    api.get<BankAccount | null>("/producer/bank-account", { token }),
+  saveBankAccount: (token: string, data: BankAccountInput) =>
+    api.put<BankAccount>("/producer/bank-account", data, { token }),
+  deleteBankAccount: (token: string) =>
+    api.delete<{ message: string }>("/producer/bank-account", { token }),
   orders: (token: string, status?: string) =>
     api.get<PageResult<ProducerOrder>>("/producer/orders", {
       token,
@@ -173,6 +285,31 @@ export const adminApi = {
 
   auditLogs: (token: string) =>
     api.get<PageResult<AuditLogEntry>>("/admin/audit-logs", { token }),
+
+  settlements: (token: string, status?: SettlementStatus) =>
+    api.get<AdminSettlement[]>("/admin/settlements", {
+      token,
+      query: status ? { status } : undefined,
+    }),
+
+  closeSettlementPeriod: (token: string, periodStart: string, periodEnd: string) =>
+    api.post<ClosePeriodResult>(
+      "/admin/settlements/close",
+      { period_start: periodStart, period_end: periodEnd },
+      { token },
+    ),
+
+  paySettlement: (
+    token: string,
+    settlementId: string,
+    reference: string,
+    notes?: string,
+  ) =>
+    api.post<AdminSettlement>(
+      `/admin/settlements/${settlementId}/pay`,
+      { payment_reference: reference, notes: notes || null },
+      { token },
+    ),
 
   reviewProducer: (
     token: string,

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.permissions import CurrentUser, collect_permissions
-from app.core.rate_limit import client_ip, rate_limit
+from app.core.rate_limit import client_ip, rate_limit, subject_rate_limit
 from app.db.session import get_session
 from app.modules.auth.service import AuthService
 from app.schemas.auth import (
@@ -109,7 +109,19 @@ def resend_verification(
     ],
 )
 def login(payload: LoginRequest, request: Request, session: SessionDep) -> TokenResponse:
-    """Autentica y devuelve el par de tokens."""
+    """Autentica y devuelve el par de tokens.
+
+    Dos topes, no uno: el de la dependencia cuenta por cliente, y este cuenta por
+    cuenta. Hacen falta los dos, porque cada uno deja pasar lo que el otro para:
+    el primero no ve mil clientes ensayando contra un mismo correo; el segundo no
+    ve a un cliente recorriendo el padrón de correos.
+    """
+    subject_rate_limit(
+        "login",
+        payload.email,
+        limit=settings.rate_limit_login_per_account_per_minute,
+        window_seconds=60,
+    )
     tokens, _ = AuthService(session).login(
         email=payload.email,
         password=payload.password,

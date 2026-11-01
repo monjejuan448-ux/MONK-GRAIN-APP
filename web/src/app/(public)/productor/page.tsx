@@ -21,11 +21,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ORDER_STATUS_META,
   producerApi,
+  type InventoryAlert,
   type ProducerDashboard,
   type ProducerOrder,
+  type SettlementSummary,
 } from "@/features/dashboard/api";
 import { ApiError } from "@/lib/api";
-import { formatCurrency, formatDateShort, formatRating } from "@/lib/format";
+import { formatCurrency, formatDateShort, formatKilos, formatRating } from "@/lib/format";
 import { session } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +35,8 @@ export default function ProducerDashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<ProducerDashboard | null>(null);
   const [orders, setOrders] = useState<ProducerOrder[]>([]);
+  const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
+  const [settlement, setSettlement] = useState<SettlementSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
@@ -46,12 +50,17 @@ export default function ProducerDashboardPage() {
 
     setError(null);
     try {
-      const [dashboard, orderPage] = await Promise.all([
-        producerApi.dashboard(token),
-        producerApi.orders(token),
-      ]);
+      const [dashboard, orderPage, inventoryAlerts, settlementSummary] =
+        await Promise.all([
+          producerApi.dashboard(token),
+          producerApi.orders(token),
+          producerApi.inventoryAlerts(token),
+          producerApi.settlementSummary(token),
+        ]);
       setData(dashboard);
       setOrders(orderPage.items.slice(0, 8));
+      setAlerts(inventoryAlerts);
+      setSettlement(settlementSummary);
     } catch (requestError) {
       // El backend ya rechaza a quien no es productor; aquí solo se traduce a
       // un mensaje comprensible en lugar de un error genérico.
@@ -156,6 +165,12 @@ export default function ProducerDashboardPage() {
           >
             Devoluciones
           </Link>
+          <Link
+            href="/productor/liquidaciones"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Liquidaciones
+          </Link>
         </nav>
       </header>
 
@@ -201,13 +216,120 @@ export default function ProducerDashboardPage() {
           />
           <StatCard label="Borradores" value={data.draft_products} icon={Coffee} />
           <StatCard
-            label="Presentaciones con bajo inventario"
+            label="Lotes por reponer"
             value={data.low_stock_variants}
+            hint={
+              data.low_stock_variants > 0
+                ? "Revisa el detalle más abajo"
+                : "Todo con existencias"
+            }
             icon={AlertTriangle}
             emphasis={data.low_stock_variants > 0 ? "warning" : "default"}
           />
         </div>
       </section>
+
+      {/* ---------------- Liquidación ----------------
+          El endpoint existía, estaba probado y ningún llamador lo invocaba, de
+          modo que el vendedor no tenía dónde ver lo que se le debe. */}
+      {settlement && (
+        <section aria-labelledby="liquidacion" className="mb-10">
+          <h2 id="liquidacion" className="mb-4 font-display text-xl font-bold">
+            Liquidación pendiente
+          </h2>
+          <Card>
+            <CardContent className="pt-6">
+              <dl className="grid gap-6 sm:grid-cols-3">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Ventas acumuladas</dt>
+                  <dd className="font-display text-2xl font-bold tabular-nums">
+                    {formatCurrency(settlement.gross_amount)}
+                  </dd>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {settlement.sub_orders_count}{" "}
+                    {settlement.sub_orders_count === 1 ? "pedido" : "pedidos"} entregados
+                  </p>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Comisión de la plataforma
+                  </dt>
+                  <dd className="font-display text-2xl font-bold tabular-nums text-muted-foreground">
+                    −{formatCurrency(settlement.commission_total)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Te corresponde</dt>
+                  <dd className="font-display text-2xl font-bold tabular-nums text-primary">
+                    {formatCurrency(settlement.net_amount)}
+                  </dd>
+                </div>
+              </dl>
+              {/* Decirlo es parte del arreglo: sin cierre de periodo ni
+                  dispersión de fondos, esta cifra solo crece, y presentarla sin
+                  más daría a entender un pago en camino que no existe. */}
+              <p className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
+                <span>
+                  Liquidamos por periodos y solo lo ya entregado, pasado el plazo de
+                  retracto.
+                </span>
+                <Link
+                  href="/productor/liquidaciones"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  Ver liquidaciones
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      {/* ---------------- Lotes por reponer ---------------- */}
+      {alerts.length > 0 && (
+        <section aria-labelledby="reponer" className="mb-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 id="reponer" className="font-display text-xl font-bold">
+              Lotes por reponer
+            </h2>
+            <Link
+              href="/productor/catalogo"
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              Ir al catálogo
+            </Link>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <ul className="divide-y divide-border">
+                {alerts.map((alert) => (
+                  <li
+                    key={alert.variant_id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium">{alert.product_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {alert.variant_label}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={alert.available_qty === 0 ? "warning" : "outline"}>
+                        {alert.available_qty === 0
+                          ? "Agotado"
+                          : `${formatKilos(alert.available_qty)} libres`}
+                      </Badge>
+                      <span className="whitespace-nowrap text-sm text-muted-foreground">
+                        avisas por debajo de {formatKilos(alert.low_stock_threshold)}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         {/* ---------------- Pedidos ---------------- */}
@@ -297,8 +419,7 @@ export default function ProducerDashboardPage() {
                           {product.name}
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                          {product.units_sold}{" "}
-                          {product.units_sold === 1 ? "unidad" : "unidades"} ·{" "}
+                          {formatKilos(product.units_sold)} ·{" "}
                           {formatCurrency(product.revenue)}
                         </p>
                       </div>
