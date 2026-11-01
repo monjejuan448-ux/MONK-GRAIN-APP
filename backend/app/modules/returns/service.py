@@ -268,7 +268,7 @@ class ReturnService:
             if requested.quantity > available.returnable_qty:
                 raise BusinessRuleError(
                     f"De «{available.product_name}» solo puedes devolver "
-                    f"{available.returnable_qty} de las {available.purchased_qty} unidades: "
+                    f"{available.returnable_qty} de los {available.purchased_qty} kg: "
                     "las demás ya están en otra solicitud."
                 )
             order_item = self.session.get(OrderItem, requested.order_item_id)

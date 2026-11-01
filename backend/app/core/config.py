@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     password_min_length: int = 12
     email_verification_expire_hours: int = 24
     password_reset_expire_hours: int = 1
+    # Clave de cifrado de campos (hoy, la cuenta bancaria del vendedor). Si se
+    # deja vacía se deriva de `secret_key`, lo que basta en desarrollo pero no
+    # en producción: `secret_key` se rota con normalidad, y al rotarla los datos
+    # ya cifrados quedarían ilegibles. Se genera con:
+    #   docker compose exec backend python -c \
+    #     "from app.core.crypto import generate_key; print(generate_key())"
+    encryption_key: str = ""
 
     # ---------- CORS ----------
     # `NoDecode` impide que pydantic-settings intente interpretar el valor como
@@ -48,6 +55,11 @@ class Settings(BaseSettings):
 
     # ---------- Límite de peticiones ----------
     rate_limit_login_per_minute: int = 5
+    # Tope de intentos contra una misma cuenta, venga de donde venga. Algo más
+    # alto que el de cliente: una familia o una oficina comparten dirección de
+    # salida, y el objetivo es frenar el ensayo de contraseñas, no un par de
+    # tecleos mal dados entre varias personas.
+    rate_limit_login_per_account_per_minute: int = 10
     rate_limit_default_per_minute: int = 120
 
     # ---------- Almacenamiento ----------
@@ -71,7 +83,13 @@ class Settings(BaseSettings):
 
     # ---------- Negocio ----------
     default_currency: str = "COP"
-    default_commission_rate: Decimal = Decimal("0.08")
+    # 2,5 % sobre el valor de la venta. El 8 % anterior venía del negocio
+    # minorista de café tostado —bolsas de unos 40.000 pesos— y el pivote a
+    # pergamino no lo revisó: sobre una carga de 125 kg habrían sido entre
+    # 168.000 y 310.000 pesos de comisión, muy por encima de lo que cobra la
+    # intermediación real del grano, y el caficultor habría vendido en el punto
+    # de compra del pueblo. Decidido el 1 de noviembre de 2026.
+    default_commission_rate: Decimal = Decimal("0.025")
     default_locale: str = "es-CO"
     low_stock_threshold: int = 5
 

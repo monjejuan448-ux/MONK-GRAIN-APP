@@ -78,7 +78,9 @@ jobs:
             libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libffi8
 
       - name: Instalar el proyecto
-        run: pip install -e ".[dev]"
+        # Con las versiones exactas del lock, para que el CI valide lo mismo que
+        # corre en la imagen y no lo que resuelvan hoy los rangos.
+        run: pip install -c requirements.lock -e ".[dev]"
 
       - name: Crear las extensiones de PostgreSQL
         # El esquema usa CITEXT y unaccent; deben existir antes de migrar.

@@ -303,7 +303,7 @@ class OrderService:
         return sub_order, sub_subtotal, shipping
 
     def _reserve_stock(self, variant_id: uuid.UUID, quantity: int) -> None:
-        """Reserva unidades bloqueando la fila de inventario.
+        """Reserva kilos bloqueando la fila de inventario.
 
         `FOR UPDATE` serializa las compras concurrentes de la misma variante: sin
         él, dos checkouts simultáneos podrían leer el mismo stock y venderlo dos
@@ -320,7 +320,7 @@ class OrderService:
 
         if inventory.available_qty < quantity:
             raise InsufficientStockError(
-                f"Solo quedan {inventory.available_qty} unidades disponibles.",
+                f"Solo quedan {inventory.available_qty} kg disponibles.",
                 details={"variant_id": str(variant_id), "available": inventory.available_qty},
             )
 

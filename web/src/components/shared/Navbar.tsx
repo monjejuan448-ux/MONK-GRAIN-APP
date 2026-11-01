@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/catalogo", label: "Catálogo" },
   { href: "/productores", label: "Productores" },
-  { href: "/regiones", label: "Regiones" },
-  { href: "/blog", label: "Blog" },
+  // «Regiones» y «Blog» apuntaban a páginas sin escribir, y esta barra sale en
+  // todas las páginas: eran dos 404 en la navegación principal. El catálogo ya
+  // filtra por región, que era lo que «Regiones» prometía.
 ];
 
 export function Navbar() {

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.logging import configure_logging, get_logger
+from app.db.divipola import DEPARTMENTS, MUNICIPALITIES
 from app.db.session import SessionLocal
 from app.models.enums import RoleCode
 from app.models.geo import Department, Municipality, Region
@@ -117,124 +118,12 @@ REGIONS: list[tuple[str, str, str]] = [
     ("sierra_nevada", "Sierra Nevada", "Cafés de origen indígena, cultivados en reserva natural."),
 ]
 
-# Departamentos con producción cafetera relevante y sus municipios principales.
-# (código DANE departamento, nombre, [(código municipio, nombre, lat, lng)])
-GEOGRAPHY: list[tuple[str, str, list[tuple[str, str, float, float]]]] = [
-    (
-        "41",
-        "Huila",
-        [
-            ("41001", "Neiva", 2.9273, -75.2819),
-            ("41551", "Pitalito", 1.8539, -76.0513),
-            ("41396", "La Plata", 2.3897, -75.8919),
-            ("41006", "Acevedo", 1.8064, -75.8878),
-            ("41668", "San Agustín", 1.8808, -76.2681),
-            ("41359", "Isnos", 1.9283, -76.2153),
-            ("41615", "Rivera", 2.7772, -75.2569),
-            ("41298", "Garzón", 2.1961, -75.6278),
-        ],
-    ),
-    (
-        "52",
-        "Nariño",
-        [
-            ("52001", "Pasto", 1.2136, -77.2811),
-            ("52356", "Ipiales", 0.8256, -77.6444),
-            ("52683", "Sandoná", 1.2833, -77.4711),
-            ("52480", "Nariño", 1.2903, -77.3583),
-            ("52693", "San Lorenzo", 1.5058, -77.2178),
-            ("52254", "El Tambo", 1.4083, -77.3903),
-        ],
-    ),
-    (
-        "19",
-        "Cauca",
-        [
-            ("19001", "Popayán", 2.4448, -76.6147),
-            ("19392", "Inzá", 2.5497, -76.0625),
-            ("19548", "Piendamó", 2.6383, -76.5311),
-            ("19130", "Cajibío", 2.6222, -76.5706),
-            ("19701", "Santander de Quilichao", 3.0089, -76.4847),
-            ("19022", "Almaguer", 1.9142, -76.8547),
-        ],
-    ),
-    (
-        "73",
-        "Tolima",
-        [
-            ("73001", "Ibagué", 4.4389, -75.2322),
-            ("73449", "Melgar", 4.2044, -74.6408),
-            ("73168", "Chaparral", 3.7236, -75.4839),
-            ("73616", "Rioblanco", 3.5289, -75.6428),
-            ("73555", "Planadas", 3.1978, -75.6425),
-        ],
-    ),
-    (
-        "17",
-        "Caldas",
-        [
-            ("17001", "Manizales", 5.0689, -75.5174),
-            ("17174", "Chinchiná", 4.9822, -75.6058),
-            ("17614", "Riosucio", 5.4222, -75.7031),
-            ("17873", "Villamaría", 5.0397, -75.5100),
-            ("17380", "La Merced", 5.3944, -75.5461),
-        ],
-    ),
-    (
-        "63",
-        "Quindío",
-        [
-            ("63001", "Armenia", 4.5339, -75.6811),
-            ("63690", "Salento", 4.6378, -75.5706),
-            ("63111", "Buenavista", 4.3597, -75.7392),
-            ("63302", "Génova", 4.2064, -75.7889),
-            ("63548", "Pijao", 4.3350, -75.7036),
-        ],
-    ),
-    (
-        "66",
-        "Risaralda",
-        [
-            ("66001", "Pereira", 4.8133, -75.6961),
-            ("66682", "Santa Rosa de Cabal", 4.8697, -75.6217),
-            ("66170", "Dosquebradas", 4.8339, -75.6753),
-            ("66400", "La Virginia", 4.8994, -75.8828),
-            ("66594", "Quinchía", 5.3400, -75.7311),
-        ],
-    ),
-    (
-        "05",
-        "Antioquia",
-        [
-            ("05001", "Medellín", 6.2442, -75.5812),
-            ("05055", "Argelia", 5.7314, -75.1428),
-            ("05364", "Jericó", 5.7908, -75.7847),
-            ("05002", "Abejorral", 5.7897, -75.4286),
-            ("05659", "San Vicente", 6.2822, -75.3325),
-            ("05756", "Sonsón", 5.7147, -75.3106),
-        ],
-    ),
-    (
-        "68",
-        "Santander",
-        [
-            ("68001", "Bucaramanga", 7.1193, -73.1227),
-            ("68209", "Confines", 6.3550, -73.2394),
-            ("68755", "Socorro", 6.4636, -73.2611),
-            ("68370", "Jesús María", 6.0000, -73.7833),
-        ],
-    ),
-    (
-        "47",
-        "Magdalena",
-        [
-            ("47001", "Santa Marta", 11.2408, -74.1990),
-            ("47053", "Aracataca", 10.5919, -74.1889),
-            ("47245", "El Banco", 9.0006, -73.9756),
-            ("47660", "San Sebastián de Buenavista", 9.2394, -74.3506),
-        ],
-    ),
-]
+# La división político-administrativa completa vive en `divipola.py`: son los 33
+# departamentos y las 1.122 entidades municipales del DANE. Antes había aquí una
+# lista recortada a los 54 municipios cafeteros, y como `addresses.municipality_id`
+# es obligatorio, eso dejaba sin poder comprar a cualquiera que viviera fuera de
+# la zona cafetera —Bogotá, Cali, Barranquilla y Cartagena incluidas—.
+
 
 CERTIFICATIONS: list[tuple[str, str, str]] = [
     ("organic", "Orgánico", "Certificación de producción orgánica"),
@@ -294,28 +183,27 @@ def seed_geography(session: Session) -> None:
         municipality.dane_code for municipality in session.scalars(select(Municipality)).all()
     }
 
-    municipality_count = 0
-    for dept_code, dept_name, municipalities in GEOGRAPHY:
-        department = existing_departments.get(dept_code)
-        if department is None:
+    for dept_code, dept_name in DEPARTMENTS:
+        if dept_code not in existing_departments:
             department = Department(dane_code=dept_code, name=dept_name)
             session.add(department)
             session.flush()
             existing_departments[dept_code] = department
 
-        for mun_code, mun_name, lat, lng in municipalities:
-            if mun_code in existing_municipalities:
-                continue
-            session.add(
-                Municipality(
-                    department_id=department.id,
-                    dane_code=mun_code,
-                    name=mun_name,
-                    centroid_lat=lat,
-                    centroid_lng=lng,
-                )
+    municipality_count = 0
+    for dept_code, mun_code, mun_name, lat, lng in MUNICIPALITIES:
+        if mun_code in existing_municipalities:
+            continue
+        session.add(
+            Municipality(
+                department_id=existing_departments[dept_code].id,
+                dane_code=mun_code,
+                name=mun_name,
+                centroid_lat=lat,
+                centroid_lng=lng,
             )
-            municipality_count += 1
+        )
+        municipality_count += 1
 
     existing_regions = {region.code for region in session.scalars(select(Region)).all()}
     for code, name, description in REGIONS:

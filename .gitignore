@@ -27,10 +27,6 @@ build/
 .eslintcache
 coverage/
 
-# Expo / React Native
-.expo/
-.expo-shared/
-
 # Docker y datos locales
 docker-data/
 *.pid
