@@ -372,7 +372,7 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
 ```
 
-**Estado: 6 de 23 construidas.**
+**Estado: 7 de 23 construidas.** GA7-AA1 y GA7-AA2, completas.
 
 ### GA7 — AP7 Codificar los módulos del software
 
@@ -384,7 +384,7 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 | AA1-EV04 Instalación de Git | entorno real del equipo | [`entregas/GA7/AA1_EV04_Instalacion_Git/`](entregas/GA7/AA1_EV04_Instalacion_Git/) | ✅ PDF, 7 pág. | **7 capturas de pantalla**, marcadas en el documento |
 | AA1-EV05 Git configurado | repo `Programa-Git` | [`entregas/GA7/AA1_EV05_Programa_Git/`](entregas/GA7/AA1_EV05_Programa_Git/) | ✅ ejercicio hecho y publicado · guion listo | **Grabar el video** (5-7 min), guion en el PDF |
 | AA2-EV01 Módulo JDBC | **`catalogo-pergamino`** (Java 17 + JDBC + PostgreSQL) | [`entregas/GA7/AA2_EV01_Modulo_JDBC/`](entregas/GA7/AA2_EV01_Modulo_JDBC/) | ✅ PDF 10 pág. · 13 pruebas · CRUD verificado contra PostgreSQL | — |
-| AA2-EV02 Servlets y JSP | el mismo módulo, capa web | `entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/` | ⬜ pendiente | — |
+| AA2-EV02 Servlets y JSP | **`catalogo-web`** (Jakarta Servlet 6 + JSP + JSTL, sobre `catalogo-pergamino`) | [`entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/`](entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/) | ✅ PDF 8 pág. · WAR desplegado y probado por HTTP en Tomcat 10 | — |
 | AA3-EV01 Framework Java | `negociacion-pergamino` (Spring) | `entregas/GA7/AA3_EV01_Modulo_Framework/` | ⬜ pendiente | — |
 | AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |
 | AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
@@ -406,6 +406,23 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 | AA2-EV03 Taller disruptivas | — (teórico) | `entregas/GA8/AA2_EV03_Taller_Disruptivas/` | ⬜ pendiente | Elegir 3 tecnologías |
 | AA2-EV04 Video machine learning | — | `entregas/GA8/AA2_EV04_Video_Machine_Learning/` | ⬜ pendiente | **Grabar el video** (10 min) |
 | AA2-EV05 Texto blockchain | — | `entregas/GA8/AA2_EV05_Texto_Blockchain/` | ⬜ pendiente | — |
+
+### Cómo construir los módulos Java
+
+Maven y Tomcat no están instalados en el sistema; se usan los de la carpeta de herramientas:
+
+```bash
+export MVN="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-maven-3.9.16/bin/mvn"
+export CATALINA_HOME="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-tomcat-10.1.61"
+```
+
+Los módulos Java usan la base `monkgrain_java` del mismo PostgreSQL del proyecto, **no** la de la aplicación: un módulo de aprendizaje que inserta y borra no debe tocar los datos de demostración.
+
+```bash
+docker compose exec -T postgres psql -U monkgrain -d postgres -c "CREATE DATABASE monkgrain_java;"
+docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
+  < entregas/GA7/AA2_EV01_Modulo_JDBC/catalogo-pergamino/src/main/resources/esquema.sql
+```
 
 ### Lo que está bloqueado
 

@@ -1,0 +1,362 @@
+<!-- GA7-220501096-AA2-EV02 · Módulos de software codificados y probados -->
+<header class="portada">
+  <h1>Informe Técnico: Capa Web del Catálogo con Servlets y JSP</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia codifica el módulo enfocado a web del proyecto
+  <strong>MONK GRAIN</strong>: formularios HTML procesados por
+  <strong>servlets</strong>, con los métodos <strong>GET</strong> y
+  <strong>POST</strong>, y elementos de <strong>JSP</strong> para la
+  presentación.
+</p>
+
+<p>
+  No parte de cero. La capa web <strong>reutiliza como dependencia</strong> el
+  módulo <code>catalogo-pergamino</code> de la evidencia AA2-EV01: los servlets no
+  repiten el acceso a datos ni las reglas de negocio, los invocan. Esa reutilización es
+  precisamente lo que hace que la división en capas valga la pena, y queda demostrada
+  aquí: la misma regla sirve a dos interfaces —consola y web— sin duplicarse.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar el módulo enfocado a web con servlets: formularios HTML procesados por
+  servlets, con métodos GET y POST, y elementos de JSP, cumpliendo los estándares de
+  codificación del proyecto y versionando el trabajo con Git.
+</p>
+
+<h2>3. Arquitectura: una capa más sobre lo ya construido</h2>
+
+<pre class="salida">Navegador
+    │  HTTP (GET / POST)
+    ▼
+Servlets  ──────► CatalogService ──► DAO ──► JDBC ──► PostgreSQL
+(catalogo-web)    └──────── catalogo-pergamino (AA2-EV01) ───────┘
+    │
+    ▼
+  JSP (presentación)</pre>
+
+<table>
+  <thead>
+    <tr><th>Componente</th><th>Responsabilidad</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>CatalogServlet</code></td><td>Catálogo público. Solo GET</td></tr>
+    <tr><td><code>LotServlet</code></td><td>Gestión de lotes. GET para mostrar, POST para crear y eliminar</td></tr>
+    <tr><td>JSP</td><td>Presentación. No contienen lógica de negocio</td></tr>
+    <tr><td><code>catalogo-pergamino</code></td><td>Modelo, DAO y reglas, reutilizados de AA2-EV01</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Los servlets no consultan la base de datos.</strong> Recogen los
+    parámetros, los convierten, y delegan. Si mañana cambia la regla del filtro,
+    cambia en un solo sitio y las dos interfaces la heredan.
+  </p>
+</div>
+
+<h2>4. Los dos métodos HTTP</h2>
+
+<h3>4.1 GET — consultar</h3>
+
+<p>
+  El filtro del catálogo va por GET para que el criterio quede en la dirección y la
+  página pueda compartirse o recargarse:
+</p>
+
+<pre><code>@WebServlet(name = "CatalogServlet", urlPatterns = {"/catalogo"})
+public class CatalogServlet extends HttpServlet {
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        String parametro = request.getParameter("factorMaximo");
+
+        try {
+            BigDecimal factorMaximo = parsearFactor(parametro);
+            List&lt;PergaminoLot&gt; lotes = service.browseCatalog(factorMaximo);
+
+            request.setAttribute("lotes", lotes);
+            request.setAttribute("total", lotes.size());
+
+            request.getRequestDispatcher("/WEB-INF/jsp/catalogo.jsp")
+                   .forward(request, response);
+
+        } catch (ValidationException e) {
+            // Un filtro mal escrito es culpa de quien lo escribe: 400, no 500.
+            reenviarAError(request, response, e.getMessage(),
+                    HttpServletResponse.SC_BAD_REQUEST);
+        }
+    }
+}</code></pre>
+
+<h3>4.2 POST — modificar</h3>
+
+<p>
+  Tras un POST que modifica datos se responde con una <strong>redirección</strong>, no
+  con el contenido. Es el patrón <em>POST-Redirect-GET</em>, y no es una formalidad: sin
+  él, recargar la página reenvía el formulario y el lote se publica dos veces.
+</p>
+
+<pre><code>private void crear(HttpServletRequest request, HttpServletResponse response)
+        throws IOException {
+
+    PergaminoLot lote = new PergaminoLot();
+    lote.setProducerId(parsearEntero(request.getParameter("productor"), "vendedor"));
+    lote.setLotCode(textoObligatorio(request.getParameter("codigo"), "código del lote"));
+    lote.setYieldFactor(parsearDecimalOpcional(
+            request.getParameter("factor"), "factor de rendimiento"));
+    ...
+    int id = service.registerLot(lote);
+
+    // POST-Redirect-GET: recargar no debe publicar el lote dos veces.
+    response.sendRedirect(request.getContextPath()
+            + "/lotes?mensaje=" + codificar("Lote " + lote.getLotCode()
+            + " publicado con el identificador " + id + "."));
+}</code></pre>
+
+<div class="nota">
+  <p>
+    <strong>Eliminar va por POST, nunca por un enlace.</strong> Una acción que borra no
+    debe poder dispararse con una visita: un rastreador que siga los enlaces de la
+    página vaciaría el catálogo.
+  </p>
+</div>
+
+<h3>4.3 La codificación de caracteres</h3>
+
+<pre><code>request.setCharacterEncoding("UTF-8");</code></pre>
+
+<p>
+  Sin esa línea al principio de <code>doPost</code>, los acentos del formulario llegan
+  rotos y «Nariño» se guarda como «NariÃ±o». El descriptor de despliegue lo refuerza con
+  <code>&lt;request-character-encoding&gt;</code>.
+</p>
+
+<h2>5. Conversión y validación de la entrada</h2>
+
+<p>
+  Toda la entrada de un formulario llega como <strong>texto</strong>. Convertirla con un
+  mensaje que nombra el campo evita que el usuario reciba un
+  <code>NumberFormatException</code>, que no le dice qué corregir:
+</p>
+
+<pre><code>private BigDecimal parsearDecimalOpcional(String valor, String campo) {
+    if (valor == null || valor.isBlank()) {
+        return null;
+    }
+    try {
+        // Se admite la coma decimal: es como se escribe en Colombia.
+        return new BigDecimal(valor.trim().replace(',', '.'));
+    } catch (NumberFormatException e) {
+        throw new ValidationException(
+                "El " + campo + " debe ser un número. Recibimos: «" + valor + "».");
+    }
+}</code></pre>
+
+<p>
+  El formulario también valida en el navegador (<code>required</code>, <code>min</code>,
+  <code>max</code>, <code>step</code>), pero eso es una comodidad, no una defensa: la
+  comprobación del navegador se salta con una petición directa, como demuestran las
+  pruebas de la sección 8.
+</p>
+
+<h2>6. Elementos de JSP utilizados</h2>
+
+<table>
+  <thead>
+    <tr><th>Elemento</th><th>Uso</th><th>Dónde</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Directiva <code>page</code></td><td>Tipo de contenido y codificación</td><td>Todas</td></tr>
+    <tr><td>Directiva <code>taglib</code></td><td>Importa JSTL core y fmt</td><td><code>catalogo.jsp</code>, <code>lotes.jsp</code></td></tr>
+    <tr><td>Acción <code>jsp:include</code></td><td>Cabecera y pie comunes</td><td>Todas</td></tr>
+    <tr><td>Lenguaje de expresiones <code>${...}</code></td><td>Lee atributos de la petición</td><td>Todas</td></tr>
+    <tr><td><code>c:forEach</code></td><td>Recorre la lista de lotes</td><td><code>catalogo.jsp</code></td></tr>
+    <tr><td><code>c:if</code> y <code>c:choose</code></td><td>Mostrar u ocultar según el dato</td><td><code>catalogo.jsp</code>, <code>lote-detalle.jsp</code></td></tr>
+    <tr><td><code>fmt:formatNumber</code></td><td>Moneda y decimales</td><td><code>catalogo.jsp</code></td></tr>
+    <tr><td><code>isErrorPage="true"</code></td><td>Acceso al objeto <code>exception</code></td><td><code>error.jsp</code></td></tr>
+  </tbody>
+</table>
+
+<p>Un fragmento representativo, del catálogo:</p>
+
+<pre><code>&lt;c:forEach var="lote" items="${lotes}"&gt;
+  &lt;tr&gt;
+    &lt;td&gt;&lt;code&gt;${lote.lotCode}&lt;/code&gt;&lt;/td&gt;
+    &lt;td class="num"&gt;
+      &lt;c:choose&gt;
+        &lt;c:when test="${empty lote.yieldFactor}"&gt;—&lt;/c:when&gt;
+        &lt;c:otherwise&gt;
+          &lt;fmt:formatNumber value="${lote.yieldFactor}" minFractionDigits="2"/&gt;
+        &lt;/c:otherwise&gt;
+      &lt;/c:choose&gt;
+    &lt;/td&gt;
+    &lt;td&gt;&lt;span class="etiqueta"&gt;${lote.yieldFactorLabel}&lt;/span&gt;&lt;/td&gt;
+    &lt;td class="num"&gt;${lote.availableAsCargas}&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/c:forEach&gt;</code></pre>
+
+<div class="nota">
+  <p>
+    <strong>Las JSP viven bajo <code>WEB-INF/</code></strong>, que el contenedor no
+    sirve directamente. Solo se alcanzan por el <code>forward</code> de un servlet, de
+    modo que nadie puede saltarse la lógica escribiendo la ruta de la página.
+  </p>
+</div>
+
+<h2>7. Un defecto encontrado al desplegar</h2>
+
+<p>
+  El módulo funcionaba por consola y, al desplegarlo en Tomcat, el catálogo devolvía
+  <strong>500</strong>:
+</p>
+
+<pre class="salida">SEVERE [http-nio-8080-exec-1] Servlet.service() for servlet [CatalogServlet]
+  co.monkgrain.catalog.util.DataAccessException: No fue posible conectar con la
+  base de datos en jdbc:postgresql://localhost:5432/monkgrain_java
+  Caused by: java.sql.SQLException: No suitable driver found</pre>
+
+<p>
+  El controlador <strong>sí estaba</strong> en el WAR
+  (<code>WEB-INF/lib/postgresql-42.7.4.jar</code>). La causa es más sutil: desde JDBC 4.0
+  el controlador se registra solo, pero <code>DriverManager</code> hace esa búsqueda
+  <strong>una sola vez</strong>, con el cargador de clases activo en ese momento. Si
+  Tomcat tocó <code>DriverManager</code> antes que la aplicación —lo habitual—, la
+  búsqueda ya ocurrió sin ver el controlador que vive en <code>WEB-INF/lib</code>.
+</p>
+
+<p>La corrección, en el módulo de la evidencia anterior:</p>
+
+<pre><code>static {
+    try {
+        Class.forName(CONTROLADOR);
+    } catch (ClassNotFoundException e) {
+        throw new DataAccessException(
+                "No se encontró el controlador JDBC " + CONTROLADOR
+                        + ". Verifica que el jar de PostgreSQL esté en el classpath.", e);
+    }
+    ...
+}</code></pre>
+
+<p>
+  <code>Class.forName</code> fuerza el registro desde el cargador de la aplicación web.
+  En consola es inofensivo, de modo que el módulo sigue funcionando en los dos entornos:
+  se comprobó volviendo a ejecutar sus 13 pruebas y la demostración por consola.
+</p>
+
+<h2>8. Pruebas en ejecución</h2>
+
+<p>
+  Desplegado en <strong>Apache Tomcat 10.1.61</strong> y ejercido por HTTP real, no por
+  inspección del código.
+</p>
+
+<h3>8.1 Respuestas correctas</h3>
+
+<pre class="salida">GET  /catalogo                    → 200
+GET  /lotes                       → 200
+GET  /lotes?accion=nuevo          → 200
+
+POST /lotes (registrar vendedor)  → 302 → /lotes?accion=nuevo&amp;mensaje=Vendedor+...
+POST /lotes (publicar MIR-2026-001) → 302
+POST /lotes (publicar MIR-2026-002) → 302
+
+GET  /catalogo
+     MIR-2026-001 · Excepcional · 1250 kg (10 cargas)
+     MIR-2026-002 · Estándar    · 375 kg (3 cargas)
+
+GET  /catalogo?factorMaximo=92    → 1 lote: MIR-2026-001
+     (el filtro acota el TECHO: menos es mejor)
+
+GET  /lotes?accion=detalle&amp;id=7  → Excepcional · en el rango seguro
+POST /lotes (eliminar)            → 302</pre>
+
+<h3>8.2 Validaciones, saltándose el navegador</h3>
+
+<p>
+  Estas peticiones se enviaron <strong>directamente por HTTP</strong>, sin pasar por el
+  formulario, que es justo lo que demuestra que la validación del servidor no es
+  decorativa:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Entrada</th><th>Código</th><th>Mensaje devuelto</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Factor 145</td><td><code>400</code></td><td>El factor de rendimiento debe estar entre 80 y 130. Un valor fuera de ese rango es un error de digitación, no un café excepcional.</td></tr>
+    <tr><td>Código repetido</td><td><code>400</code></td><td>Ya tienes un lote con el código MIR-2026-001.</td></tr>
+    <tr><td>Precio <code>abc</code></td><td><code>400</code></td><td>El precio por kilogramo debe ser un número. Recibimos: «abc».</td></tr>
+    <tr><td>Fecha <code>15-09-2026</code></td><td><code>400</code></td><td>La fecha de cosecha debe tener el formato AAAA-MM-DD. Recibimos: «15-09-2026».</td></tr>
+    <tr><td>Humedad 150 %</td><td><code>400</code></td><td>La humedad debe estar entre 0 % y 100 %.</td></tr>
+    <tr><td>Vendedor inexistente</td><td><code>400</code></td><td>No existe el vendedor 1.</td></tr>
+    <tr><td>Filtro <code>abc</code> (GET)</td><td><code>400</code></td><td>El factor de rendimiento debe ser un número. Recibimos: «abc».</td></tr>
+  </tbody>
+</table>
+
+<p>
+  El código <code>400</code> y no <code>500</code> es intencional: un dato mal escrito es
+  culpa de quien lo escribe y se corrige cambiándolo; un <code>500</code> diría que el
+  fallo es del servidor y que no hay nada que el usuario pueda hacer.
+</p>
+
+<div class="pendiente">
+  <span class="titulo">Lo que puedes hacer tú</span>
+  <p>
+    <strong>Ver el módulo en el navegador.</strong> Tomcat quedó corriendo con la
+    aplicación desplegada:
+    <strong>http://localhost:8080/catalogo-pergamino/catalogo</strong>. Si lo apagaste,
+    se levanta con <code>bin/startup.sh</code> desde la carpeta de Tomcat. Para las
+    capturas de la evidencia AA3-EV02 conviene recorrer el catálogo, el formulario y un
+    error de validación.
+  </p>
+</div>
+
+<h2>9. Estructura del módulo</h2>
+
+<pre class="salida">catalogo-web/
+├── pom.xml                      empaquetado WAR, depende de catalogo-pergamino
+└── src/main/
+    ├── java/co/monkgrain/catalog/web/
+    │   ├── CatalogServlet.java     GET  /catalogo
+    │   └── LotServlet.java         GET y POST  /lotes
+    └── webapp/
+        ├── index.jsp               redirige al catálogo
+        ├── estilo.css
+        └── WEB-INF/
+            ├── web.xml             bienvenida, codificación, páginas de error
+            └── jsp/
+                ├── _cabecera.jsp   incluida por todas
+                ├── _pie.jsp
+                ├── catalogo.jsp    catálogo público con filtro
+                ├── lotes.jsp       bandeja del vendedor
+                ├── lote-formulario.jsp
+                ├── lote-detalle.jsp
+                └── error.jsp</pre>
+
+<h2>10. Conclusión</h2>
+
+<p>
+  El módulo web implementa formularios HTML procesados por servlets con GET y POST, y
+  emplea los elementos de JSP —directivas, acciones, lenguaje de expresiones y JSTL— para
+  la presentación, sin lógica de negocio en las páginas.
+</p>
+
+<p>
+  Lo que mejor demuestra la arquitectura es lo que <strong>no</strong> hubo que escribir:
+  ni una consulta SQL ni una regla de validación. Todo eso vino del módulo de la
+  evidencia anterior, y la única corrección que hizo falta —la carga explícita del
+  controlador JDBC— se aplicó allí y benefició a las dos interfaces.
+</p>

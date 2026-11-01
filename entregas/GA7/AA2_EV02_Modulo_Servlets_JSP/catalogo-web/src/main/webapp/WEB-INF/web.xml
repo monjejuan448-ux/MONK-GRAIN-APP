@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Descriptor de despliegue.
+
+  Los servlets se declaran con @WebServlet en el código, que es lo habitual
+  desde Servlet 3.0. Aquí quedan las cosas que no son de un servlet concreto:
+  la página de inicio, el juego de caracteres y las páginas de error.
+-->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+  <display-name>MONK GRAIN - Catalogo de pergamino</display-name>
+
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+
+  <!-- Sin esto, los acentos de las JSP salen rotos en algunos contenedores. -->
+  <request-character-encoding>UTF-8</request-character-encoding>
+  <response-character-encoding>UTF-8</response-character-encoding>
+
+  <!-- Que un error del contenedor no muestre la traza de la pila al
+       visitante: delata rutas y versiones, y no le sirve de nada. -->
+  <error-page>
+    <error-code>404</error-code>
+    <location>/WEB-INF/jsp/error.jsp</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>/WEB-INF/jsp/error.jsp</location>
+  </error-page>
+  <error-page>
+    <exception-type>java.lang.Throwable</exception-type>
+    <location>/WEB-INF/jsp/error.jsp</location>
+  </error-page>
+</web-app>

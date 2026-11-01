@@ -26,11 +26,35 @@ public final class DatabaseConnection {
 
     private static final String ARCHIVO_CONFIGURACION = "database.properties";
 
+    /**
+     * Nombre del controlador, que se carga explícitamente.
+     *
+     * <p>Desde JDBC 4.0 el controlador se registra solo, y en una aplicación de
+     * consola basta con tenerlo en el classpath. <strong>Dentro de un contenedor
+     * de servlets no basta</strong>: {@code DriverManager} hace su búsqueda
+     * automática una sola vez, con el cargador de clases que esté activo en ese
+     * momento, y si Tomcat lo tocó primero esa búsqueda ya ocurrió sin ver el
+     * controlador que vive en {@code WEB-INF/lib}. El síntoma es un
+     * «No suitable driver found» con el controlador presente en el WAR.
+     *
+     * <p>{@code Class.forName} fuerza el registro desde el cargador de la
+     * aplicación web y resuelve el caso. En consola es inofensivo.
+     */
+    private static final String CONTROLADOR = "org.postgresql.Driver";
+
     private static final String URL;
     private static final String USUARIO;
     private static final String CLAVE;
 
     static {
+        try {
+            Class.forName(CONTROLADOR);
+        } catch (ClassNotFoundException e) {
+            throw new DataAccessException(
+                    "No se encontró el controlador JDBC " + CONTROLADOR
+                            + ". Verifica que el jar de PostgreSQL esté en el classpath.", e);
+        }
+
         Properties propiedades = cargarPropiedades();
         URL = resolver("MONKGRAIN_JDBC_URL", propiedades, "db.url");
         USUARIO = resolver("MONKGRAIN_JDBC_USER", propiedades, "db.user");

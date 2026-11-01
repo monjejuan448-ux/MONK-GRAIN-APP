@@ -1,0 +1,27 @@
+GA7-220501096-AA2-EV02
+Módulos de software codificados y probados — capa web con servlets y JSP
+
+Repositorio del proyecto:
+[PENDIENTE — ver la nota en el README del proyecto]
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Módulo entregado:  catalogo-web  (depende de catalogo-pergamino, AA2-EV01)
+Ruta en el repositorio:
+  entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/catalogo-web/
+
+Compilar y desplegar:
+  # 1. instalar el módulo de la evidencia anterior
+  cd ../AA2_EV01_Modulo_JDBC/catalogo-pergamino && mvn clean install
+
+  # 2. construir el WAR
+  cd ../../AA2_EV02_Modulo_Servlets_JSP/catalogo-web && mvn clean package
+
+  # 3. desplegar
+  cp target/catalogo-pergamino.war $CATALINA_HOME/webapps/
+  $CATALINA_HOME/bin/startup.sh
+
+Dirección:
+  http://localhost:8080/catalogo-pergamino/catalogo
