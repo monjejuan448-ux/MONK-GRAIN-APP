@@ -150,8 +150,8 @@ export default function DataPolicyPage() {
       <p>
         <strong>La ubicación exacta de la finca no se publica nunca.</strong> Tampoco se
         publican el número de documento, la dirección de notificaciones, el teléfono ni el
-        correo de quien vende. Los documentos de
-        certificación son privados: solo los abren su titular y el equipo de MONK GRAIN.
+        correo de quien vende. Los documentos de certificación son privados: solo los
+        abren su titular y el equipo de MONK GRAIN.
       </p>
       <p>
         Hay una excepción que la ley nos impone: cuando alguien que compró un café

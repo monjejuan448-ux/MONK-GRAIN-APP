@@ -96,11 +96,15 @@ jobs:
         # como paso y se espera a que responda: arrancar las pruebas antes de
         # que acepte conexiones produce fallos que no son del producto.
         run: |
+          # Se tira de quay.io y no de Docker Hub: los ejecutores de GitHub
+          # comparten dirección de salida y Docker Hub deniega el descargue
+          # anónimo con «pull access denied». MinIO publica la misma imagen en
+          # los dos registros.
           docker run -d --name minio \
             -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio:latest server /data
+            quay.io/minio/minio:latest server /data
           for intento in $(seq 1 30); do
             if curl -sf http://localhost:9000/minio/health/live > /dev/null; then
               echo "MinIO responde tras $intento intento(s)."

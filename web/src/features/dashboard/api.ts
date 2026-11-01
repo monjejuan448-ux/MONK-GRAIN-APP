@@ -299,7 +299,12 @@ export const adminApi = {
       { token },
     ),
 
-  paySettlement: (token: string, settlementId: string, reference: string, notes?: string) =>
+  paySettlement: (
+    token: string,
+    settlementId: string,
+    reference: string,
+    notes?: string,
+  ) =>
     api.post<AdminSettlement>(
       `/admin/settlements/${settlementId}/pay`,
       { payment_reference: reference, notes: notes || null },

@@ -152,7 +152,11 @@ export default function ProducerSettlementsPage() {
   if (error) {
     return (
       <div className="container-page py-10">
-        <ErrorState title="Algo salió mal" description={error} onRetry={() => void load()} />
+        <ErrorState
+          title="Algo salió mal"
+          description={error}
+          onRetry={() => void load()}
+        />
       </div>
     );
   }
@@ -206,9 +210,9 @@ export default function ProducerSettlementsPage() {
                 </div>
               </dl>
               <p className="mt-6 border-t border-border pt-4 text-sm text-muted-foreground">
-                Liquidamos por periodos y solo lo ya entregado, pasados los cinco días hábiles
-                del derecho de retracto. Un pedido con una reclamación abierta espera a que se
-                resuelva.
+                Liquidamos por periodos y solo lo ya entregado, pasados los cinco días
+                hábiles del derecho de retracto. Un pedido con una reclamación abierta
+                espera a que se resuelva.
               </p>
             </CardContent>
           </Card>
@@ -225,12 +229,17 @@ export default function ProducerSettlementsPage() {
           <Card>
             <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
               <div className="flex items-start gap-3">
-                <Landmark className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />
+                <Landmark
+                  className="mt-1 size-5 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
                 <div>
                   <p className="font-medium">
                     {account.bank_name} · {account.account_type}
                   </p>
-                  <p className="tabular-nums text-muted-foreground">{account.masked_number}</p>
+                  <p className="tabular-nums text-muted-foreground">
+                    {account.masked_number}
+                  </p>
                   <p className="text-sm text-muted-foreground">{account.holder_name}</p>
                 </div>
               </div>
@@ -255,8 +264,8 @@ export default function ProducerSettlementsPage() {
             <CardContent className="pt-6">
               {!account && (
                 <p className="mb-5 border border-gold/40 bg-gold/10 px-4 py-3 text-sm">
-                  <strong>Sin una cuenta registrada no podemos liquidarte.</strong> Tus ventas se
-                  siguen acumulando, pero el dinero no tiene a dónde ir.
+                  <strong>Sin una cuenta registrada no podemos liquidarte.</strong> Tus
+                  ventas se siguen acumulando, pero el dinero no tiene a dónde ir.
                 </p>
               )}
 
@@ -318,13 +327,15 @@ export default function ProducerSettlementsPage() {
                     minLength={5}
                     maxLength={30}
                     value={form.holder_document}
-                    onChange={(e) => setForm({ ...form, holder_document: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, holder_document: e.target.value })
+                    }
                     className="border border-input bg-background px-3 py-2 tabular-nums"
                   />
                 </label>
 
                 {formError && (
-                  <p role="alert" className="sm:col-span-2 text-sm text-destructive">
+                  <p role="alert" className="text-sm text-destructive sm:col-span-2">
                     {formError}
                   </p>
                 )}
@@ -349,8 +360,9 @@ export default function ProducerSettlementsPage() {
               </form>
 
               <p className="mt-5 border-t border-border pt-4 text-xs text-muted-foreground">
-                La cuenta se guarda cifrada. Ni el equipo de MONK GRAIN la ve en la plataforma: de
-                vuelta solo viajan los cuatro últimos dígitos, para que puedas reconocerla.
+                La cuenta se guarda cifrada. Ni el equipo de MONK GRAIN la ve en la
+                plataforma: de vuelta solo viajan los cuatro últimos dígitos, para que
+                puedas reconocerla.
               </p>
             </CardContent>
           </Card>

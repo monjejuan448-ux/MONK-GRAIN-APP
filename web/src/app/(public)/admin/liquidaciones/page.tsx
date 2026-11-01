@@ -140,7 +140,11 @@ export default function AdminSettlementsPage() {
   if (error) {
     return (
       <div className="container-page py-10">
-        <ErrorState title="Algo salió mal" description={error} onRetry={() => void load()} />
+        <ErrorState
+          title="Algo salió mal"
+          description={error}
+          onRetry={() => void load()}
+        />
       </div>
     );
   }
@@ -151,8 +155,8 @@ export default function AdminSettlementsPage() {
     <div className="container-page py-10">
       <h1 className="font-display text-3xl font-bold">Liquidaciones</h1>
       <p className="mt-2 max-w-2xl text-muted-foreground">
-        Cierra un periodo para generar lo que hay que pagar a cada vendedor, y deja constancia
-        del desembolso cuando salga el dinero.
+        Cierra un periodo para generar lo que hay que pagar a cada vendedor, y deja
+        constancia del desembolso cuando salga el dinero.
       </p>
 
       {/* ---------------- Cerrar periodo ---------------- */}
@@ -196,7 +200,10 @@ export default function AdminSettlementsPage() {
             </p>
 
             {result && (
-              <div role="status" className="mt-4 border border-border bg-muted/40 px-4 py-3 text-sm">
+              <div
+                role="status"
+                className="mt-4 border border-border bg-muted/40 px-4 py-3 text-sm"
+              >
                 {result.settlements_created === 0 ? (
                   <p>No había nada que liquidar en ese periodo.</p>
                 ) : (
@@ -211,7 +218,10 @@ export default function AdminSettlementsPage() {
                 )}
                 {result.skipped_without_bank_account > 0 && (
                   <p className="mt-2 flex items-start gap-1.5 text-coffee-dark">
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    <AlertTriangle
+                      className="mt-0.5 size-4 shrink-0"
+                      aria-hidden="true"
+                    />
                     <span>
                       {result.skipped_without_bank_account}{" "}
                       {result.skipped_without_bank_account === 1
@@ -310,7 +320,9 @@ export default function AdminSettlementsPage() {
                       {estaPagando && (
                         <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-border pt-4">
                           <label className="flex flex-1 flex-col gap-1.5 sm:max-w-xs">
-                            <span className="text-sm font-medium">Referencia del pago</span>
+                            <span className="text-sm font-medium">
+                              Referencia del pago
+                            </span>
                             <input
                               autoFocus
                               required
@@ -321,8 +333,8 @@ export default function AdminSettlementsPage() {
                               className="border border-input bg-background px-3 py-2"
                             />
                             <span className="text-xs text-muted-foreground">
-                              Obligatoria: sin constancia de por dónde salió el dinero, no es un
-                              pago registrado.
+                              Obligatoria: sin constancia de por dónde salió el dinero, no
+                              es un pago registrado.
                             </span>
                           </label>
                           <Button
@@ -332,7 +344,11 @@ export default function AdminSettlementsPage() {
                           >
                             Confirmar
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setPayingId(null)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setPayingId(null)}
+                          >
                             Cancelar
                           </Button>
                         </div>
