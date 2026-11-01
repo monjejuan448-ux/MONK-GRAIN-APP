@@ -60,6 +60,14 @@ jobs:
       SECRET_KEY: clave_solo_para_integracion_continua_no_usar_jamas_en_produccion
       APP_ENV: development
       CORS_ORIGINS: http://localhost:3000
+      # Almacenamiento de objetos. Las pruebas de evidencias de devolución
+      # suben una foto, y sin esto fallaban con EndpointConnectionError: el
+      # flujo declaraba postgres y redis, pero no el almacenamiento.
+      S3_ENDPOINT_URL: http://localhost:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: monkgrain
+      S3_REGION: us-east-1
 
     steps:
       - uses: actions/checkout@v4
@@ -81,6 +89,27 @@ jobs:
         # Con las versiones exactas del lock, para que el CI valide lo mismo que
         # corre en la imagen y no lo que resuelvan hoy los rangos.
         run: pip install -c requirements.lock -e ".[dev]"
+
+      - name: Levantar el almacenamiento de objetos
+        # MinIO no se puede declarar en `services:` porque necesita el
+        # argumento `server /data`, y ese bloque no admite órdenes. Se levanta
+        # como paso y se espera a que responda: arrancar las pruebas antes de
+        # que acepte conexiones produce fallos que no son del producto.
+        run: |
+          docker run -d --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+          for intento in $(seq 1 30); do
+            if curl -sf http://localhost:9000/minio/health/live > /dev/null; then
+              echo "MinIO responde tras $intento intento(s)."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MinIO no respondió en 60 segundos." >&2
+          exit 1
 
       - name: Crear las extensiones de PostgreSQL
         # El esquema usa CITEXT y unaccent; deben existir antes de migrar.
