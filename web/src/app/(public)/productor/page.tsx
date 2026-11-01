@@ -50,12 +50,13 @@ export default function ProducerDashboardPage() {
 
     setError(null);
     try {
-      const [dashboard, orderPage, inventoryAlerts, settlementSummary] = await Promise.all([
-        producerApi.dashboard(token),
-        producerApi.orders(token),
-        producerApi.inventoryAlerts(token),
-        producerApi.settlementSummary(token),
-      ]);
+      const [dashboard, orderPage, inventoryAlerts, settlementSummary] =
+        await Promise.all([
+          producerApi.dashboard(token),
+          producerApi.orders(token),
+          producerApi.inventoryAlerts(token),
+          producerApi.settlementSummary(token),
+        ]);
       setData(dashboard);
       setOrders(orderPage.items.slice(0, 8));
       setAlerts(inventoryAlerts);
@@ -218,7 +219,9 @@ export default function ProducerDashboardPage() {
             label="Lotes por reponer"
             value={data.low_stock_variants}
             hint={
-              data.low_stock_variants > 0 ? "Revisa el detalle más abajo" : "Todo con existencias"
+              data.low_stock_variants > 0
+                ? "Revisa el detalle más abajo"
+                : "Todo con existencias"
             }
             icon={AlertTriangle}
             emphasis={data.low_stock_variants > 0 ? "warning" : "default"}
@@ -248,7 +251,9 @@ export default function ProducerDashboardPage() {
                   </p>
                 </div>
                 <div>
-                  <dt className="text-sm text-muted-foreground">Comisión de la plataforma</dt>
+                  <dt className="text-sm text-muted-foreground">
+                    Comisión de la plataforma
+                  </dt>
                   <dd className="font-display text-2xl font-bold tabular-nums text-muted-foreground">
                     −{formatCurrency(settlement.commission_total)}
                   </dd>
@@ -265,7 +270,8 @@ export default function ProducerDashboardPage() {
                   más daría a entender un pago en camino que no existe. */}
               <p className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground">
                 <span>
-                  Liquidamos por periodos y solo lo ya entregado, pasado el plazo de retracto.
+                  Liquidamos por periodos y solo lo ya entregado, pasado el plazo de
+                  retracto.
                 </span>
                 <Link
                   href="/productor/liquidaciones"
@@ -303,7 +309,9 @@ export default function ProducerDashboardPage() {
                   >
                     <div className="min-w-0">
                       <p className="font-medium">{alert.product_name}</p>
-                      <p className="text-sm text-muted-foreground">{alert.variant_label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {alert.variant_label}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant={alert.available_qty === 0 ? "warning" : "outline"}>
@@ -411,7 +419,8 @@ export default function ProducerDashboardPage() {
                           {product.name}
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                          {formatKilos(product.units_sold)} · {formatCurrency(product.revenue)}
+                          {formatKilos(product.units_sold)} ·{" "}
+                          {formatCurrency(product.revenue)}
                         </p>
                       </div>
                     </li>

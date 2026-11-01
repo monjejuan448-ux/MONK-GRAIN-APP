@@ -34,7 +34,8 @@ function collectRoutes(dir: string, prefix = ""): string[] {
     if (statSync(full).isDirectory()) {
       // Los grupos de rutas —(public), (auth)— organizan archivos pero no
       // aparecen en la URL.
-      const segment = entry.startsWith("(") && entry.endsWith(")") ? prefix : `${prefix}/${entry}`;
+      const segment =
+        entry.startsWith("(") && entry.endsWith(")") ? prefix : `${prefix}/${entry}`;
       routes.push(...collectRoutes(full, segment));
     } else if (entry === "page.tsx") {
       routes.push(prefix === "" ? "/" : prefix);
