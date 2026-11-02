@@ -1,0 +1,718 @@
+<!-- GA8-220501096-AA2-EV03 · Taller sobre tecnologías emergentes y disruptivas -->
+<header class="portada">
+  <h1>Taller sobre Tecnologías Emergentes y Disruptivas</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">2 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  El taller tiene dos secciones: una investigación corta sobre once tecnologías, y el
+  estudio a fondo de tres de ellas elegidas para aplicarlas a un proyecto propio.
+</p>
+
+<p>
+  Conviene empezar por una distinción que el nombre del taller invita a saltarse.
+  <strong>«Emergente» y «disruptiva» no son lo mismo.</strong> Emergente es la que acaba de
+  aparecer; disruptiva es la que cambia quién gana dinero en un sector. Hay tecnologías
+  emergentes que nunca disrumpen nada —se quedan en curiosidad— y tecnologías viejísimas
+  que disrumpen al llegar a un sitio donde no estaban. El contenedor marítimo no era nuevo
+  en 1956 y reorganizó el comercio mundial.
+</p>
+
+<p>
+  La distinción importa para elegir, que es lo que pide la Sección 2: para MONK GRAIN
+  resulta más útil una tecnología madura que resuelva un problema real del caficultor que
+  una recién salida del laboratorio.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Investigar once tecnologías emergentes y disruptivas, y profundizar en tres: en qué
+  consisten, sus características más importantes, cómo usarlas en el medio ambiente propio
+  y qué recursos haría falta para un proyecto.
+</p>
+
+<hr>
+
+<h2>SECCIÓN 1 — Las once tecnologías</h2>
+
+<h2>3. Internet de las cosas</h2>
+
+<p>
+  Objetos físicos con sensores y conexión que reportan lo que miden, sin que nadie los
+  consulte. Un termómetro que anota la temperatura cada diez minutos y la envía.
+</p>
+
+<table>
+  <thead><tr><th></th><th></th></tr></thead>
+  <tbody>
+    <tr><td>Qué lo hace posible</td><td>Sensores baratos, radios de bajo consumo (LoRa, NB-IoT, Zigbee) y baterías que duran años</td></tr>
+    <tr><td>Donde ya está</td><td>Medidores de servicios públicos, logística en frío, riego agrícola, salud en casa</td></tr>
+    <tr><td>Su problema real</td><td><strong>No es técnico, es de mantenimiento.</strong> Mil sensores son mil baterías que se agotan, mil firmwares que actualizar y mil puertas de entrada si no están bien cerradas</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Inteligencia artificial</h2>
+
+<p>
+  Sistemas que resuelven tareas que antes exigían juicio humano: clasificar, predecir,
+  traducir, reconocer, generar.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Los dos enfoques</td><td><strong>Simbólico</strong>: reglas escritas por una persona. <strong>Conexionista</strong>: redes neuronales que ajustan parámetros a partir de ejemplos. Hoy domina el segundo</td></tr>
+    <tr><td>Donde ya está</td><td>Traducción, reconocimiento de voz e imagen, recomendaciones, detección de fraude, modelos de lenguaje</td></tr>
+    <tr><td>Su problema real</td><td><strong>Explica mal lo que decide.</strong> Una red con millones de parámetros acierta sin poder decir por qué, y eso choca con cualquier decisión que haya que justificar: un crédito negado, un diagnóstico, un rechazo</td></tr>
+  </tbody>
+</table>
+
+<p>Se amplía en la evidencia AA2-EV04, el video sobre <em>machine learning</em>.</p>
+
+<h2>5. Crowdsourcing</h2>
+
+<p>
+  Resolver una tarea repartiéndola entre muchas personas, normalmente desconocidas entre
+  sí, en lugar de contratar a unas pocas.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Variantes</td><td><strong>Colaborativo</strong> (Wikipedia, OpenStreetMap), <strong>por tarea</strong> (etiquetado de datos), <strong>por financiación</strong> (<em>crowdfunding</em>), <strong>por concurso</strong> (desafíos con premio)</td></tr>
+    <tr><td>Donde ya está</td><td>Mapas abiertos, reportes de tránsito, moderación de contenido, ciencia ciudadana</td></tr>
+    <tr><td>Su problema real</td><td><strong>La calidad es desigual y hay que controlarla.</strong> Casi todo el trabajo de un proyecto de este tipo no es recoger, es validar: votación, reputación, muestreo</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Voz a texto</h2>
+
+<p>
+  Convertir habla en texto escrito. Lo que antes exigía dictar despacio y entrenar al
+  programa hoy funciona con habla corrida.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Qué cambió</td><td>Los modelos entrenados con miles de horas de audio real, con acentos y ruido. Antes se modelaba cada fonema a mano</td></tr>
+    <tr><td>Donde ya está</td><td>Dictado en el teléfono, subtítulos automáticos, asistentes de voz, transcripción de consultas médicas</td></tr>
+    <tr><td>Su problema real</td><td><strong>El acento y el vocabulario local.</strong> Un modelo entrenado con español neutro se equivoca con «marquesina», «pergamino» o «beneficio» usados en su sentido cafetero. Y los nombres propios son el caso peor</td></tr>
+  </tbody>
+</table>
+
+<h2>7. Geolocalización</h2>
+
+<p>Determinar dónde está algo, y usar esa posición para decidir.</p>
+
+<table>
+  <tbody>
+    <tr><td>Cómo se obtiene</td><td>GNSS (GPS, Galileo, GLONASS) al aire libre; redes móviles y wifi en interiores; dirección IP como aproximación gruesa</td></tr>
+    <tr><td>Precisión</td><td>De 3 a 10 m con GPS de teléfono; centímetros con corrección diferencial (RTK), que es lo que usa la agricultura de precisión</td></tr>
+    <tr><td>Donde ya está</td><td>Navegación, reparto, seguros por uso, catastro, trazabilidad agrícola</td></tr>
+    <tr><td>Su problema real</td><td><strong>Es un dato personal.</strong> La posición de alguien revela dónde vive, dónde trabaja y con quién se reúne. En Colombia la Ley 1581 de 2012 obliga a tratarla con consentimiento y finalidad declarada</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Impresión 3D</h2>
+
+<p>
+  Fabricación por adición: construir un objeto capa por capa a partir de un modelo digital,
+  en vez de quitarle material a un bloque.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Técnicas</td><td>FDM (filamento fundido, la doméstica), SLA (resina y luz), SLS (polvo y láser), metal por sinterizado</td></tr>
+    <tr><td>Donde ya está</td><td>Prototipos, prótesis a medida, repuestos descontinuados, moldes, construcción experimental</td></tr>
+    <tr><td>Su problema real</td><td><strong>No compite con la producción en serie.</strong> Imprimir mil piezas iguales es más caro y más lento que inyectarlas. Gana donde la pieza es única o el molde no existe</td></tr>
+  </tbody>
+</table>
+
+<h2>9. Blockchain</h2>
+
+<p>
+  Un registro compartido entre participantes que no confían entre sí, donde cada bloque
+  encadena el resumen criptográfico del anterior, de modo que alterar uno obligaría a
+  recalcular todos los siguientes.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Qué resuelve</td><td>Acordar un historial único <strong>sin una autoridad central</strong> que lo custodie</td></tr>
+    <tr><td>Donde ya está</td><td>Criptomonedas, contratos automáticos, trazabilidad de cadenas de suministro, registros de propiedad en pruebas piloto</td></tr>
+    <tr><td>Su problema real</td><td><strong>Garantiza que el dato no se alteró, no que fuera cierto al escribirlo.</strong> Si alguien anota «café orgánico» sobre un lote que no lo es, la cadena conserva la mentira para siempre, con una integridad impecable</td></tr>
+  </tbody>
+</table>
+
+<p>Se amplía en la evidencia AA2-EV05, el texto argumentativo.</p>
+
+<h2>10. Bases de conocimiento</h2>
+
+<p>
+  Almacenes de información estructurada <em>con sus relaciones</em>, de modo que se pueda
+  razonar sobre ellas y no solo buscarlas.
+</p>
+
+<table>
+  <tbody>
+    <tr><td>Formas</td><td>Grafos de conocimiento (RDF, SPARQL), ontologías (OWL), bases de datos de grafos (Neo4j)</td></tr>
+    <tr><td>Donde ya está</td><td>El panel lateral de los buscadores, Wikidata, sistemas de apoyo al diagnóstico, catálogos de productos complejos</td></tr>
+    <tr><td>Su problema real</td><td><strong>Construirla y mantenerla cuesta mucho trabajo humano.</strong> La ontología hay que acordarla entre expertos, y los proyectos suelen morir ahí, no en la parte técnica</td></tr>
+  </tbody>
+</table>
+
+<h2>11. Tecnologías en robots (hardware)</h2>
+
+<p>Máquinas que perciben su entorno, deciden y actúan sobre el mundo físico.</p>
+
+<table>
+  <tbody>
+    <tr><td>Qué los compone</td><td>Actuadores y servomotores, sensores (LiDAR, cámaras de profundidad, encoders), controladores en tiempo real, baterías</td></tr>
+    <tr><td>Tipos</td><td>Industriales de brazo fijo; <strong>colaborativos</strong>, que trabajan junto a personas; móviles autónomos; drones</td></tr>
+    <tr><td>Donde ya está</td><td>Manufactura, bodegas, cirugía asistida, inspección de infraestructura, agricultura</td></tr>
+    <tr><td>Su problema real</td><td><strong>El mundo físico es irregular.</strong> Un robot que clasifica piezas idénticas en una banda funciona; uno que debe recoger café maduro de un cafeto en una ladera se enfrenta a que cada rama es distinta</td></tr>
+  </tbody>
+</table>
+
+<h2>12. Tecnologías visuales</h2>
+
+<table>
+  <thead><tr><th>Tecnología</th><th>Qué hace</th><th>Dónde se usa</th></tr></thead>
+  <tbody>
+    <tr><td><strong>3D</strong></td><td>Representa volumen en una pantalla plana</td><td>Diseño, simulación, videojuegos, visualización médica</td></tr>
+    <tr><td><strong>Realidad virtual</strong></td><td>Sustituye el entorno por uno generado. Aísla</td><td>Entrenamiento de alto riesgo, terapia de fobias, diseño inmersivo</td></tr>
+    <tr><td><strong>Realidad aumentada</strong></td><td>Superpone información sobre el entorno real. No aísla</td><td>Mantenimiento guiado, cirugía, probar muebles en casa, educación</td></tr>
+    <tr><td><strong>Hologramas</strong></td><td>Reconstruyen un frente de onda: la imagen cambia al mover la cabeza, sin gafas</td><td>Casi todo lo que se anuncia como «holograma» no lo es. El uso real está en seguridad documental y metrología</td></tr>
+  </tbody>
+</table>
+
+<p>
+  La diferencia que más se confunde es virtual contra aumentada, y decide el caso de uso:
+  <strong>la virtual aísla y la aumentada no</strong>. Para entrenar a alguien en una
+  situación peligrosa conviene aislarlo; para ayudarlo mientras trabaja con las manos,
+  nunca.
+</p>
+
+<hr>
+
+<h2>SECCIÓN 2 — Las tres elegidas</h2>
+
+<h2>13. Cómo se eligieron</h2>
+
+<p>
+  Tres criterios, en este orden:
+</p>
+
+<ol>
+  <li>
+    <strong>Que resuelva un problema que MONK GRAIN tiene hoy</strong>, no uno que podría
+    tener. El proyecto es un mercado de café pergamino seco entre caficultores y
+    compradores, y su atributo central es el <em>factor de rendimiento</em>, que depende
+    directamente del secado.
+  </li>
+  <li>
+    <strong>Que no duplique otra evidencia.</strong> Inteligencia artificial y blockchain
+    quedan fuera a propósito: son el tema de AA2-EV04 y AA2-EV05.
+  </li>
+  <li>
+    <strong>Que sea alcanzable por una plataforma pequeña</strong> en el Eje Cafetero, con
+    conectividad irregular y usuarios que no son técnicos.
+  </li>
+</ol>
+
+<table>
+  <thead><tr><th>Elegida</th><th>Qué problema de MONK GRAIN atiende</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Internet de las cosas</strong></td><td>El factor de rendimiento depende del secado, y el secado se vigila hoy a ojo</td></tr>
+    <tr><td><strong>Geolocalización</strong></td><td>El origen se declara y no se comprueba; el flete se estima a mano</td></tr>
+    <tr><td><strong>Voz a texto</strong></td><td>Publicar un lote exige escribir en un teléfono, en el campo, a veces con las manos sucias</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    La guía dice que las tres tecnologías las elige el aprendiz. Estas son las que mejor
+    encajan con el proyecto por los criterios de arriba, pero <strong>se pueden
+    cambiar</strong>: impresión 3D y robótica, por ejemplo, darían un trabajo igual de
+    válido si el interés va por ahí.
+  </p>
+</div>
+
+<hr>
+
+<h2>14. Internet de las cosas</h2>
+
+<h3>14.1 En qué consiste</h3>
+
+<p>
+  Objetos físicos con sensores, capacidad de cómputo mínima y conexión, que miden algo del
+  mundo y lo reportan solos. No hay nadie consultándolos: el sensor decide cuándo hablar.
+</p>
+
+<p>
+  La arquitectura típica tiene cuatro piezas: el <strong>dispositivo</strong> que mide, la
+  <strong>red</strong> que transporta, la <strong>plataforma</strong> que recibe y guarda, y
+  la <strong>aplicación</strong> que convierte la medida en una decisión. La última es la
+  que da valor y la que más se descuida: miles de lecturas que nadie mira no son internet
+  de las cosas, son una factura de almacenamiento.
+</p>
+
+<h3>14.2 Características más importantes</h3>
+
+<table>
+  <thead><tr><th>Característica</th><th>Por qué importa</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Bajo consumo</strong></td>
+      <td>Un sensor que haya que recargar cada semana no se instala en una finca. LoRaWAN permite años con una pila porque transmite poquísimo y muy espaciado</td>
+    </tr>
+    <tr>
+      <td><strong>Alcance largo, ancho de banda mínimo</strong></td>
+      <td>LoRa llega a kilómetros en campo abierto y transmite unas decenas de bytes. Para «la humedad es 11,2 %» alcanza de sobra</td>
+    </tr>
+    <tr>
+      <td><strong>Tolerancia a la desconexión</strong></td>
+      <td>El dispositivo debe guardar lo que midió mientras no hubo red y enviarlo después. Sin esto se pierde justo lo que pasó durante la falla</td>
+    </tr>
+    <tr>
+      <td><strong>Identidad y cifrado por dispositivo</strong></td>
+      <td>Cada sensor con su clave. Si se comprometiera uno, no se comprometen los demás</td>
+    </tr>
+    <tr>
+      <td><strong>Actualización remota</strong></td>
+      <td>Sin ella, corregir un error significa recorrer las fincas una por una</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>14.3 Cómo usarlo en mi medio ambiente</h3>
+
+<p>
+  <strong>Sensores de humedad y temperatura en la marquesina de secado.</strong>
+</p>
+
+<p>
+  El dato más importante de un lote de pergamino en MONK GRAIN es el <strong>factor de
+  rendimiento</strong>: cuántos kilos de pergamino hacen falta para obtener 70 kg de café
+  excelso. El estándar de la Federación es 94, y menos es mejor. Ese factor depende en buena
+  parte del secado, y la humedad final es lo que lo decide: el pergamino debe quedar entre
+  <strong>10 % y 12 %</strong>. Por encima se arriesga hongo y sabores de fermento; por
+  debajo, el grano se quiebra en la trilla y el rendimiento empeora.
+</p>
+
+<p>
+  Hoy eso se vigila <strong>a ojo y por tacto</strong>, con la experiencia del caficultor,
+  y se confirma con un medidor de mano al final —si hay uno—. El resultado es que una
+  semana con dos días de lluvia puede arruinar un lote y nadie se enteró a tiempo.
+</p>
+
+<pre class="salida">     marquesina                      MONK GRAIN
+  ┌──────────────┐
+  │ ░░ pergamino │   LoRa      ┌─────────┐   HTTP   ┌──────────────┐
+  │              │ ─────────►  │ pasarela│ ───────► │ app/modules/ │
+  │  ◉ humedad   │  cada 30'   │ en casa │          │  sensors/    │
+  │  ◉ temp.     │             └─────────┘          └──────┬───────┘
+  └──────────────┘                                         │
+                                                           ▼
+                                           ┌───────────────────────────┐
+                                           │ · curva de secado del lote│
+                                           │ · aviso: humedad &lt; 10 %   │
+                                           │ · aviso: 3 h sin bajar    │
+                                           └───────────────────────────┘</pre>
+
+<p>Tres usos concretos, de menos a más ambicioso:</p>
+
+<table>
+  <thead><tr><th>#</th><th>Uso</th><th>Qué cambia</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td><td><strong>Avisar</strong> cuando la humedad entra en el rango o se pasa</td>
+      <td>El caficultor recoge en el momento correcto en vez de adivinarlo</td>
+    </tr>
+    <tr>
+      <td>2</td><td><strong>Guardar la curva de secado</strong> junto al lote</td>
+      <td>Se publica como evidencia: el comprador ve <em>cómo</em> se secó, no solo el número final. Es un argumento de precio</td>
+    </tr>
+    <tr>
+      <td>3</td><td><strong>Estimar el factor</strong> a partir de la curva</td>
+      <td>Esto ya es aprendizaje automático y necesita datos históricos. <strong>No se empieza por aquí</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  El orden no es casual. El uso 1 da valor con un sensor y un aviso; el 3 necesita cientos
+  de lotes con su factor real medido en la trilladora para poder aprender algo. Empezar por
+  el 3 es el error más común en estos proyectos: se monta el modelo antes de tener los
+  datos que lo alimentan.
+</p>
+
+<h3>14.4 Qué recursos necesito</h3>
+
+<table>
+  <thead><tr><th>Recurso</th><th>Detalle</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Hardware por finca</strong></td>
+      <td>2–3 sensores de humedad y temperatura con radio LoRa, en caja estanca; una pasarela LoRaWAN con wifi o red móvil en la casa de la finca</td>
+    </tr>
+    <tr>
+      <td><strong>Red</strong></td>
+      <td>Una pasarela cubre varias hectáreas. La zona cafetera tiene cobertura móvil irregular: la pasarela debe <strong>guardar y reenviar</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Software</strong></td>
+      <td>Un módulo <code>sensors</code> en el backend: endpoint de ingesta con clave por dispositivo, tabla de series temporales, y las reglas de aviso. Es trabajo conocido, no investigación</td>
+    </tr>
+    <tr>
+      <td><strong>Conocimiento</strong></td>
+      <td>Electrónica básica y protocolos LoRaWAN —lo que no hay hoy en el equipo— además del backend, que sí hay</td>
+    </tr>
+    <tr>
+      <td><strong>Lo que de verdad cuesta</strong></td>
+      <td><strong>Calibrar y mantener.</strong> Un sensor de humedad relativa no mide la humedad <em>del grano</em>: hay que correlacionarlo con un medidor de referencia, finca por finca. Y hay que cambiar pilas, limpiar y reponer lo que se daña</td>
+    </tr>
+    <tr>
+      <td><strong>Cómo empezaría</strong></td>
+      <td>Una finca, dos sensores, tres meses, contrastando cada lectura con el medidor de mano. Sin ese contraste el número es decorativo</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>15. Geolocalización</h2>
+
+<h3>15.1 En qué consiste</h3>
+
+<p>
+  Determinar la posición de algo en la superficie terrestre y usarla para decidir. Los
+  satélites GNSS emiten su hora y su posición; el receptor compara las señales de varios y
+  resuelve dónde está.
+</p>
+
+<p>
+  Hay tres grados de precisión, y conviene no confundirlos: la <strong>dirección IP</strong>
+  acierta la ciudad; el <strong>GPS de un teléfono</strong>, entre 3 y 10 metros; la
+  <strong>corrección diferencial RTK</strong>, centímetros. El último exige una estación
+  base cercana.
+</p>
+
+<h3>15.2 Características más importantes</h3>
+
+<table>
+  <thead><tr><th>Característica</th><th>Por qué importa</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>La precisión se elige</strong></td>
+      <td>Más precisión cuesta más dinero y más batería. Para decir «esta finca está en Pitalito» sobran 10 metros</td>
+    </tr>
+    <tr>
+      <td><strong>No funciona bajo techo</strong></td>
+      <td>La señal satelital necesita cielo. En interiores se recurre a wifi o radio, con otra precisión</td>
+    </tr>
+    <tr>
+      <td><strong>Geocerca</strong></td>
+      <td>Disparar algo al entrar o salir de un área. Es lo que convierte una coordenada en una decisión</td>
+    </tr>
+    <tr>
+      <td><strong>Es un dato personal</strong></td>
+      <td>La posición revela dónde vive y con quién se reúne alguien. Exige consentimiento y finalidad declarada (Ley 1581 de 2012)</td>
+    </tr>
+    <tr>
+      <td><strong>Se puede falsificar</strong></td>
+      <td>Un teléfono puede informar coordenadas inventadas. Una posición enviada por el usuario <strong>no es una prueba</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>15.3 Cómo usarlo en mi medio ambiente</h3>
+
+<p><strong>Origen verificable del lote, y flete calculado en vez de estimado.</strong></p>
+
+<p>
+  MONK GRAIN ya guarda el municipio de cada lote contra el catálogo DANE completo —33
+  departamentos y 1.122 entidades municipales— y lo muestra como origen. Pero el municipio
+  <strong>lo declara el vendedor</strong> y nadie lo comprueba. En un mercado donde el
+  origen es parte del precio, eso es una debilidad: el café de Nariño y el de otra región se
+  pagan distinto.
+</p>
+
+<table>
+  <thead><tr><th>Uso</th><th>Qué resuelve</th><th>Cuidado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Coordenada de la finca al registrarse</strong></td>
+      <td>Se contrasta con el municipio declarado. Si no cae dentro, se marca para revisión del administrador</td>
+      <td>Es un <em>indicio</em>, no una prueba: se puede falsificar. Sirve para priorizar qué revisar, no para aprobar solo</td>
+    </tr>
+    <tr>
+      <td><strong>Flete calculado por distancia real</strong></td>
+      <td>Hoy el envío se estima. Con las coordenadas del origen y del destino se calcula con la distancia por carretera</td>
+      <td>En zona cafetera la distancia en línea recta engaña: una ladera puede duplicar el recorrido</td>
+    </tr>
+    <tr>
+      <td><strong>Mapa de orígenes en el catálogo</strong></td>
+      <td>El comprador ve de dónde viene cada lote. Es información comercial útil</td>
+      <td><strong>Al municipio, no a la finca.</strong> Publicar la coordenada exacta de la vivienda de un caficultor es un riesgo de seguridad que ningún valor comercial compensa</td>
+    </tr>
+    <tr>
+      <td><strong>Altitud desde la coordenada</strong></td>
+      <td>La altura influye en el perfil de taza y hoy se declara a mano</td>
+      <td>La altitud del GPS es menos precisa que la horizontal; mejor obtenerla de un modelo de elevación</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>La decisión de diseño que más importa aquí no es técnica.</strong> Es a qué
+    resolución se publica: la coordenada se guarda con precisión y <strong>se muestra
+    agregada al municipio</strong>. Guardar fino y mostrar grueso permite calcular fletes y
+    verificar orígenes sin publicar dónde vive nadie. Al revés —guardar grueso— no habría
+    forma de recuperar la precisión después.
+  </p>
+</div>
+
+<h3>15.4 Qué recursos necesito</h3>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Hardware</strong></td>
+      <td>Ninguno nuevo: el GPS del teléfono del caficultor alcanza. Es la gran ventaja frente a las otras dos</td>
+    </tr>
+    <tr>
+      <td><strong>Software</strong></td>
+      <td>Permiso de ubicación en la aplicación móvil de AA2-EV02 (que hoy <strong>solo pide <code>INTERNET</code></strong>); dos columnas en <code>producer_profiles</code>; PostGIS o cálculos geodésicos en PostgreSQL; un servicio de mapas y rutas</td>
+    </tr>
+    <tr>
+      <td><strong>Datos</strong></td>
+      <td>Los límites municipales del DANE para poder contrastar. El catálogo de nombres ya está; faltan los polígonos</td>
+    </tr>
+    <tr>
+      <td><strong>Conocimiento</strong></td>
+      <td>Consultas geoespaciales. Es lo más accesible de las tres tecnologías: PostGIS está maduro y bien documentado</td>
+    </tr>
+    <tr>
+      <td><strong>Lo legal, que no es opcional</strong></td>
+      <td>La ubicación es dato personal. Hay que declarar la finalidad, pedir consentimiento específico, permitir revocarlo y actualizar la política de tratamiento. <code>docs/10</code> ya recoge once decisiones de negocio sin resolver sobre datos personales: esta sería la doceava</td>
+    </tr>
+    <tr>
+      <td><strong>Lo que de verdad cuesta</strong></td>
+      <td><strong>Pedir el permiso sin perder usuarios.</strong> Un diálogo de ubicación al abrir la aplicación hace que mucha gente diga no y desconfíe. Hay que pedirlo <em>cuando</em> se registra la finca, explicando para qué</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>16. Voz a texto</h2>
+
+<h3>16.1 En qué consiste</h3>
+
+<p>
+  Convertir audio de habla en texto. Un modelo acústico relaciona el sonido con unidades
+  del lenguaje y un modelo de lenguaje decide qué secuencia de palabras es más probable.
+  Hoy ambos van juntos en una sola red entrenada con miles de horas de audio real.
+</p>
+
+<p>
+  Funciona de dos formas: <strong>en el dispositivo</strong>, sin conexión, con modelos
+  pequeños; o <strong>en el servidor</strong>, con modelos grandes y mejor precisión, pero
+  enviando el audio.
+</p>
+
+<h3>16.2 Características más importantes</h3>
+
+<table>
+  <thead><tr><th>Característica</th><th>Por qué importa</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>El acento manda</strong></td>
+      <td>Un modelo entrenado con español peninsular rinde peor con habla paisa o pastusa. Para el campo colombiano es la variable que más pesa</td>
+    </tr>
+    <tr>
+      <td><strong>El vocabulario especializado falla</strong></td>
+      <td>«Pergamino», «marquesina», «beneficio», «caturra», «borbón» no están en el vocabulario general. Y «factor 94» puede transcribirse como «factor noventa y cuatro»</td>
+    </tr>
+    <tr>
+      <td><strong>El ruido degrada</strong></td>
+      <td>Una finca tiene viento, lluvia sobre zinc y motores. El micrófono importa tanto como el modelo</td>
+    </tr>
+    <tr>
+      <td><strong>En el dispositivo vs. en el servidor</strong></td>
+      <td>El primero funciona sin señal y no envía la voz a ninguna parte; el segundo acierta más. En zona cafetera, lo primero pesa</td>
+    </tr>
+    <tr>
+      <td><strong>La voz es dato biométrico</strong></td>
+      <td>Identifica a una persona. Enviarla a un servicio de terceros tiene implicaciones legales distintas a enviar texto</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>16.3 Cómo usarlo en mi medio ambiente</h3>
+
+<p><strong>Publicar un lote dictándolo, en vez de escribirlo.</strong></p>
+
+<p>
+  Publicar un lote en MONK GRAIN exige llenar un formulario con unos quince campos: nombre,
+  variedad, proceso, factor de rendimiento, humedad, kilos disponibles, precio, mínimo de
+  despacho y una descripción. Está pensado para un teclado y una mesa.
+</p>
+
+<p>La situación real es otra:</p>
+
+<ul>
+  <li>Un caficultor de 60 años que escribe despacio en un teléfono.</li>
+  <li>De pie en la marquesina, con las manos sucias o mojadas.</li>
+  <li>Con sol fuerte sobre la pantalla.</li>
+</ul>
+
+<p>
+  El resultado previsible es que el lote se publica incompleto, o no se publica. La
+  descripción —que es justamente donde el caficultor cuenta su café y lo diferencia— queda
+  vacía, y con ella se va buena parte del valor de la plataforma.
+</p>
+
+<table>
+  <thead><tr><th>Uso</th><th>Qué resuelve</th><th>Por qué es viable</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Dictar la descripción del lote</strong></td>
+      <td>El campo donde el caficultor cuenta su café, que es el que más se deja vacío</td>
+      <td>Es texto libre: un error de transcripción se corrige y no rompe nada</td>
+    </tr>
+    <tr>
+      <td><strong>Dictar la reseña de un comprador</strong></td>
+      <td>Más reseñas, que es lo que da confianza en un mercado nuevo</td>
+      <td>Mismo motivo</td>
+    </tr>
+    <tr>
+      <td><strong>Dictar el motivo de un rechazo</strong></td>
+      <td>El motivo no es obligatorio a propósito, y por eso se omite. Dictarlo cuesta menos que escribirlo</td>
+      <td>Mismo motivo</td>
+    </tr>
+    <tr>
+      <td><strong>Dictar números: factor, humedad, precio</strong></td>
+      <td>Nada. <strong>No se debe hacer.</strong></td>
+      <td>Un «94» transcrito como «84» cambia el precio del lote. Los números se escriben y se confirman</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>La regla de diseño que resume las cuatro filas:</strong> dictado para el texto
+    libre, teclado para los datos que gobiernan el dinero. Y el texto dictado
+    <strong>siempre se muestra para revisar antes de guardar</strong>, nunca se envía
+    directo. Un sistema que acierta el 95 % de las palabras se equivoca en una de cada
+    veinte, y ninguna de las dos partes de una negociación quiere descubrir eso después.
+  </p>
+</div>
+
+<h3>16.4 Qué recursos necesito</h3>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Lo más barato, y por donde empezaría</strong></td>
+      <td><strong>El dictado que ya trae Android.</strong> El teclado del sistema tiene un micrófono: no hace falta programar nada, solo diseñar el formulario para que dictar sea cómodo —campos grandes, texto largo permitido— y explicarlo. Coste de desarrollo: casi cero</td>
+    </tr>
+    <tr>
+      <td><strong>El siguiente paso</strong></td>
+      <td><code>SpeechRecognizer</code> de Android, que da control sobre el idioma y el momento. Sigue sin coste por uso</td>
+    </tr>
+    <tr>
+      <td><strong>El paso caro</strong></td>
+      <td>Un modelo propio o un servicio en la nube, para mejorar con el vocabulario cafetero. Necesitaría <strong>audio etiquetado de caficultores colombianos</strong>, que es el recurso difícil: hay que grabarlo y transcribirlo a mano</td>
+    </tr>
+    <tr>
+      <td><strong>Software</strong></td>
+      <td>Permiso <code>RECORD_AUDIO</code> —peligroso, con diálogo— en la aplicación de AA2-EV02, y una pantalla de revisión del texto</td>
+    </tr>
+    <tr>
+      <td><strong>Lo legal</strong></td>
+      <td>La voz es dato biométrico. Con el dictado del sistema el audio no pasa por los servidores de MONK GRAIN, lo cual <strong>simplifica mucho</strong> el tratamiento. Con un servicio propio habría que declararlo y pedir consentimiento específico</td>
+    </tr>
+    <tr>
+      <td><strong>Lo que de verdad cuesta</strong></td>
+      <td><strong>Que la gente lo use.</strong> Hablarle a un teléfono en público incomoda a mucha gente, más a quien no está acostumbrado. El micrófono tiene que estar visible y ser opcional, nunca el único camino</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>17. Comparación de las tres</h2>
+
+<table>
+  <thead>
+    <tr><th></th><th>IoT</th><th>Geolocalización</th><th>Voz a texto</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hardware nuevo</td><td>Sí, por finca</td><td>No</td><td>No</td></tr>
+    <tr><td>Coste de arranque</td><td>Alto</td><td>Medio</td><td><strong>Casi nulo</strong></td></tr>
+    <tr><td>Coste de mantener</td><td><strong>Alto</strong> (pilas, calibración)</td><td>Bajo</td><td>Nulo</td></tr>
+    <tr><td>Conocimiento que falta</td><td>Electrónica, LoRaWAN</td><td>Geoespacial</td><td>Ninguno</td></tr>
+    <tr><td>Carga legal</td><td>Baja</td><td><strong>Alta</strong> (dato personal)</td><td>Media (biométrico)</td></tr>
+    <tr><td>Valor para el caficultor</td><td><strong>Alto</strong>: mejor factor, mejor precio</td><td>Medio</td><td>Medio-alto</td></tr>
+    <tr><td>Valor para el comprador</td><td><strong>Alto</strong>: evidencia del secado</td><td>Medio: origen creíble</td><td>Bajo</td></tr>
+    <tr><td>Riesgo de que no se use</td><td>Medio</td><td>Bajo</td><td><strong>Alto</strong></td></tr>
+  </tbody>
+</table>
+
+<h3>17.1 En qué orden las haría</h3>
+
+<ol>
+  <li>
+    <strong>Voz a texto, con el dictado del sistema.</strong> Costo casi nulo y se puede
+    probar en una semana. Si la gente no lo usa, se pierde una semana y se aprende algo.
+  </li>
+  <li>
+    <strong>Geolocalización.</strong> No necesita hardware y resuelve dos problemas reales
+    —origen creíble y flete calculado—. Lo que hay que hacer bien es lo legal y la
+    resolución a la que se publica.
+  </li>
+  <li>
+    <strong>Internet de las cosas.</strong> Es la de más valor de las tres: toca el factor
+    de rendimiento, que es el atributo que gobierna el precio. Y es la más cara de
+    sostener. Una finca, tres meses, contrastando con un medidor de mano antes de prometer
+    nada.
+  </li>
+</ol>
+
+<p>
+  El orden va al revés del entusiasmo: lo más barato primero, lo más valioso al final. El
+  motivo es que las dos primeras <strong>enseñan algo sobre los usuarios</strong> antes de
+  gastar en sensores. Si los caficultores no abren la aplicación en la marquesina, el
+  sensor más preciso del mundo no cambia nada.
+</p>
+
+<h2>18. Conclusión</h2>
+
+<p>
+  Las once tecnologías de la Sección 1 comparten un patrón que se ve al ponerlas en fila:
+  <strong>ninguna falla por lo técnico</strong>. Internet de las cosas falla por
+  mantenimiento, el <em>crowdsourcing</em> por control de calidad, las bases de conocimiento
+  por el trabajo humano de construirlas, blockchain por confundir integridad con veracidad,
+  y la inteligencia artificial por no poder explicar lo que decide.
+</p>
+
+<p>
+  De las tres elegidas, la que más valor tiene para MONK GRAIN es la de internet de las
+  cosas, porque toca el factor de rendimiento, que es el atributo que decide el precio del
+  pergamino. Y es la que iría última, porque es la que más cuesta sostener y la que menos
+  enseña si se hace primero.
+</p>
+
+<p>
+  La tecnología emergente que conviene a un proyecto pequeño no es la más nueva: es la que
+  resuelve un problema que los usuarios ya tienen, con recursos que se pueden mantener el
+  año que viene.
+</p>

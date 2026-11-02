@@ -1,0 +1,42 @@
+GA8-220501096-AA2-EV01
+Taller. Integración, tecnologías emergentes y disruptivas — Android
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     2 de noviembre de 2026
+
+Contenido:
+  Taller_Android.pdf    Seccion 1 (investigacion) y Seccion 2 (procedimiento)
+  Taller_Android.html   el mismo documento en HTML, que la guia pide aparte
+
+La guia pide un RAR con "PDF, html y apk". El PDF y el HTML estan aqui.
+
+Seccion 1 — investigacion (hecha)
+  Que es Android, concepto de APK, Android SDK, lenguajes, IDEs,
+  Android multiusuario, minimo privilegio y los componentes esenciales.
+
+Seccion 2 — la primera app (te toca a ti)
+  Instalar Android Studio, crear el proyecto con los valores de la
+  seccion 12, escribir los tres archivos de la seccion 13, ejecutarlo
+  y tomar las 8 capturas.
+
+  El codigo esta listo para copiar y pegar:
+    MainActivity.kt          seccion 13 del documento
+    activity_main.xml        seccion 13
+    strings.xml              seccion 13
+
+  Valores del asistente de nuevo proyecto:
+    Plantilla     Empty Views Activity
+    Name          Hola MONK GRAIN
+    Package       co.monkgrain.hola
+    Language      Kotlin
+    Minimum SDK   API 24 (Android 7.0)
+
+  Generar el APK:
+    ./gradlew assembleDebug
+    # queda en app/build/outputs/apk/debug/app-debug.apk
+
+Pendiente del aprendiz:  las 8 capturas y el APK, que van dentro del RAR.

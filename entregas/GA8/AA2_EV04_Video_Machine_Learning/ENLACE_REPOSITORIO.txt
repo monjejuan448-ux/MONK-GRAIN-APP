@@ -1,0 +1,47 @@
+GA8-220501096-AA2-EV04
+Video exposición sobre machine learning
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     2 de noviembre de 2026
+
+Documento:
+  Guion_Video_Machine_Learning.pdf      12 paginas
+
+ENTREGA FINAL: un video MP4 de 10 minutos. LO GRABAS TU.
+Este documento es el guion completo, con las tres fases que pide la guia.
+
+Que trae el guion
+  Preproduccion   los 9 bloques con su texto completo, palabra por
+                  palabra, su duracion exacta, lo que va en pantalla y
+                  una nota de que NO decir
+                  + las 6 imagenes de apoyo (seccion 13)
+                  + indicaciones de audio
+  Produccion      formato, encuadre, luz, y como grabarlo POR BLOQUES
+                  en vez de de corrido (seccion 14)
+  Posproduccion   los 7 pasos de edicion (seccion 15)
+
+Los 9 bloques (10:00 en total)
+  1. Presentacion y pregunta de arranque        0:00 - 0:50
+  2. Que es la inteligencia artificial          0:50 - 2:00
+  3. Los dos modelos de IA                      2:00 - 3:40
+  4. Que es el machine learning                 3:40 - 5:00
+  5. Antecedentes: setenta años                 5:00 - 6:20
+  6. Objetivos: para que sirve                  6:20 - 7:10
+  7. Productos hechos con IA                    7:10 - 8:10
+  8. Consecuencias sociales, eticas, filosof.   8:10 - 9:30
+  9. Cierre                                     9:30 - 10:00
+
+Antes de entregar
+  La seccion 16 tiene una lista de comprobacion de 15 puntos. Los puntos
+  3 al 12 son exactamente los que enumera la guia, en ese orden, para
+  poder contrastarlos uno por uno.
+
+Programas libres que sirven
+  Grabar:  OBS Studio
+  Editar:  Shotcut, Kdenlive
+
+Pendiente del aprendiz:  grabar el video y entregarlo en MP4.

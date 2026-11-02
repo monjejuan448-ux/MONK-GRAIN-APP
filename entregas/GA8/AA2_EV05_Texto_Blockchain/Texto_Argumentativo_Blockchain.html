@@ -1,0 +1,597 @@
+<!-- GA8-220501096-AA2-EV05 · Texto argumentativo sobre blockchain -->
+<header class="portada">
+  <h1>Blockchain garantiza que el dato no se alteró, no que fuera cierto</h1>
+  <hr class="filete">
+  <p>Texto argumentativo</p>
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">2 de noviembre de 2026</p>
+</header>
+
+<h2>1. Premisa</h2>
+
+<p>
+  <strong>Blockchain resuelve el problema de ponerse de acuerdo sobre un historial sin que
+  nadie lo custodie. No resuelve el problema de que lo escrito sea verdad.</strong> Son dos
+  problemas distintos, y confundirlos explica por qué tantos proyectos de trazabilidad con
+  blockchain no entregan lo que prometieron.
+</p>
+
+<p>
+  Esta distinción no es un detalle técnico: decide cuándo la tecnología sirve. Si el
+  problema es que <em>desconfío de quien guarda el registro</em>, blockchain es la respuesta
+  y es brillante. Si el problema es que <em>desconfío de quien informa el dato</em>,
+  blockchain no aporta nada — y además deja la mentira grabada para siempre, con una
+  integridad impecable.
+</p>
+
+<p>
+  Lo que sigue sostiene esa premisa explicando primero cómo funciona la tecnología, porque
+  el argumento depende de entender <strong>qué es exactamente lo que el mecanismo
+  garantiza</strong>.
+</p>
+
+<h2>2. Qué es blockchain</h2>
+
+<p>
+  Una <em>blockchain</em> —cadena de bloques— es un registro de transacciones compartido
+  entre muchos participantes, en el que cada bloque contiene el resumen criptográfico del
+  bloque anterior. Esa referencia encadena los bloques de modo que alterar uno obliga a
+  recalcular todos los que vienen después.
+</p>
+
+<p>
+  Tres propiedades la definen:
+</p>
+
+<table>
+  <thead><tr><th>Propiedad</th><th>Qué significa</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Distribuida</strong></td>
+      <td>Cada participante tiene una copia completa. No hay un servidor central que la custodie</td>
+    </tr>
+    <tr>
+      <td><strong>Append-only</strong></td>
+      <td>Solo se añade al final. No hay operación de modificar ni de borrar</td>
+    </tr>
+    <tr>
+      <td><strong>Verificable por cualquiera</strong></td>
+      <td>Quien tenga la cadena puede recalcular los resúmenes y comprobar que nadie tocó nada</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Objetivos y antecedentes</h2>
+
+<h3>3.1 El problema que vino a resolver</h3>
+
+<p>
+  El objetivo original fue muy concreto: <strong>dinero digital sin un banco</strong>.
+</p>
+
+<p>
+  El obstáculo se llama <em>doble gasto</em>. Un archivo digital se copia perfectamente, así
+  que si el dinero es un archivo, nada impide pagarle lo mismo a dos personas. La solución
+  de siempre es un tercero de confianza —un banco— que lleve el saldo y diga quién tiene
+  qué. Y eso funciona, con un costo: hay que confiar en el banco, y el banco puede
+  equivocarse, cobrar, congelar o desaparecer.
+</p>
+
+<p>
+  La pregunta que origina blockchain es: <em>¿se puede llevar ese registro entre
+  desconocidos que no confían unos en otros, sin que nadie lo custodie?</em>
+</p>
+
+<h3>3.2 Antecedentes</h3>
+
+<table>
+  <thead><tr><th>Año</th><th>Aporte</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>1979</strong></td>
+      <td>Ralph Merkle describe el <em>árbol de Merkle</em>, que permite resumir muchos datos en un solo valor y verificar uno sin revisar todos</td>
+    </tr>
+    <tr>
+      <td><strong>1991</strong></td>
+      <td>Haber y Stornetta publican un método para <strong>sellar documentos en el tiempo</strong> encadenando sus resúmenes. Es la cadena de bloques, dieciocho años antes de Bitcoin, y sin criptomoneda</td>
+    </tr>
+    <tr>
+      <td><strong>1997</strong></td>
+      <td>Adam Back propone <em>Hashcash</em>: exigir trabajo computacional para enviar un correo, como freno al <em>spam</em>. Es el antecedente directo de la minería</td>
+    </tr>
+    <tr>
+      <td><strong>2008</strong></td>
+      <td>Alguien bajo el nombre de <strong>Satoshi Nakamoto</strong> publica el artículo de Bitcoin, que <em>combina</em> lo anterior con un mecanismo de consenso</td>
+    </tr>
+    <tr>
+      <td><strong>2009</strong></td>
+      <td>Se mina el primer bloque de Bitcoin</td>
+    </tr>
+    <tr>
+      <td><strong>2015</strong></td>
+      <td>Ethereum añade <em>contratos inteligentes</em>: programas que se ejecutan en la cadena</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Conviene detenerse en 1991, porque sostiene parte del argumento: <strong>la cadena de
+  bloques no se inventó para las criptomonedas</strong>. Se inventó para sellar documentos
+  en el tiempo. Lo que Nakamoto aportó en 2008 no fue el encadenamiento —ya existía— sino
+  cómo lograr que miles de desconocidos se pongan de acuerdo sobre cuál es la cadena
+  verdadera. Ese es el problema difícil.
+</p>
+
+<h2>4. Criptografía: las dos piezas</h2>
+
+<p>
+  Blockchain usa criptografía para dos cosas distintas, y conviene no mezclarlas.
+</p>
+
+<h3>4.1 Firma digital: quién autoriza</h3>
+
+<p>
+  Usa criptografía <strong>asimétrica</strong>: cada participante tiene dos claves
+  relacionadas matemáticamente.
+</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Clave privada</strong></td>
+      <td>Secreta. Firma. Quien la tenga puede gastar el dinero asociado</td>
+    </tr>
+    <tr>
+      <td><strong>Clave pública</strong></td>
+      <td>Se comparte. Es la dirección. Permite a cualquiera verificar la firma</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Firmar con la privada y verificar con la pública demuestra dos cosas: que quien firmó
+  tenía la clave, y que el mensaje no cambió después de firmarse.
+</p>
+
+<p>
+  De aquí sale una consecuencia dura: <strong>no hay recuperación de contraseña</strong>. Si
+  se pierde la clave privada, el dinero asociado es inalcanzable para siempre. No hay a
+  quién reclamarle, porque la ausencia de autoridad central —que es la virtud— implica la
+  ausencia de alguien que pueda ayudar.
+</p>
+
+<h3>4.2 Hash: huella del contenido</h3>
+
+<p>
+  Un <strong><em>hash</em></strong> o función de resumen toma datos de cualquier tamaño y
+  produce una cadena de longitud fija. Bitcoin usa SHA-256, que produce 256 bits.
+</p>
+
+<pre class="salida">SHA-256("Lote de pergamino, finca El Mirador, factor 92")
+  = 7d8f3a2b1c9e4f6a0b5d8c3e2f1a9b7c6d4e3f2a1b8c9d0e5f4a3b2c1d9e8f7a
+
+SHA-256("Lote de pergamino, finca El Mirador, factor 93")
+  = 2a9c1f8e3b7d5a4c0e9f6b2d8a1c3e7f4b9d2a6c8e1f5b3d7a9c4e2f6b8d1a3c
+                                        ↑
+            un solo carácter distinto en la entrada,
+            y el resumen no se parece en nada</pre>
+
+<p>
+  Tiene cuatro propiedades, y las cuatro hacen falta:
+</p>
+
+<table>
+  <thead><tr><th>Propiedad</th><th>Qué significa</th><th>Por qué importa aquí</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Determinista</strong></td>
+      <td>La misma entrada da siempre el mismo resumen</td>
+      <td>Permite que cualquiera verifique por su cuenta</td>
+    </tr>
+    <tr>
+      <td><strong>Rápida de calcular</strong></td>
+      <td>Milisegundos para cualquier tamaño</td>
+      <td>Verificar la cadena entera es viable</td>
+    </tr>
+    <tr>
+      <td><strong>Irreversible</strong></td>
+      <td>Del resumen no se puede volver al dato</td>
+      <td>Se puede publicar el resumen de algo privado</td>
+    </tr>
+    <tr>
+      <td><strong>Efecto avalancha</strong></td>
+      <td>Un bit distinto cambia todo el resumen</td>
+      <td><strong>Es lo que delata cualquier alteración</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  <strong>El efecto avalancha es el corazón del mecanismo.</strong> Si el resumen cambiara
+  poco al cambiar poco el dato, se podría alterar un registro buscando un cambio compensado
+  que dejara el resumen igual. Como no es así, cualquier modificación —un peso, un dígito
+  del factor de rendimiento— se nota de inmediato.
+</p>
+
+<h2>5. El bloque</h2>
+
+<p>Un bloque tiene dos partes: la cabecera y las transacciones.</p>
+
+<pre class="salida">┌─────────────────────────────────────────────────┐
+│  BLOQUE 847                                     │
+├─────────────────────────────────────────────────┤
+│  CABECERA                                       │
+│                                                 │
+│   hash_anterior : 00000a3f7b2c…    ← el enlace  │
+│   raiz_merkle   : 9e4d1c8b…        ← resumen de │
+│                                      todas las  │
+│                                      transacc.  │
+│   marca_tiempo  : 2026-11-02T14:23:01Z          │
+│   dificultad    : 00000…  (ceros exigidos)      │
+│   nonce         : 2 847 193 004   ← lo que el   │
+│                                      minero     │
+│                                      buscó      │
+├─────────────────────────────────────────────────┤
+│  TRANSACCIONES                                  │
+│                                                 │
+│   1. A → B   0,015 BTC    firmada por A         │
+│   2. C → D   0,420 BTC    firmada por C         │
+│   3. …                                          │
+└─────────────────────────────────────────────────┘
+
+   hash de esta cabecera = 00000b7e2f1a…
+                            └─► lo hereda el bloque 848</pre>
+
+<table>
+  <thead><tr><th>Campo</th><th>Para qué sirve</th></tr></thead>
+  <tbody>
+    <tr><td><code>hash_anterior</code></td><td>El eslabón. Es lo que convierte una lista en una cadena</td></tr>
+    <tr><td><code>raiz_merkle</code></td><td>Resume todas las transacciones en un valor. Permite verificar que una transacción está en el bloque sin descargarlo entero</td></tr>
+    <tr><td><code>marca_tiempo</code></td><td>Cuándo se creó</td></tr>
+    <tr><td><code>dificultad</code></td><td>Cuántos ceros debe tener el resumen. Define cuánto trabajo cuesta</td></tr>
+    <tr><td><code>nonce</code></td><td>Un número que el minero cambia hasta que el resumen cumple la dificultad</td></tr>
+  </tbody>
+</table>
+
+<h2>6. Cómo se relacionan los bloques</h2>
+
+<pre class="salida">  BLOQUE 846          BLOQUE 847          BLOQUE 848
+┌────────────┐      ┌────────────┐      ┌────────────┐
+│ ant: …1f4e │      │ ant: 0a3f7b│◄─┐   │ ant: 0b7e2f│◄─┐
+│ merkle: …  │      │ merkle: …  │  │   │ merkle: …  │  │
+│ nonce: …   │      │ nonce: …   │  │   │ nonce: …   │  │
+├────────────┤      ├────────────┤  │   ├────────────┤  │
+│ transacc.  │      │ transacc.  │  │   │ transacc.  │  │
+└─────┬──────┘      └─────┬──────┘  │   └─────┬──────┘  │
+      │                   │         │         │         │
+   hash =                hash =     │      hash =       │
+   0a3f7b… ──────────────┘          │      0b7e2f… ─────┘
+                                     │
+                         (y así hacia adelante)</pre>
+
+<p>
+  Si alguien modifica una transacción del bloque 846, el resumen de ese bloque cambia. Pero
+  el 847 guarda el resumen <em>viejo</em> del 846, así que la cadena deja de cuadrar. Para
+  que cuadrara habría que recalcular el 847 — y entonces el 848 deja de cuadrar, y así
+  hasta el final.
+</p>
+
+<p>
+  Y ahí está el verdadero candado: recalcular cada bloque exige <strong>volver a hacer el
+  trabajo de la minería</strong> de todos ellos, mientras el resto de la red sigue añadiendo
+  bloques nuevos a la cadena legítima. Hay que correr más rápido que toda la red junta.
+</p>
+
+<h3>6.1 La red</h3>
+
+<pre class="salida">                    ┌─────┐
+              ┌─────┤  N1 ├─────┐
+              │     └──┬──┘     │
+              │        │        │
+           ┌──┴──┐  ┌──┴──┐  ┌──┴──┐
+       ┌───┤  N2 ├──┤  N3 ├──┤  N4 ├───┐
+       │   └──┬──┘  └──┬──┘  └──┬──┘   │
+       │      │        │        │      │
+    ┌──┴──┐   │     ┌──┴──┐     │   ┌──┴──┐
+    │  N5 ├───┴─────┤  N6 ├─────┴───┤  N7 │
+    └──┬──┘         └──┬──┘         └──┬──┘
+       │               │               │
+       └───────────────┴───────────────┘
+
+  Cada nodo (N1…N7):
+    · tiene una copia completa de la cadena
+    · valida cada bloque que recibe
+    · lo reenvía a sus vecinos
+    · rechaza lo que no cuadra
+
+  No hay centro. Ninguna línea es imprescindible: si N3 cae,
+  la información sigue llegando por los otros caminos.</pre>
+
+<p>
+  Que la topología no tenga centro es justamente lo que da la propiedad buscada: no existe
+  un nodo al que haya que creerle, ni uno cuya caída detenga el sistema.
+</p>
+
+<h2>7. Qué es una criptomoneda</h2>
+
+<p>
+  Una criptomoneda es una unidad de valor cuyo registro de propiedad vive en una blockchain
+  y cuyas transferencias se autorizan con firmas digitales.
+</p>
+
+<p>
+  Hay un detalle que la distingue del dinero bancario y conviene decir bien:
+  <strong>la moneda no es un archivo que se mueve</strong>. No hay un «bitcoin» guardado en
+  ningún lado. Lo que existe es un historial de transacciones, y el saldo de una dirección
+  es el resultado de sumarlas. «Tener» criptomoneda significa tener la clave privada que
+  permite firmar una transferencia desde esa dirección.
+</p>
+
+<table>
+  <thead><tr><th></th><th>Dinero en un banco</th><th>Criptomoneda</th></tr></thead>
+  <tbody>
+    <tr><td>Quién lleva el registro</td><td>El banco</td><td>Todos los nodos</td></tr>
+    <tr><td>Quién autoriza</td><td>El banco, verificando identidad</td><td>Quien tiene la clave privada</td></tr>
+    <tr><td>Si pierdo el acceso</td><td>Se recupera con identificación</td><td><strong>Se pierde para siempre</strong></td></tr>
+    <tr><td>Reversar una transferencia</td><td>Posible</td><td>Imposible</td></tr>
+    <tr><td>Horario</td><td>Hábil</td><td>Permanente</td></tr>
+    <tr><td>Quién emite</td><td>El banco central</td><td>Las reglas del protocolo</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Esa tabla se lee en los dos sentidos, y ahí está la honestidad del asunto: cada ventaja de
+  la columna derecha es la misma propiedad que su desventaja. La irreversibilidad protege
+  del fraude del vendedor y deja sin salida a quien se equivocó de dirección. La ausencia de
+  custodio evita que nadie congele una cuenta y evita que nadie pueda ayudar.
+</p>
+
+<h2>8. La minería</h2>
+
+<p>
+  Minar es <strong>competir por el derecho a añadir el siguiente bloque</strong>, y cobrar
+  por ello.
+</p>
+
+<h3>8.1 Cómo funciona</h3>
+
+<p>
+  El protocolo exige que el resumen de la cabecera del bloque empiece por una cantidad
+  determinada de ceros. Como el resumen es imprevisible, no hay forma de calcular qué
+  cabecera lo cumple: solo se puede <strong>probar</strong>. El minero cambia el
+  <code>nonce</code>, calcula el resumen, mira si cumple, y vuelve a empezar.
+</p>
+
+<pre class="salida">nonce = 0           → hash = 8f3a2b…   no empieza por ceros
+nonce = 1           → hash = c71e9d…   no
+nonce = 2           → hash = 4b8f0a…   no
+   …                        (miles de billones de intentos)
+nonce = 2 847 193 004 → hash = 00000b7e2f…   ✓ cumple
+
+  → el minero anuncia el bloque. Los demás nodos lo verifican
+    con UN solo cálculo, y lo aceptan.</pre>
+
+<p>
+  La asimetría entre encontrar y verificar es lo que hace que funcione: encontrar cuesta una
+  cantidad enorme de trabajo, <strong>comprobar cuesta un cálculo</strong>. Eso es lo que se
+  llama <em>prueba de trabajo</em>.
+</p>
+
+<h3>8.2 Para qué sirve el gasto</h3>
+
+<p>
+  La pregunta razonable es por qué derrochar energía en encontrar números inútiles. La
+  respuesta es que el gasto <em>es</em> el mecanismo de seguridad: hace que
+  <strong>reescribir la historia cueste dinero real</strong>. Sin un costo, cualquiera
+  podría generar miles de cadenas alternativas y no habría forma de saber cuál es la
+  verdadera. La regla de consenso es «la cadena con más trabajo acumulado gana», y para
+  ganar hay que gastar más que todos los demás juntos.
+</p>
+
+<p>
+  El minero recibe dos cosas: una recompensa de monedas nuevas —que se reduce a la mitad
+  cada cuatro años aproximadamente, y así se emite la moneda— y las comisiones de las
+  transacciones del bloque.
+</p>
+
+<h3>8.3 El costo, dicho sin adornos</h3>
+
+<p>
+  El consumo energético de la prueba de trabajo es enorme y es una objeción legítima. No se
+  puede «optimizar»: la seguridad del sistema <em>está</em> en el gasto, así que reducirlo
+  reduce la seguridad.
+</p>
+
+<p>
+  La alternativa que se adoptó es cambiar de mecanismo. Ethereum pasó en 2022 de prueba de
+  trabajo a <strong>prueba de participación</strong>, donde el derecho a proponer bloques
+  depende de cuánta moneda se deposita como garantía y no de cuánta electricidad se gasta.
+  Quien intenta hacer trampa pierde el depósito. El consumo bajó drásticamente, y en cambio
+  concentra influencia en quien más tiene — otro intercambio.
+</p>
+
+<h2>9. Productos hechos con esta tecnología</h2>
+
+<table>
+  <thead><tr><th>Producto</th><th>Qué es</th><th>Qué problema atiende</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Bitcoin</strong></td><td>La primera criptomoneda (2009)</td><td>Dinero digital sin banco</td></tr>
+    <tr><td><strong>Ethereum</strong></td><td>Cadena con contratos inteligentes</td><td>Programas que se ejecutan sin servidor</td></tr>
+    <tr><td><strong>Hyperledger Fabric</strong></td><td>Blockchain <em>privada</em>, de la Fundación Linux</td><td>Consorcios de empresas que colaboran y compiten</td></tr>
+    <tr><td><strong>IBM Food Trust</strong></td><td>Trazabilidad alimentaria sobre Fabric</td><td>Rastrear un lote de un extremo a otro de la cadena</td></tr>
+    <tr><td><strong>Everledger</strong></td><td>Registro de diamantes y objetos de valor</td><td>Procedencia, contra el robo y los diamantes de conflicto</td></tr>
+    <tr><td><strong>Stablecoins</strong> (USDC, USDT)</td><td>Monedas ancladas a una divisa</td><td>Transferir valor sin la volatilidad</td></tr>
+    <tr><td><strong>Registros de tierras</strong></td><td>Pilotos en Georgia, Suecia, Honduras</td><td>Catastros manipulables o destruidos</td></tr>
+    <tr><td><strong>Diplomas verificables</strong></td><td>Títulos con su resumen en cadena</td><td>Comprobar un título sin llamar a la universidad</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Esta lista ya insinúa el argumento. Los casos que funcionaron —diplomas, procedencia de
+  diamantes— tienen una cosa en común: <strong>el dato que se registra es verificable en el
+  momento de escribirlo por quien lo escribe</strong>. La universidad sabe a quién tituló.
+  Los que han costado más de lo que entregaron son los de trazabilidad agrícola, donde el
+  dato lo informa alguien que podría tener interés en informar otra cosa.
+</p>
+
+<h2>10. El argumento</h2>
+
+<h3>10.1 Lo que el mecanismo garantiza, exactamente</h3>
+
+<p>
+  Recapitulando lo técnico: el encadenamiento de resúmenes garantiza que
+  <strong>un dato escrito no se alteró después</strong>. La firma digital garantiza
+  <strong>quién lo escribió</strong>. El consenso garantiza que <strong>todos ven el mismo
+  historial</strong>.
+</p>
+
+<p>
+  Ninguna de las tres dice nada sobre si el dato era <strong>cierto cuando se escribió</strong>.
+  No hay en el protocolo ningún mecanismo que pueda decirlo, y no por falta de madurez: es
+  que la pregunta «¿es verdad?» no se contesta mirando el registro, sino mirando el mundo.
+  Esa frontera se llama <em>el problema del oráculo</em>, y es estructural.
+</p>
+
+<h3>10.2 El caso del café</h3>
+
+<p>
+  Vale la pena aterrizarlo en MONK GRAIN, el proyecto de este programa: un mercado de café
+  pergamino seco entre caficultores y compradores, donde el atributo que gobierna el precio
+  es el <strong>factor de rendimiento</strong>.
+</p>
+
+<p>
+  Supongamos que se registra cada lote en una blockchain para garantizar su trazabilidad.
+  Un caficultor publica un lote con factor 88 —excepcional, muy por encima del estándar de
+  94 de la Federación— cuando en realidad es 98. El sistema funciona perfectamente: la
+  transacción se firma con su clave, entra en un bloque, se encadena, y queda registrada de
+  forma inmutable y verificable por cualquiera.
+</p>
+
+<p>
+  <strong>Lo que queda inmutable es la mentira.</strong> Y no solo eso: queda
+  <em>legitimada</em>, porque el comprador ve un dato «verificado en blockchain» y le
+  atribuye una credibilidad que el mecanismo nunca prometió. La tecnología hizo que el
+  registro falso sea más creíble que si estuviera en una hoja de cálculo.
+</p>
+
+<p>
+  Peor aún: como no hay operación de borrar, corregirlo exige añadir un registro nuevo que
+  diga «lo anterior estaba mal», y el original permanece. Un dato erróneo en una base de
+  datos corriente se corrige; en una cadena, se acumula.
+</p>
+
+<h3>10.3 Cuándo sí, entonces</h3>
+
+<p>
+  El argumento no es que blockchain no sirva. Es que sirve para un problema preciso, y
+  conviene saber cuál:
+</p>
+
+<table>
+  <thead><tr><th>Si el problema es…</th><th>¿Sirve?</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Desconfío de <strong>quien guarda</strong> el registro</td>
+      <td><strong>Sí</strong></td>
+      <td>Es exactamente lo que resuelve: quita al custodio</td>
+    </tr>
+    <tr>
+      <td>Varias empresas que <strong>compiten</strong> necesitan un registro común</td>
+      <td><strong>Sí</strong></td>
+      <td>Ninguna aceptaría que lo lleve otra</td>
+    </tr>
+    <tr>
+      <td>Hay que demostrar que un documento <strong>existía</strong> en una fecha</td>
+      <td><strong>Sí</strong></td>
+      <td>Es el uso de 1991, el original</td>
+    </tr>
+    <tr>
+      <td>Desconfío de <strong>quien informa</strong> el dato</td>
+      <td><strong>No</strong></td>
+      <td>Lo graba sin poder comprobarlo</td>
+    </tr>
+    <tr>
+      <td>Quiero trazabilidad y <strong>una sola empresa</strong> controla la cadena</td>
+      <td><strong>No</strong></td>
+      <td>Una base de datos con bitácora de auditoría hace lo mismo, más barato y más rápido</td>
+    </tr>
+    <tr>
+      <td>Hay que <strong>corregir</strong> datos con frecuencia</td>
+      <td><strong>No</strong></td>
+      <td>La inmutabilidad trabaja en contra</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  La prueba que más rápido descarta un proyecto es una sola pregunta:
+  <strong>¿quién es el custodio del que desconfiamos?</strong> Si no se puede nombrar, no
+  hay problema que blockchain resuelva, y lo que se está buscando es la palabra, no la
+  tecnología.
+</p>
+
+<h3>10.4 Qué haría falta para que la trazabilidad del café funcionara</h3>
+
+<p>
+  Para que el registro del factor de rendimiento significara algo, el dato tendría que
+  entrar <strong>sin pasar por el interés de nadie</strong>:
+</p>
+
+<ul>
+  <li>
+    Que lo mida un <strong>tercero independiente</strong> —una trilladora, un laboratorio—
+    y firme él la transacción, no el vendedor.
+  </li>
+  <li>
+    O que lo reporte un <strong>instrumento</strong> cuya clave privada no esté en manos del
+    interesado.
+  </li>
+  <li>
+    O que se registre un <strong>compromiso verificable después</strong>: el vendedor declara
+    88, y si la trilla arroja 98, el registro inmutable sirve para reclamar.
+  </li>
+</ul>
+
+<p>
+  Nótese que <strong>el valor de las tres opciones está fuera de la blockchain</strong>. Es
+  el laboratorio, el instrumento o el contrato lo que aporta la veracidad; la cadena solo
+  impide que se borre después. Lo cual es útil —pero es mucho menos de lo que se anuncia, y
+  en los dos primeros casos un registro firmado y bien auditado lo lograría igual.
+</p>
+
+<h2>11. Conclusión</h2>
+
+<p>
+  Blockchain resuelve un problema real y difícil: <strong>ponerse de acuerdo sobre un
+  historial único entre participantes que no confían entre sí, sin un custodio</strong>. Lo
+  resuelve con tres piezas —el resumen criptográfico que delata cualquier alteración, la
+  firma digital que acredita quién autoriza, y un mecanismo de consenso que hace costoso
+  reescribir el pasado— y lo resuelve bien. Bitcoin lleva funcionando desde 2009.
+</p>
+
+<p>
+  Pero lo que garantiza es <strong>integridad, no veracidad</strong>. Las tres piezas
+  aseguran que el dato no se alteró, que se sabe quién lo puso y que todos ven lo mismo.
+  Ninguna puede decir si era cierto al escribirlo, porque eso no se averigua mirando el
+  registro.
+</p>
+
+<p>
+  De ahí la consecuencia práctica, y es la que sostiene este texto: <strong>un dato falso
+  registrado en una blockchain no se vuelve cierto; se vuelve permanente, y además
+  aparenta estar verificado</strong>. En un mercado de café donde el factor de rendimiento
+  decide el precio, eso no es una mejora sobre una base de datos bien auditada: es un
+  riesgo mayor, porque le presta credibilidad técnica a un dato que nadie comprobó.
+</p>
+
+<p>
+  La pregunta correcta antes de adoptarla no es «¿cómo usamos blockchain?» sino
+  <strong>«¿quién es el custodio del que desconfiamos?»</strong>. Cuando se puede nombrar
+  —varios actores que compiten, un catastro manipulable, un archivo que puede
+  desaparecer—, la respuesta es sólida. Cuando no se puede nombrar, lo que se está buscando
+  es la credibilidad de la palabra y no lo que la tecnología hace, y ese es un proyecto que
+  va a costar mucho y entregar poco.
+</p>

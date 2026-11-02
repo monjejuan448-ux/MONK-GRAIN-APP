@@ -33,20 +33,49 @@ EXCLUIR=(-x '*/target/*' -x '*/__pycache__/*' -x '*/node_modules/*'
 
 mkdir -p "$DESTINO"
 
-# empaquetar <AA#_EV##> <carpeta de la evidencia> [rutas extra del repositorio...]
+# Evidencias donde el HTML SÍ entra en el ZIP.
 #
-# La carpeta de la evidencia entra completa menos los .html de origen (el PDF
-# ya está, y el HTML solo sirve para reconstruirlo). Las rutas extra son
-# código del producto que vive fuera de `entregas/`.
+# Por regla general se excluye: el PDF ya está y el HTML solo sirve para
+# reconstruirlo. La excepción es GA8-AA2-EV01, donde la guía pide
+# literalmente «PDF, html y apk», así que ahí el HTML es parte de la entrega
+# y no un archivo de trabajo.
+CON_HTML=" G8_AA2_EV01 "
+
+# empaquetar <clave> <carpeta de la evidencia> [rutas extra del repositorio...]
+#
+# La carpeta de la evidencia entra completa, menos los .html salvo en las
+# claves de CON_HTML. Las rutas extra son código del producto que vive fuera
+# de `entregas/`.
 empaquetar() {
   local clave="$1"; shift
   local carpeta="$1"; shift
-  local zip="$DESTINO/${APRENDIZ}_${clave}.zip"
+  # El nombre lleva la guia, y es una DESVIACION DELIBERADA del formato
+  # NOMBRE_APELLIDO_AA#_EV## que piden las guias.
+  #
+  # El motivo: las dos guias numeran sus actividades desde AA1, asi que
+  # GA7-AA2-EV01 (modulo JDBC) y GA8-AA2-EV01 (taller de Android) producirian
+  # el MISMO nombre de archivo. Al generarlos sin la guia, el segundo piso al
+  # primero y el ZIP del modulo JDBC desaparecio sin aviso. Lo mismo con
+  # AA2-EV02.
+  #
+  # Si la instructora exige el nombre literal, hay que entregarlos en envios
+  # separados por guia y renombrarlos al subir.
+  local guia="GA7"
+  local nombre="$clave"
+  if [[ "$clave" == G8_* ]]; then
+    guia="GA8"
+    nombre="${clave#G8_}"
+  fi
+  local zip="$DESTINO/${APRENDIZ}_${guia}_${nombre}.zip"
 
   rm -f "$zip"
   cd "$RAIZ"
 
-  zip -q -r "$zip" "$carpeta" -x '*.html' "${EXCLUIR[@]}"
+  if [[ "$CON_HTML" == *" $clave "* ]]; then
+    zip -q -r "$zip" "$carpeta" "${EXCLUIR[@]}"
+  else
+    zip -q -r "$zip" "$carpeta" -x '*.html' "${EXCLUIR[@]}"
+  fi
 
   local extra
   for extra in "$@"; do
@@ -57,13 +86,20 @@ empaquetar() {
     zip -q -r "$zip" "$extra" "${EXCLUIR[@]}"
   done
 
-  printf '  %-28s %s  (%s)\n' "${APRENDIZ}_${clave}.zip" \
+  printf '  %-34s %s  (%s)\n' "${APRENDIZ}_${guia}_${nombre}.zip" \
     "$(unzip -l "$zip" | tail -1 | awk '{print $2" archivos"}')" \
     "$(du -h "$zip" | cut -f1)"
 }
 
 # ------------------------------------------------------------------
-# Las nueve evidencias que se entregan comprimidas
+# Las evidencias que se entregan comprimidas
+#
+# GA7: nueve de las diecisiete. GA8: cuatro de las siete — las dos de
+# integracion, que piden «codigo fuente, archivos compilados, documentos y
+# URL», y las dos de Android, que piden RAR con el APK dentro.
+#
+# Las claves de GA8 llevan el prefijo G8_ para que no choquen con las de GA7:
+# las dos guias tienen una AA1-EV01 y una AA2-EV01 distintas.
 # ------------------------------------------------------------------
 declare -A EVIDENCIAS=(
   [AA2_EV01]="entregas/GA7/AA2_EV01_Modulo_JDBC"
@@ -75,6 +111,11 @@ declare -A EVIDENCIAS=(
   [AA5_EV02]="entregas/GA7/AA5_EV02_Postman_API"
   [AA5_EV03]="entregas/GA7/AA5_EV03_APIs_Proyecto"
   [AA5_EV04]="entregas/GA7/AA5_EV04_Postman_Proyecto"
+
+  [G8_AA1_EV01]="entregas/GA8/AA1_EV01_Integracion_Modulos"
+  [G8_AA1_EV02]="entregas/GA8/AA1_EV02_Modulos_Integrados"
+  [G8_AA2_EV01]="entregas/GA8/AA2_EV01_Taller_Android"
+  [G8_AA2_EV02]="entregas/GA8/AA2_EV02_APK_Movil"
 )
 
 # Código del producto que cada evidencia necesita llevar dentro, porque vive
@@ -101,6 +142,20 @@ declare -A EXTRAS=(
               web/tests/TradingComponents.test.tsx"
   [AA5_EV03]="backend/app/main.py backend/app/modules backend/app/schemas backend/app/core"
   [AA5_EV04]="backend/app/main.py backend/app/modules backend/app/schemas backend/app/core"
+
+  # Las dos de integracion piden «codigo fuente y archivos compilados» del
+  # sistema entero. Se incluye el backend y el frontend sin lo que se
+  # regenera, mas la orquestacion y el flujo de integracion continua, que es
+  # donde esta la configuracion de servidores que la evidencia documenta.
+  [G8_AA1_EV01]="backend/app backend/migrations backend/Dockerfile
+                 backend/requirements.lock backend/pyproject.toml
+                 web/src web/package.json web/Dockerfile
+                 docker-compose.yml docker-compose.prod.yml infra
+                 .github/workflows/ci.yml"
+  [G8_AA1_EV02]="backend/app backend/migrations backend/tests backend/Dockerfile
+                 backend/requirements.lock web/src web/tests web/package.json
+                 docker-compose.yml docker-compose.prod.yml infra docs
+                 .github/workflows/ci.yml"
 )
 
 SOLO="${1:-}"

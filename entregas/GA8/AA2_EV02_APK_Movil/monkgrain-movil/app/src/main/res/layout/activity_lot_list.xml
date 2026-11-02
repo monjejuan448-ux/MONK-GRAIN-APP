@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  El catálogo de lotes.
+
+  Los cuatro estados —cargando, error, vacío y la lista— están los cuatro en
+  el árbol y se muestran u ocultan. La alternativa, crearlos al vuelo, hace
+  que el código de la Activity tenga que saber construir vistas, que es justo
+  lo que el diseño en XML evita.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/fondo">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/lista"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:listitem="@layout/item_lot" />
+
+    <ProgressBar
+        android:id="@+id/cargando"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/error"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/reintentar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!--
+      El botón de reintentar aparece SOLO cuando falta conexión. Ante un
+      error 500 no se ofrece, porque reintentar no va a arreglarlo y
+      ofrecerlo sería mentirle al usuario sobre lo que está en su mano.
+    -->
+    <Button
+        android:id="@+id/reintentar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/reintentar"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/error"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/vacio"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:gravity="center"
+        android:text="@string/sin_lotes"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,36 @@
+GA8-220501096-AA2-EV03
+Taller sobre tecnologías emergentes y disruptivas
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     2 de noviembre de 2026
+
+Documento:
+  Taller_Tecnologias_Disruptivas.pdf      15 paginas
+
+Seccion 1 — las once tecnologias
+  Internet de las cosas, inteligencia artificial, crowdsourcing,
+  voz a texto, geolocalizacion, impresion 3D, blockchain, bases de
+  conocimiento, tecnologias en robots y tecnologias visuales.
+
+Seccion 2 — las tres elegidas
+  1. Internet de las cosas   sensores de humedad en la marquesina
+  2. Geolocalizacion         origen verificable y flete calculado
+  3. Voz a texto             publicar un lote dictandolo
+
+  De cada una: en que consiste, caracteristicas mas importantes, como
+  usarla en mi medio ambiente y que recursos necesito.
+
+Por que esas tres
+  - Resuelven un problema que MONK GRAIN tiene hoy
+  - No duplican otra evidencia: inteligencia artificial es el tema de
+    AA2-EV04 y blockchain el de AA2-EV05
+  - Son alcanzables por una plataforma pequeña en el Eje Cafetero
+
+LA GUIA DICE QUE LAS TRES LAS ELIGES TU. Estas son las que mejor encajan
+con el proyecto, pero se pueden cambiar: impresion 3D y robotica darian
+un trabajo igual de valido si el interes va por ahi. Si las cambias,
+avisame y reescribo la seccion 2.

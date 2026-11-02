@@ -1,0 +1,49 @@
+GA8-220501096-AA2-EV05
+Texto argumentativo sobre blockchain
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     2 de noviembre de 2026
+
+ENTREGA: documento en Word
+  Texto_Argumentativo_Blockchain.docx      <- ESTE es el que se entrega
+  Texto_Argumentativo_Blockchain.pdf       12 paginas (minimo pedido: 3)
+
+Premisa del texto
+  Blockchain garantiza que el dato no se altero, no que fuera cierto.
+  Resuelve el problema de ponerse de acuerdo sobre un historial sin
+  custodio; no resuelve el problema de que lo escrito sea verdad.
+
+Conclusion
+  Un dato falso registrado en una blockchain no se vuelve cierto: se
+  vuelve permanente, y ademas aparenta estar verificado. La pregunta
+  correcta antes de adoptarla no es "¿como usamos blockchain?" sino
+  "¿quien es el custodio del que desconfiamos?".
+
+Lo que pide la guia, y donde esta
+  Que es blockchain                 seccion 2
+  Objetivos y antecedentes          seccion 3
+  Criptografia                      seccion 4.1
+  Hash                              seccion 4.2
+  Bloque                            seccion 5
+  Como se relacionan los bloques    seccion 6
+  Grafico de una red blockchain     seccion 6.1
+  Productos hechos con blockchain   seccion 9
+  Que es una criptomoneda           seccion 7
+  En que consiste la mineria        seccion 8
+  Premisa                           seccion 1
+  Conclusion                        seccion 11
+
+NOTA SOBRE EL GRAFICO DE LA RED
+Los diagramas (el bloque, la cadena y la red) estan dibujados con
+caracteres y no como imagen, y es a proposito: se comprobo que
+LibreOffice NO conserva las imagenes al convertir de HTML a Word, ni
+SVG ni PNG, con ningun filtro. Dibujados con caracteres sobreviven
+intactos (590 caracteres de linea verificados en el .docx).
+
+Si la instructora prefiere una imagen dibujada, se puede rehacer la
+seccion 6.1 con un grafico hecho en LibreOffice Draw y pegarlo
+directamente en el .docx.

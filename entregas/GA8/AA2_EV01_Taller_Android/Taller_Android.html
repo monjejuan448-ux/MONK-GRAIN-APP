@@ -1,0 +1,660 @@
+<!-- GA8-220501096-AA2-EV01 · Taller de integración y tecnologías emergentes: Android -->
+<header class="portada">
+  <h1>Taller: Integración y Tecnologías Emergentes — Android</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este taller tiene dos secciones. La primera investiga qué es Android y cómo está hecho
+  por dentro; la segunda crea la primera aplicación en Android Studio.
+</p>
+
+<p>
+  La investigación no se queda en la definición de diccionario. Donde una decisión de
+  Android se parece a una que ya se tomó en MONK GRAIN —los permisos, el aislamiento entre
+  usuarios, el ciclo de vida— se dice, porque es lo que convierte el dato en algo que se
+  puede usar en el proyecto de AA2-EV02.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Investigar los conceptos fundamentales de Android y crear la primera aplicación con
+  Android Studio, configurando el proyecto, una actividad, y ejecutándola hasta mostrar un
+  mensaje en pantalla.
+</p>
+
+<hr>
+
+<h2>SECCIÓN 1 — Investigación</h2>
+
+<h2>3. Qué es Android</h2>
+
+<p>
+  Android es un <strong>sistema operativo para dispositivos móviles</strong> construido
+  sobre el núcleo de Linux, desarrollado hoy por Google y la Open Handset Alliance. Nació
+  en 2003 como una empresa independiente —Android Inc., de Andy Rubin— que Google compró en
+  2005; la primera versión pública es de 2008.
+</p>
+
+<p>
+  Lo que explica casi todo lo demás es que <strong>Android no es Linux con otra cara</strong>:
+  es una pila de capas donde cada una resuelve un problema distinto.
+</p>
+
+<pre class="salida">┌─────────────────────────────────────────────┐
+│  Aplicaciones        la tuya, y las de serie │
+├─────────────────────────────────────────────┤
+│  Marco de trabajo    Activity, Service,      │
+│  (Java/Kotlin API)   ContentProvider…        │
+├─────────────────────────────────────────────┤
+│  Bibliotecas         ART (ejecuta el código) │
+│  nativas + ART       SQLite, OpenGL, Media   │
+├─────────────────────────────────────────────┤
+│  HAL                 abstrae el hardware:    │
+│                      cámara, sensores, GPS   │
+├─────────────────────────────────────────────┤
+│  Núcleo Linux        procesos, memoria,      │
+│                      controladores, permisos │
+└─────────────────────────────────────────────┘</pre>
+
+<p>
+  La capa de abstracción del hardware (HAL) es la que permite que la misma aplicación
+  funcione en un teléfono de gama baja y en uno de gama alta con cámaras distintas: la
+  aplicación pide «una foto», no «esta cámara concreta».
+</p>
+
+<h2>4. Qué es un APK</h2>
+
+<p>
+  <strong>APK</strong> es <em>Android Package</em>: el archivo que se instala en el
+  dispositivo. Por dentro es un <strong>ZIP</strong> con una estructura fija.
+</p>
+
+<table>
+  <thead><tr><th>Dentro del APK</th><th>Qué es</th></tr></thead>
+  <tbody>
+    <tr><td><code>AndroidManifest.xml</code></td><td>La declaración: nombre, versión, permisos, actividades y cuál se abre primero</td></tr>
+    <tr><td><code>classes.dex</code></td><td>El código compilado a <em>bytecode</em> DEX, que es lo que ART ejecuta</td></tr>
+    <tr><td><code>resources.arsc</code></td><td>Los recursos compilados: textos, colores, medidas</td></tr>
+    <tr><td><code>res/</code></td><td>Imágenes y diseños de pantalla</td></tr>
+    <tr><td><code>lib/</code></td><td>Bibliotecas nativas, una carpeta por arquitectura</td></tr>
+    <tr><td><code>META-INF/</code></td><td><strong>La firma digital</strong></td></tr>
+  </tbody>
+</table>
+
+<p>
+  <strong>Todo APK va firmado</strong>, y la firma hace dos cosas. Identifica a quien lo
+  publicó —no por su nombre, sino porque la clave es siempre la misma— y permite que el
+  sistema compruebe que el archivo no fue modificado después. De ahí sale una regla con
+  consecuencias prácticas: <strong>una actualización solo se instala sobre una aplicación
+  firmada con la misma clave</strong>. Perder la clave de firma significa no poder volver a
+  actualizar la aplicación nunca; hay que publicarla con otro identificador y pedirle a
+  cada usuario que la instale de cero.
+</p>
+
+<p>
+  Desde 2021, Google Play recibe en cambio un <strong>AAB</strong> (<em>Android App
+  Bundle</em>), y es Play quien genera un APK a medida de cada dispositivo. La diferencia
+  importa: el AAB se sube a la tienda, el APK se instala. Para una aplicación interna como
+  la de AA2-EV02, que se instala a mano, el APK sigue siendo el formato.
+</p>
+
+<h2>5. El Android SDK</h2>
+
+<p>
+  El <strong>SDK</strong> (<em>Software Development Kit</em>) es el conjunto de piezas que
+  hacen falta para construir una aplicación.
+</p>
+
+<table>
+  <thead><tr><th>Pieza</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><strong>SDK Platforms</strong></td><td>Las API de cada versión de Android. Se compila contra una</td></tr>
+    <tr><td><strong>Build Tools</strong></td><td><code>aapt2</code> compila recursos, <code>d8</code> convierte a DEX, <code>apksigner</code> firma</td></tr>
+    <tr><td><strong>Platform Tools</strong></td><td><code>adb</code>, el puente para instalar y depurar en el dispositivo</td></tr>
+    <tr><td><strong>Emulator</strong></td><td>Dispositivos virtuales para probar sin teléfono</td></tr>
+    <tr><td><strong>Gradle</strong></td><td>El sistema de construcción: dependencias, variantes, firma</td></tr>
+  </tbody>
+</table>
+
+<h3>5.1 Tres números que se confunden todo el tiempo</h3>
+
+<table>
+  <thead><tr><th>Nivel de API</th><th>Qué significa</th><th>Qué decide</th></tr></thead>
+  <tbody>
+    <tr><td><code>minSdk</code></td><td>La versión más antigua que puede instalarla</td><td>A cuánta gente llegas</td></tr>
+    <tr><td><code>targetSdk</code></td><td>La versión contra la que se probó</td><td>Qué comportamientos nuevos se te aplican</td></tr>
+    <tr><td><code>compileSdk</code></td><td>Las API disponibles al compilar</td><td>Qué puedes escribir</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Bajar <code>minSdk</code> amplía el público y obliga a comprobar en tiempo de ejecución
+  si una función existe. Subir <code>targetSdk</code> es obligatorio para publicar en Play
+  y <em>activa</em> restricciones nuevas: una aplicación con <code>targetSdk</code> viejo
+  conserva permisos que ya no se conceden. Es la tensión central de mantener una aplicación
+  Android.
+</p>
+
+<h2>6. Lenguajes</h2>
+
+<table>
+  <thead><tr><th>Lenguaje</th><th>Situación</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Kotlin</strong></td><td>El recomendado por Google desde 2019. Tipos que distinguen lo que puede ser nulo de lo que no, corrutinas para el trabajo en segundo plano, menos código repetido</td></tr>
+    <tr><td><strong>Java</strong></td><td>Sigue funcionando. Millones de líneas en producción, y es el que se ha usado en GA7</td></tr>
+    <tr><td>C / C++ (NDK)</td><td>Solo para lo que necesita velocidad: motores de juego, procesamiento de señal</td></tr>
+    <tr><td>Dart, JavaScript</td><td>Multiplataforma (Flutter, React Native). No son Android nativo</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los dos primeros conviven en el mismo proyecto porque <strong>ambos compilan al mismo
+  bytecode DEX</strong>. Una clase Kotlin puede llamar a una Java y al revés, sin puente ni
+  conversión.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Qué se usará en AA2-EV02, y por qué.</strong> El proyecto móvil de MONK GRAIN
+    se escribirá en <strong>Kotlin</strong>. El motivo no es que sea lo recomendado: es que
+    el tipo que distingue lo nulo de lo no nulo resuelve en el compilador justo el error que
+    más aparece al consumir una API —un campo que llega vacío y nadie lo previó—. En Java
+    ese error aparece en el teléfono del usuario; en Kotlin, al compilar.
+  </p>
+</div>
+
+<h2>7. Entornos de desarrollo</h2>
+
+<table>
+  <thead><tr><th>IDE</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Android Studio</strong></td><td>El oficial, sobre IntelliJ IDEA. Trae SDK, emulador, editor de diseño, analizadores y perfilador</td></tr>
+    <tr><td>IntelliJ IDEA</td><td>Con el complemento de Android. Mismo motor, menos herramientas específicas</td></tr>
+    <tr><td>Visual Studio Code</td><td>Posible con extensiones, pero sin editor de diseño ni emulador integrado</td></tr>
+    <tr><td>Eclipse + ADT</td><td><strong>Descontinuado</strong> en 2015. Aparece en tutoriales viejos y ya no se usa</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Android multiusuario</h2>
+
+<p>
+  Android soporta <strong>varios usuarios en un mismo dispositivo</strong>, cada uno con sus
+  aplicaciones, sus datos y sus cuentas. Hay tres figuras distintas:
+</p>
+
+<table>
+  <thead><tr><th>Figura</th><th>Qué es</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Usuario completo</strong></td><td>Un espacio independiente. Instala sus aplicaciones, no ve las de los demás</td></tr>
+    <tr><td><strong>Perfil restringido</strong></td><td>Comparte las aplicaciones del dueño con límites. Pensado para menores</td></tr>
+    <tr><td><strong>Perfil de trabajo</strong></td><td>Separa lo laboral de lo personal en el mismo teléfono. La empresa administra <em>solo</em> ese perfil</td></tr>
+  </tbody>
+</table>
+
+<p>
+  El mecanismo es sencillo y contundente: <strong>cada usuario tiene su propio directorio de
+  datos</strong> (<code>/data/user/0/</code>, <code>/data/user/10/</code>…) y el núcleo
+  impide que un proceso lea el del otro. No es una cortina en la interfaz, es un permiso del
+  sistema de archivos.
+</p>
+
+<p>
+  Para quien desarrolla, la consecuencia práctica es que <strong>la misma aplicación puede
+  estar instalada dos veces con datos distintos</strong>. Una aplicación que guarde una
+  sesión suponiendo que hay un solo usuario se comportará de forma extraña cuando la abra el
+  segundo. Es el mismo error de fondo que guardar estado global en un servidor web que
+  atiende a varias personas.
+</p>
+
+<h2>9. Mínimo privilegio</h2>
+
+<p>
+  Es el principio que atraviesa toda la seguridad de Android: <strong>cada aplicación recibe
+  lo mínimo para funcionar, y nada más</strong>.
+</p>
+
+<h3>9.1 Cómo se implementa</h3>
+
+<table>
+  <thead><tr><th>Mecanismo</th><th>Cómo funciona</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Un UID por aplicación</strong></td>
+      <td>Android aprovecha los usuarios de Linux: cada aplicación instalada recibe su propio identificador de usuario, y sus archivos pertenecen a ese UID. Una aplicación no puede leer los datos de otra porque el <em>sistema de archivos</em> no se lo permite</td>
+    </tr>
+    <tr>
+      <td><strong>Proceso aislado</strong></td>
+      <td>Cada aplicación corre en su propio proceso con su propia instancia de ART. Si una se cae, no arrastra a las demás</td>
+    </tr>
+    <tr>
+      <td><strong>Permisos declarados</strong></td>
+      <td>Lo que necesita acceso fuera de su caja se declara en el manifiesto. Lo no declarado, no existe para esa aplicación</td>
+    </tr>
+    <tr>
+      <td><strong>Permisos peligrosos en tiempo de ejecución</strong></td>
+      <td>Desde Android 6, cámara, ubicación, contactos y micrófono se piden <em>al usar</em>, no al instalar, y el usuario puede negarlos o concederlos solo esta vez</td>
+    </tr>
+    <tr>
+      <td><strong>SELinux</strong></td>
+      <td>Control de acceso obligatorio que limita incluso a los procesos del sistema. Una aplicación comprometida no hereda todo el dispositivo</td>
+    </tr>
+    <tr>
+      <td><strong>Alcance del almacenamiento</strong></td>
+      <td>Desde Android 10, una aplicación ve sus archivos y lo que el usuario elija, no la tarjeta entera</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Es el mismo principio que gobierna el backend de MONK GRAIN.</strong> Allí los
+    endpoints no preguntan «¿eres administrador?» sino «¿tienes el permiso
+    <code>product.create</code>?», y hay 24 permisos en vez de cuatro roles con poderes
+    amplios. La idea de fondo es idéntica: conceder lo mínimo y nombrarlo. La diferencia es
+    quién concede —el usuario del teléfono en Android, un administrador en la plataforma—.
+  </p>
+</div>
+
+<h3>9.2 Lo que esto significa al escribir la aplicación</h3>
+
+<ul>
+  <li>
+    <strong>Pedir un permiso cuesta usuarios.</strong> Cada diálogo es una oportunidad de
+    que digan que no y de que desconfíen. La aplicación de AA2-EV02 solo necesitará
+    <code>INTERNET</code>, que ni siquiera abre diálogo.
+  </li>
+  <li>
+    <strong>Hay que programar para el «no».</strong> Un permiso puede negarse, o concederse
+    «solo esta vez». La aplicación tiene que seguir siendo útil sin él, no quedarse en una
+    pantalla en blanco.
+  </li>
+  <li>
+    <strong>Los datos sensibles no van en almacenamiento compartido.</strong> Un token de
+    sesión va en el almacenamiento privado de la aplicación o, mejor, cifrado.
+  </li>
+</ul>
+
+<h2>10. Componentes esenciales de una aplicación</h2>
+
+<p>
+  Son cuatro, y todos tienen algo en común: <strong>el sistema los crea y los destruye, no
+  la aplicación</strong>. Esa inversión explica casi todos los errores de principiante en
+  Android.
+</p>
+
+<table>
+  <thead><tr><th>Componente</th><th>Qué es</th><th>Ejemplo en MONK GRAIN móvil</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Activity</strong></td>
+      <td>Una pantalla con la que el usuario interactúa</td>
+      <td>La lista de lotes; el detalle de un lote</td>
+    </tr>
+    <tr>
+      <td><strong>Service</strong></td>
+      <td>Trabajo sin interfaz, que sigue aunque se cierre la pantalla</td>
+      <td>Subir la foto de un lote mientras el caficultor hace otra cosa</td>
+    </tr>
+    <tr>
+      <td><strong>Broadcast Receiver</strong></td>
+      <td>Reacciona a avisos del sistema o de otras aplicaciones</td>
+      <td>Volver a intentar el envío cuando regrese la conexión</td>
+    </tr>
+    <tr>
+      <td><strong>Content Provider</strong></td>
+      <td>Comparte datos con otras aplicaciones, de forma controlada</td>
+      <td>No se usará: los datos del lote no se comparten fuera</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>10.1 El ciclo de vida de una Activity, y por qué importa</h3>
+
+<pre class="salida">              onCreate()      se crea
+                   ↓
+              onStart()       va a verse
+                   ↓
+              onResume()      está al frente  ◄───┐
+                   ↓                              │
+            [el usuario usa la app]               │
+                   ↓                              │
+              onPause()       pierde el frente ───┘
+                   ↓
+              onStop()        ya no se ve
+                   ↓
+              onDestroy()     se destruye</pre>
+
+<p>
+  Lo que convierte esto en algo más que un diagrama es que <strong>el sistema puede destruir
+  una Activity para recuperar memoria y recrearla después</strong>, y también lo hace al
+  girar el teléfono. Si el estado vive en una variable de la Activity, girar la pantalla lo
+  borra.
+</p>
+
+<p>
+  Es el error clásico de Android: la aplicación funciona, el usuario gira el teléfono, y el
+  formulario a medio llenar desaparece. Se evita guardando el estado donde sobreviva —hoy,
+  un <code>ViewModel</code>—, no recordando poner el teléfono derecho.
+</p>
+
+<h3>10.2 El manifiesto y los intents</h3>
+
+<p>
+  <code>AndroidManifest.xml</code> declara los componentes. Lo que no está declarado,
+  <strong>no existe para el sistema</strong>: una Activity sin su entrada no se puede abrir,
+  aunque la clase esté compilada dentro del APK.
+</p>
+
+<pre><code>&lt;manifest xmlns:android="http://schemas.android.com/apk/res/android"&gt;
+
+    &lt;!-- Lo único que necesita la app de MONK GRAIN: hablar con la API.
+         INTERNET es un permiso normal, no peligroso: se concede al
+         instalar y no abre ningún diálogo al usuario. --&gt;
+    &lt;uses-permission android:name="android.permission.INTERNET" /&gt;
+
+    &lt;application android:label="MONK GRAIN"&gt;
+        &lt;activity
+            android:name=".MainActivity"
+            android:exported="true"&gt;
+
+            &lt;!-- Este filtro es lo que pone el icono en el lanzador.
+                 Sin él la app se instala y no hay forma de abrirla. --&gt;
+            &lt;intent-filter&gt;
+                &lt;action android:name="android.intent.action.MAIN" /&gt;
+                &lt;category android:name="android.intent.category.LAUNCHER" /&gt;
+            &lt;/intent-filter&gt;
+        &lt;/activity&gt;
+    &lt;/application&gt;
+&lt;/manifest&gt;</code></pre>
+
+<p>
+  Los componentes se comunican con <strong>intents</strong>, que son mensajes. Un intent
+  <em>explícito</em> nombra a quién va dirigido; uno <em>implícito</em> describe lo que se
+  quiere —«abrir esta dirección»— y el sistema ofrece quién puede hacerlo. El implícito es
+  lo que permite que compartir una foto muestre la lista de aplicaciones capaces de
+  recibirla, sin que ninguna conozca a las otras.
+</p>
+
+<hr>
+
+<h2>SECCIÓN 2 — La primera aplicación</h2>
+
+<p>
+  Esta sección se hace en el computador del aprendiz: instalar Android Studio, crear el
+  proyecto, ejecutarlo y capturar el proceso. Lo que sigue es el procedimiento paso a paso
+  con lo que debe verse en cada captura.
+</p>
+
+<h2>11. Instalar Java y Android Studio</h2>
+
+<p>
+  Android Studio trae su propio JDK, así que no hace falta instalar Java aparte. En este
+  equipo ya está, de los módulos de GA7:
+</p>
+
+<pre class="salida">$ java -version
+openjdk version "17.0.20.1" 2026-08-18</pre>
+
+<pre class="salida"># Android Studio en Linux Mint / Ubuntu
+$ sudo snap install android-studio --classic
+
+# o descargando el archivo desde developer.android.com/studio
+$ tar -xzf android-studio-*.tar.gz -C ~/
+$ ~/android-studio/bin/studio.sh</pre>
+
+<p>
+  La primera vez abre un asistente que descarga el SDK, las herramientas de construcción y
+  una imagen de emulador. Son varios gigabytes: conviene no hacerlo con prisa.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 1 — Android Studio instalado</span>
+  La pantalla de bienvenida, con el número de versión visible
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 2 — El SDK Manager</span>
+  <strong>Tools → SDK Manager</strong>, mostrando la plataforma descargada
+  (API 34 o superior) y las <em>Build Tools</em>
+</div>
+
+<h2>12. Crear el proyecto</h2>
+
+<table>
+  <thead><tr><th>Campo</th><th>Valor</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr><td>Plantilla</td><td><strong>Empty Views Activity</strong></td><td>Crea una Activity con su diseño en XML, que es lo que pide el taller</td></tr>
+    <tr><td>Name</td><td><code>Hola MONK GRAIN</code></td><td>—</td></tr>
+    <tr><td>Package name</td><td><code>co.monkgrain.hola</code></td><td>Mismo prefijo que los módulos Java de GA7</td></tr>
+    <tr><td>Language</td><td><strong>Kotlin</strong></td><td>§6</td></tr>
+    <tr><td>Minimum SDK</td><td><strong>API 24</strong> (Android 7.0)</td><td>Cubre más del 95 % de los dispositivos en uso</td></tr>
+    <tr><td>Build configuration</td><td>Kotlin DSL (<code>build.gradle.kts</code>)</td><td>Es lo que Android Studio propone hoy</td></tr>
+  </tbody>
+</table>
+
+<div class="captura">
+  <span class="rotulo">Captura 3 — El asistente de nuevo proyecto</span>
+  El diálogo con el nombre, el paquete, Kotlin y API 24 escritos
+</div>
+
+<h3>12.1 Lo que crea</h3>
+
+<pre class="salida">HolaMonkGrain/
+├── app/
+│   ├── build.gradle.kts          dependencias y versiones de SDK
+│   └── src/main/
+│       ├── AndroidManifest.xml   la declaración
+│       ├── java/co/monkgrain/hola/
+│       │   └── MainActivity.kt   la actividad principal
+│       └── res/
+│           ├── layout/activity_main.xml   el diseño
+│           └── values/strings.xml         los textos
+├── build.gradle.kts
+└── settings.gradle.kts</pre>
+
+<div class="nota">
+  <p>
+    <strong>Los textos van en <code>strings.xml</code>, no dentro del diseño.</strong> No es
+    burocracia: es lo que permite traducir la aplicación añadiendo
+    <code>values-en/strings.xml</code> sin tocar una sola pantalla. Es la misma idea que
+    <code>messages.properties</code> en el módulo de Spring de GA7-AA3.
+  </p>
+</div>
+
+<h2>13. La actividad principal</h2>
+
+<p><code>MainActivity.kt</code>:</p>
+
+<pre><code>package co.monkgrain.hola
+
+import android.os.Bundle
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+
+/**
+ * La primera pantalla de la aplicación.
+ *
+ * Hereda de AppCompatActivity y no de Activity a secas: AppCompat trae las
+ * funciones nuevas a las versiones viejas de Android, que es lo que permite
+ * poner minSdk en 24 sin renunciar a lo de hoy.
+ */
+class MainActivity : AppCompatActivity() {
+
+    /**
+     * El sistema llama a este método al crear la pantalla, y también al
+     * recrearla —por ejemplo, al girar el teléfono—. Por eso todo lo que
+     * dibuja va aquí y no en el constructor: el constructor corre una vez,
+     * `onCreate` corre cada vez que hay que volver a dibujar.
+     *
+     * `savedInstanceState` trae el estado guardado si es una recreación, y
+     * es `null` la primera vez. De ahí el tipo `Bundle?`, con interrogante:
+     * Kotlin obliga a decidir qué pasa cuando no hay nada.
+     */
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Conecta la pantalla con su diseño en XML.
+        setContentView(R.layout.activity_main)
+
+        // R es una clase que Android genera al compilar los recursos: por eso
+        // un error en el XML aparece aquí como «no se encuentra R».
+        val mensaje = findViewById&lt;TextView&gt;(R.id.mensaje)
+        mensaje.text = getString(R.string.saludo)
+    }
+}</code></pre>
+
+<p><code>res/layout/activity_main.xml</code>:</p>
+
+<pre><code>&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"&gt;
+
+    &lt;!-- El identificador es lo que permite encontrarlo desde el código
+         con findViewById. Sin id, la vista existe y es inalcanzable. --&gt;
+    &lt;TextView
+        android:id="@+id/mensaje"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="22sp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" /&gt;
+
+&lt;/androidx.constraintlayout.widget.ConstraintLayout&gt;</code></pre>
+
+<p><code>res/values/strings.xml</code>:</p>
+
+<pre><code>&lt;resources&gt;
+    &lt;string name="app_name"&gt;Hola MONK GRAIN&lt;/string&gt;
+    &lt;string name="saludo"&gt;¡Hola! Soy Eliana Chacon&lt;/string&gt;
+&lt;/resources&gt;</code></pre>
+
+<div class="nota">
+  <p>
+    <strong>Por qué <code>sp</code> y no <code>dp</code> para el texto.</strong>
+    <code>dp</code> es independiente de la densidad de la pantalla; <code>sp</code> además
+    respeta el tamaño de letra que el usuario configuró en el sistema. Usar <code>dp</code>
+    en texto ignora a quien necesita la letra grande para leer.
+  </p>
+</div>
+
+<h2>14. Compilar y ejecutar</h2>
+
+<pre class="salida"># desde Android Studio: el botón ▶ Run
+
+# o desde la terminal, en la carpeta del proyecto:
+$ ./gradlew assembleDebug
+BUILD SUCCESSFUL
+
+# el APK queda en:
+app/build/outputs/apk/debug/app-debug.apk
+
+# instalarlo en un dispositivo o emulador conectado:
+$ adb install app/build/outputs/apk/debug/app-debug.apk</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 4 — El proyecto abierto</span>
+  Android Studio con <code>MainActivity.kt</code> en el editor y el árbol de
+  archivos a la izquierda
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 5 — El dispositivo virtual</span>
+  <strong>Tools → Device Manager</strong> con el emulador creado
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 6 — La compilación</span>
+  La ventana <strong>Build</strong> con <code>BUILD SUCCESSFUL</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 7 — La aplicación en marcha</span>
+  El emulador o el teléfono mostrando el mensaje
+  <strong>«¡Hola! Soy Eliana Chacon»</strong> centrado en la pantalla
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 8 — El APK generado</span>
+  El archivo <code>app-debug.apk</code> en
+  <code>app/build/outputs/apk/debug/</code>, con su tamaño visible
+</div>
+
+<h2>15. Problemas frecuentes la primera vez</h2>
+
+<table>
+  <thead><tr><th>Síntoma</th><th>Causa</th><th>Qué hacer</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Gradle se queda descargando para siempre</td>
+      <td>La primera construcción baja el <em>wrapper</em> y las dependencias</td>
+      <td>Esperar. Solo ocurre la primera vez</td>
+    </tr>
+    <tr>
+      <td><code>SDK location not found</code></td>
+      <td>Falta <code>local.properties</code></td>
+      <td>Crearlo con <code>sdk.dir=/home/usuario/Android/Sdk</code>. <strong>No se versiona</strong>: cada máquina tiene su ruta</td>
+    </tr>
+    <tr>
+      <td>El emulador no arranca</td>
+      <td>Virtualización desactivada en la BIOS</td>
+      <td>Activar VT-x o AMD-V, o usar un teléfono real por USB</td>
+    </tr>
+    <tr>
+      <td><code>adb</code>: <em>device unauthorized</em></td>
+      <td>No se aceptó la depuración en el teléfono</td>
+      <td>Aceptar el diálogo que aparece en la pantalla del dispositivo</td>
+    </tr>
+    <tr>
+      <td>«No se encuentra R»</td>
+      <td>Hay un error en algún XML</td>
+      <td>El error real está en el XML; <code>R</code> no se genera hasta que compile</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pendiente">
+  <span class="titulo">Lo que te falta hacer a ti</span>
+  <p>
+    <strong>Toda la Sección 2 en tu computador</strong>: instalar Android Studio, crear el
+    proyecto con los valores de §12, escribir los tres archivos de §13, ejecutarlo y
+    capturar las <strong>8 capturas</strong> señaladas.
+  </p>
+  <p>
+    <strong>El APK</strong> resultante (<code>app-debug.apk</code>) va dentro del RAR de la
+    entrega, junto a este PDF y su HTML.
+  </p>
+  <p>
+    El código de §13 está listo para copiar y pegar; cambia el nombre del saludo si quieres.
+    La Sección 1 no requiere nada tuyo.
+  </p>
+</div>
+
+<h2>16. Conclusión</h2>
+
+<p>
+  Android es Linux aprovechado de una forma concreta: cada aplicación es un usuario del
+  sistema, con sus archivos protegidos por los permisos del sistema de archivos y no por
+  una cortina en la interfaz. De ahí salen el aislamiento entre aplicaciones, el soporte
+  multiusuario y el mínimo privilegio — tres cosas que parecen separadas y son el mismo
+  mecanismo visto desde ángulos distintos.
+</p>
+
+<p>
+  Para quien desarrolla, lo que más cambia respecto de una aplicación web es que
+  <strong>el sistema manda</strong>: crea y destruye las pantallas cuando le conviene, y
+  concede o niega los permisos según lo que diga el usuario. Programar para Android es, en
+  buena medida, programar para que eso no rompa nada.
+</p>

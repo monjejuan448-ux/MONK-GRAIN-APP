@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Los textos viven aquí y no dentro de los diseños. No es burocracia: es lo
+  que permite traducir la aplicación añadiendo `values-en/strings.xml` sin
+  tocar una sola pantalla. Misma idea que `messages.properties` en el módulo
+  de Spring de GA7-AA3.
+-->
+<resources>
+    <string name="app_name">MONK GRAIN</string>
+
+    <string name="reintentar">Reintentar</string>
+    <string name="sin_lotes">No hay lotes publicados en este momento.</string>
+
+    <!-- El %1$s es el peso ya formateado, con su lectura en cargas. -->
+    <string name="minimo_desde">Se vende desde %1$s</string>
+    <string name="sin_presentaciones">Sin presentaciones activas</string>
+
+    <!--
+      Plural de verdad y no «día(s)». Android elige la forma según el número,
+      y las reglas del plural cambian de un idioma a otro: el paréntesis
+      funciona en español y no en otros.
+    -->
+    <plurals name="despacho_dias">
+        <item quantity="one">Despacha en %d día</item>
+        <item quantity="other">Despacha en %d días</item>
+    </plurals>
+</resources>

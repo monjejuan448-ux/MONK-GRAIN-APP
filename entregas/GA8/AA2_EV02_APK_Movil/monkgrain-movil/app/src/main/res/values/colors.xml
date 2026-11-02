@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La paleta del proyecto: tierra y café, la misma del sitio web. -->
+<resources>
+    <color name="fondo">#FAF7F2</color>
+    <color name="texto">#2B2118</color>
+    <color name="texto_suave">#6F6256</color>
+    <color name="acento">#6F4E37</color>
+    <color name="acento_oscuro">#4A3425</color>
+    <color name="realce">#EFE4D4</color>
+    <color name="blanco">#FFFFFF</color>
+</resources>

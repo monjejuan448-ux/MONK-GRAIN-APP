@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Desde Android 9 (API 28) el tráfico sin cifrar está bloqueado por omisión,
+  y hace bien: una aplicación que manda un token por HTTP lo regala a
+  cualquiera en la misma red.
+
+  Aquí se abre una excepción para DOS direcciones de desarrollo y nada más:
+
+    10.0.2.2    el equipo anfitrión, visto desde el emulador
+    localhost   por si se usa `adb reverse` con un teléfono real
+
+  La excepción vale solo para `debug`, porque este archivo apunta a las
+  direcciones de desarrollo y la versión de release usa HTTPS. Abrirla para
+  todo el tráfico —`cleartextTrafficPermitted="true"` sin dominios— sería
+  cambiar una molestia de desarrollo por un agujero en producción.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

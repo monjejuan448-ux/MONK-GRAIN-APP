@@ -357,6 +357,8 @@ Lo que sigue pendiente, sin adornos. El pago al vendedor —que encabezaba esta 
 - **Hay esquema sin código detrás:** `conversations` y `messages` (mensajería), `blog_posts` y los cupones, que el carrito consume pero ningún endpoint crea. Construirlo o retirarlo es una decisión de alcance.
 - **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino. Quedan diez decisiones de negocio sin resolver en [docs/10](docs/10-revision-legal.md): **D-7** —quién recauda el dinero— sí se resolvió, a favor de que la plataforma recaude y liquide ([docs/18](docs/18-liquidaciones.md)), pero ese recaudo y la facultad de retención (**D-6**) siguen sin contrato que los respalde.
 - **El hook `useProtectedResource` cubre una sola pantalla de las veintiocho que lo necesitan.** Existe y está probado, y `/productor/posturas` ya pasó a usarlo (AA4-EV03); migrar las otras veintisiete es trabajo mecánico que conviene hacer por tandas, verificando cada pantalla, no de una sola vez.
+- **El módulo `users` no tiene capa de servicio.** Sus siete endpoints resuelven la lógica dentro del propio router, rompiendo la regla de dependencia `router → service → repository` que el proyecto sigue en los otros diez. Funciona y está probado con 36 pruebas, pero el día que una regla de direcciones haya que usarla desde otro sitio habrá que extraerla. Lo encontró medir el sistema para GA8-AA1-EV01.
+- **Tres carpetas de módulo vacías:** `content/`, `messaging/` y `shipments/` tienen solo `__init__.py`. Tienen modelo y tabla detrás —conversaciones, mensajes, entradas de blog, envíos— y ningún endpoint. Es alcance planeado y no construido.
 - **El precio no está indexado al precio interno de referencia de la FNC.** Fue una decisión, no un olvido: exigía una fuente del precio diario y decidir quién la mantiene.
 
 ---
@@ -375,62 +377,72 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/a-word.sh GA7/AA3_EV02_Pruebas_Modulo
 
 # Las nueve que se entregan comprimidas:
-./entregas/_plantilla/empaquetar.sh              # las nueve
-./entregas/_plantilla/empaquetar.sh AA5_EV01     # una sola
+./entregas/_plantilla/empaquetar.sh                 # las trece
+./entregas/_plantilla/empaquetar.sh AA5_EV01        # una de GA7
+./entregas/_plantilla/empaquetar.sh G8_AA2_EV02     # una de GA8
 ```
 
 ### Los ZIP de entrega
 
-De las 17 evidencias de GA7, **nueve se entregan en ZIP** y el resto en PDF o
-en video. La regla de la guía es `NOMBRE_APELLIDO_AA#_EV##`, y cada archivo
-debe llevar dentro el enlace del repositorio.
+De las 23 evidencias, **trece se entregan comprimidas** y el resto en PDF,
+Word o video. Salen en `entregas/_zip/`, que **no se versiona**: se regeneran
+con el guion y el código ya vive en el repositorio.
 
 | ZIP | Lleva dentro |
 |---|---|
-| `ELIANA_CHACON_AA2_EV01.zip` | `catalogo-pergamino/` + informe + enlace |
-| `ELIANA_CHACON_AA2_EV02.zip` | `catalogo-web/` + informe + enlace |
-| `ELIANA_CHACON_AA3_EV01.zip` | `negociacion-pergamino/` + informe + enlace |
-| `ELIANA_CHACON_AA3_EV02.zip` | lo anterior + informe en **Word** y PDF + enlace |
-| `ELIANA_CHACON_AA4_EV03.zip` | el hook, los 4 componentes, la página y las pruebas + informe + enlace |
-| `ELIANA_CHACON_AA5_EV01.zip` | `autenticacion-pergamino/` + informe + enlace |
-| `ELIANA_CHACON_AA5_EV02.zip` | lo anterior + colección Postman + `ENDPOINTS.md` + informe + enlace |
-| `ELIANA_CHACON_AA5_EV03.zip` | `backend/app/{main,modules,schemas,core}` + `ENDPOINTS.md` + informe + enlace |
-| `ELIANA_CHACON_AA5_EV04.zip` | lo anterior + colección Postman + `ENDPOINTS.md` + informe + enlace |
+| `…GA7_AA2_EV01.zip` | `catalogo-pergamino/` + informe + enlace |
+| `…GA7_AA2_EV02.zip` | `catalogo-web/` + informe + enlace |
+| `…GA7_AA3_EV01.zip` | `negociacion-pergamino/` + informe + enlace |
+| `…GA7_AA3_EV02.zip` | lo anterior + informe en **Word** y PDF |
+| `…GA7_AA4_EV03.zip` | el hook, los 4 componentes, la página y las pruebas |
+| `…GA7_AA5_EV01.zip` | `autenticacion-pergamino/` + informe + enlace |
+| `…GA7_AA5_EV02.zip` | lo anterior + colección Postman + `ENDPOINTS.md` |
+| `…GA7_AA5_EV03.zip` | `backend/app/{main,modules,schemas,core}` + `ENDPOINTS.md` |
+| `…GA7_AA5_EV04.zip` | lo anterior + colección Postman + `ENDPOINTS.md` |
+| `…GA8_AA1_EV01.zip` | backend, frontend, `docker-compose*`, `infra/`, el CI |
+| `…GA8_AA1_EV02.zip` | lo anterior + `tests/` + `docs/` + `MODULOS.md` |
+| `…GA8_AA2_EV01.zip` | el taller en PDF **y en HTML**, que es lo que pide la guía |
+| `…GA8_AA2_EV02.zip` | `monkgrain-movil/` + `verificar_contrato.py` + informe |
 
-Salen en `entregas/_zip/`, que **no se versiona**: se regeneran con el guion y
-el código ya vive en el repositorio. Se excluye siempre `target/`,
-`__pycache__` y `node_modules` — un ZIP con el JAR dentro pesa 48 MB y no
-aporta nada que no salga de `mvn package`.
+Se excluye siempre `target/`, `__pycache__` y `node_modules` — un ZIP con el
+JAR dentro pesa 48 MB y no aporta nada que no salga de `mvn package`.
 
-> **Dos nombres de la guía parecen errata.** En AA5-EV03 dice
-> `NOMBRE_APELLIDO_AA5_EV01` y en AA5-EV04 dice `NOMBRE_APELLIDO_AA5_EV02`,
-> repitiendo los de las evidencias anteriores. Aquí se usa el nombre que
-> corresponde a cada una (`..._AA5_EV03` y `..._AA5_EV04`), porque subir dos
-> archivos con el mismo nombre haría que el segundo pisara al primero.
-> **Confírmalo con la instructora** antes de entregar.
+> **Los nombres llevan la guía, y es una desviación deliberada** del formato
+> `NOMBRE_APELLIDO_AA#_EV##`. Las dos guías numeran sus actividades desde AA1,
+> así que GA7-AA2-EV01 (módulo JDBC) y GA8-AA2-EV01 (taller de Android)
+> producían **el mismo nombre de archivo**: al generarlos sin la guía, el
+> segundo pisó al primero y el ZIP del módulo JDBC desapareció sin aviso.
+>
+> Lo mismo pasa dentro de GA7: la guía nombra AA5-EV03 como
+> `NOMBRE_APELLIDO_AA5_EV01` y AA5-EV04 como `..._AA5_EV02`, que parece errata
+> de copia. **Confírmalo con la instructora**: si exige el nombre literal, hay
+> que entregarlos en envíos separados por guía y renombrarlos al subir.
 
-> Los videos y las capturas que faltan **no están dentro de los ZIP**: hay que
-> añadirlos antes de subir AA3-EV02, AA5-EV02 y AA5-EV04.
+> Los videos, las capturas y el APK que faltan **no están dentro de los ZIP**:
+> hay que añadirlos antes de subir GA7-AA3-EV02, GA7-AA5-EV02, GA7-AA5-EV04,
+> GA8-AA2-EV01 y GA8-AA2-EV02.
 
-**Estado: 16 de 23 construidas.** GA7 completa: AA1, AA2, AA3, AA4 y AA5.
+**Estado: las 23 construidas.** GA7 y GA8, completas. Lo que queda son los videos, las capturas y el despliegue, que solo puede hacer el aprendiz: están en la lista de abajo.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
-Estas nueve cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
+Estas once cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
 
 | Qué | Dónde | Detalle |
 |---|---|---|
-| **7 capturas de pantalla** | AA1-EV04 | Marcadas una a una en el PDF, con lo que debe verse en cada una |
-| **Grabar el video** (5–7 min) | AA1-EV05 | Guion completo en el PDF, bloque por bloque, con lo que decir en cada paso |
-| **Android Studio** | GA8 AA2-EV01 | Instalarlo, crear la primera app y capturar el proceso |
-| **11 capturas de pantalla** | AA3-EV02 | Listadas una a una en §8 del documento, con qué debe verse en cada una |
-| **Grabar el video** (8–10 min) | AA3-EV02 | Guion por bloques en §9 del documento |
-| **12 capturas + video** (8–10 min) | AA5-EV02 | Sobre Postman contra el servicio de autenticación. Guion por bloques en §8 |
-| **12 capturas + video** (8–10 min) | AA5-EV04 | Sobre Postman contra la API del proyecto. Guion por bloques en §8 |
-| **Confirmar dos nombres de ZIP** | AA5-EV03 y EV04 | La guía repite los nombres de EV01 y EV02; parece errata. Preguntar a la instructora |
-| **Grabar el video** (10 min) | GA8 AA2-EV04 | Sobre *machine learning*. El guion se escribirá al llegar a esa evidencia |
+| **7 capturas de pantalla** | GA7 AA1-EV04 | Marcadas una a una en el PDF, con lo que debe verse en cada una |
+| **Grabar el video** (5–7 min) | GA7 AA1-EV05 | Guion completo en el PDF, bloque por bloque, con lo que decir en cada paso |
+| **11 capturas de pantalla** | GA7 AA3-EV02 | Listadas una a una en §8 del documento, con qué debe verse en cada una |
+| **Grabar el video** (8–10 min) | GA7 AA3-EV02 | Guion por bloques en §9 del documento |
+| **12 capturas + video** (8–10 min) | GA7 AA5-EV02 | Sobre Postman contra el servicio de autenticación. Guion por bloques en §8 |
+| **12 capturas + video** (8–10 min) | GA7 AA5-EV04 | Sobre Postman contra la API del proyecto. Guion por bloques en §8 |
+| **Confirmar dos nombres de ZIP** | GA7 AA5-EV03 y EV04 | La guía repite los nombres de EV01 y EV02; parece errata. Preguntar a la instructora |
+| **Desplegar y anotar la URL** | GA8 AA1-EV02 | Los siete pasos están en §9.1 del documento. Exige servidor, dominio y claves reales |
+| **8 capturas + el APK** | GA8 AA2-EV01 | Instalar Android Studio y hacer la Sección 2. El código está listo para copiar |
+| **Compilar el APK + 6 capturas** | GA8 AA2-EV02 | El proyecto Kotlin está escrito y **nunca se compiló aquí**: puede pedir algún ajuste |
+| **Grabar el video** (10 min) | GA8 AA2-EV04 | Guion completo, palabra por palabra, en §4 a §12 del documento |
 
-Con AA5 cerrada, esta lista ya está completa para GA7. Lo que falte vendrá de GA8.
+Con GA7 y GA8 cerradas, esta lista está completa: es todo lo que falta para entregar las 23 evidencias.
 
 ### GA7 — AP7 Codificar los módulos del software
 
@@ -457,13 +469,13 @@ Con AA5 cerrada, esta lista ya está completa para GA7. Lo que falte vendrá de 
 
 | Evidencia | Módulo / fuente | Ruta | Estado | Te falta |
 |---|---|---|---|---|
-| AA1-EV01 Integrar módulos web | **MONK GRAIN completo** | `entregas/GA8/AA1_EV01_Integracion_Modulos/` | ⬜ pendiente | — |
-| AA1-EV02 Módulos integrados | lo anterior + informes de pruebas | `entregas/GA8/AA1_EV02_Modulos_Integrados/` | ⬜ pendiente | URL de despliegue |
-| AA2-EV01 Taller Android | — (teórico) | `entregas/GA8/AA2_EV01_Taller_Android/` | ⬜ pendiente | **Android Studio**: instalar, crear la app y capturar |
-| AA2-EV02 APK móvil | app mínima contra la API real | `entregas/GA8/AA2_EV02_APK_Movil/` | ⬜ pendiente | Compilar el APK |
-| AA2-EV03 Taller disruptivas | — (teórico) | `entregas/GA8/AA2_EV03_Taller_Disruptivas/` | ⬜ pendiente | Elegir 3 tecnologías |
-| AA2-EV04 Video machine learning | — | `entregas/GA8/AA2_EV04_Video_Machine_Learning/` | ⬜ pendiente | **Grabar el video** (10 min) |
-| AA2-EV05 Texto blockchain | — | `entregas/GA8/AA2_EV05_Texto_Blockchain/` | ⬜ pendiente | — |
+| AA1-EV01 Integrar módulos web | **MONK GRAIN completo** | [`entregas/GA8/AA1_EV01_Integracion_Modulos/`](entregas/GA8/AA1_EV01_Integracion_Modulos/) | ✅ PDF 12 pág. · capas, patrones, seguridad por capa · comprobado con `alembic check` | — |
+| AA1-EV02 Módulos integrados | lo anterior + `MODULOS.md` generado | [`entregas/GA8/AA1_EV02_Modulos_Integrados/`](entregas/GA8/AA1_EV02_Modulos_Integrados/) | ✅ PDF 9 pág. · entradas y salidas de los 107 endpoints · pruebas por módulo | **Desplegar y anotar la URL** (§9.1) |
+| AA2-EV01 Taller Android | — (teórico) | [`entregas/GA8/AA2_EV01_Taller_Android/`](entregas/GA8/AA2_EV01_Taller_Android/) | ✅ PDF 14 pág. · Sección 1 completa; Sección 2 con el código listo | **Android Studio**: instalar, crear la app, **8 capturas** y el APK |
+| AA2-EV02 APK móvil | **`monkgrain-movil`** (Kotlin, 1.041 líneas, 19 pruebas) | [`entregas/GA8/AA2_EV02_APK_Movil/`](entregas/GA8/AA2_EV02_APK_Movil/) | ✅ PDF 14 pág. · contrato con la API verificado, 0 problemas · **sin compilar aquí** | **Compilar el APK** y **6 capturas** |
+| AA2-EV03 Taller disruptivas | — (teórico) | [`entregas/GA8/AA2_EV03_Taller_Disruptivas/`](entregas/GA8/AA2_EV03_Taller_Disruptivas/) | ✅ PDF 15 pág. · las 11 + 3 a fondo (IoT, geolocalización, voz a texto) | Confirmar que esas 3 te sirven |
+| AA2-EV04 Video machine learning | — | [`entregas/GA8/AA2_EV04_Video_Machine_Learning/`](entregas/GA8/AA2_EV04_Video_Machine_Learning/) | ✅ Guion 12 pág. · 9 bloques con el texto palabra por palabra | **Grabar el video** (10 min) |
+| AA2-EV05 Texto blockchain | — | [`entregas/GA8/AA2_EV05_Texto_Blockchain/`](entregas/GA8/AA2_EV05_Texto_Blockchain/) | ✅ **Word** y PDF, 12 pág. (mínimo 3) · premisa y conclusión | — |
 
 ### Cómo construir los módulos Java
 
@@ -523,6 +535,14 @@ A diferencia de AA2 y AA3, que son módulos Java aparte, **AA4 se codificó dent
 - Dos correcciones de documentación: el formato de error de la API es `{"error": {"code", "message"}}` y no el `detail` de serie de FastAPI, y el catálogo decía `pages` donde el campo real es `total_pages`. Las dos afirmaciones eran plausibles y falsas, y las rompió una prueba.
 
 Y un módulo Java nuevo, `autenticacion-pergamino` (puerto 8082), cuyo interés está menos en el código que en los dos fallos que encontró: un `GET /me` que devolvía 500 y un freno por intentos fallidos que no frenaba nada, con las 40 pruebas de JUnit en verde. Las dos corrían dentro de una transacción que en producción no existe. Está contado en el §6 de su informe.
+
+### Lo que GA8 dejó en el producto
+
+- `entregas/GA8/AA1_EV02_Modulos_Integrados/generar_modulos.py` — genera las entradas y salidas de los 107 endpoints desde el OpenAPI del servicio y el XML de JUnit de pytest. Es el tipo de documentación que se escribe una vez, se desactualiza en una semana y a partir de entonces estorba.
+- `entregas/GA8/AA2_EV02_APK_Movil/monkgrain-movil/` — el proyecto Android en Kotlin: tres capas, siete patrones y 19 pruebas de dominio que corren sin emulador. **No se compiló aquí**: este equipo no tiene SDK de Android.
+- `entregas/GA8/AA2_EV02_APK_Movil/verificar_contrato.py` — contrasta los DTO de Kotlin contra el OpenAPI del servicio. Es lo único verificable sin compilar, y lo que de verdad rompe un cliente móvil: un `@SerialName` con una letra de menos compila sin protestar y falla en el teléfono del usuario.
+
+Medir el sistema para escribir AA1-EV01 sacó a la luz dos irregularidades de arquitectura que no se conocían: el módulo `users` tiene router y **no tiene capa de servicio** —su lógica vive en el router, rompiendo la regla de dependencia del propio proyecto— y `content/`, `messaging/` y `shipments/` son carpetas de módulo **vacías**, con modelo y tabla detrás y ningún endpoint. Las dos están en el documento y en «Lo que falta».
 
 ### Nota sobre Java en GA7
 

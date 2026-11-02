@@ -1,0 +1,654 @@
+<!-- GA8-220501096-AA2-EV02 · Módulos móviles de MONK GRAIN para Android -->
+<header class="portada">
+  <h1>Módulos Móviles de MONK GRAIN para Android</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">2 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia codifica los módulos móviles de MONK GRAIN para Android:
+  <strong>1.041 líneas de Kotlin</strong> en 12 archivos, que consumen la <em>misma</em>
+  API del proyecto —los 107 endpoints de AA5-EV03— y no una copia ni un simulacro.
+</p>
+
+<p>
+  El alcance se eligió a propósito: <strong>el catálogo de lotes y el detalle de un
+  lote</strong>. No es una aplicación recortada por falta de tiempo, es el recorte que tiene
+  sentido para un caficultor en el campo —mirar quién está comprando y a cuánto— y además
+  el único que no exige credenciales, porque el catálogo es público. Una demostración que
+  empieza pidiendo usuario y contraseña es más difícil de mostrar y no enseña nada más.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Lo que este documento no puede afirmar.</strong> Este equipo no tiene Android
+    Studio, ni el SDK, ni Gradle, ni el compilador de Kotlin: la guía asigna esa parte al
+    aprendiz, y es correcto. Así que el proyecto <strong>no se compiló aquí</strong>, y no
+    se va a decir lo contrario.
+  </p>
+  <p>
+    Lo que sí se hizo fue verificar lo que de verdad rompe un cliente móvil sin compilar:
+    <strong>el contrato con la API</strong>. Un nombre de campo con una letra de menos
+    compila sin protestar y falla en el teléfono del usuario. §9 cuenta cómo se comprobó, y
+    el resultado.
+  </p>
+</div>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar los módulos móviles de MONK GRAIN para Android según los requerimientos del
+  proyecto: con diagrama de clases, paquetes y componentes, capas, mapa de navegación,
+  librerías de la capa de presentación, componentes reutilizables, patrones de diseño,
+  pruebas unitarias, control de versiones, configuración del acceso a datos y documentación
+  de los ambientes.
+</p>
+
+<h2>3. Diagrama de paquetes</h2>
+
+<pre class="salida">co.monkgrain.movil
+│
+├── ui/                    PRESENTACIÓN
+│   ├── LotListActivity        la pantalla del catálogo
+│   ├── LotListViewModel       su estado
+│   ├── LotAdapter             dibuja cada fila
+│   ├── LotDetailActivity      la pantalla de detalle
+│   └── LotDetailViewModel     su estado
+│
+├── domain/                REGLAS DEL NEGOCIO
+│   ├── YieldFactor            el factor de rendimiento y su lectura
+│   ├── Kilos                  kilos, y su lectura en cargas de 125 kg
+│   └── Money                  pesos colombianos, sin coma flotante
+│
+└── data/                  ACCESO A DATOS
+    ├── CatalogApi             el contrato HTTP (interfaz de Retrofit)
+    ├── ApiClient              construye el cliente
+    ├── CatalogRepository      la única puerta a los datos
+    └── dto/CatalogDto         lo que llega de la API</pre>
+
+<h3>3.1 La regla de dependencia</h3>
+
+<pre class="salida">       ui  ──────►  domain  ◄──────  data
+       │                               ▲
+       └───────────────────────────────┘</pre>
+
+<p>
+  <code>ui</code> depende de <code>data</code> y de <code>domain</code>.
+  <code>data</code> depende de <code>domain</code>. Y <strong><code>domain</code> no
+  depende de nadie</strong>: no importa nada de Android ni de Retrofit.
+</p>
+
+<p>
+  Esa última línea es la que paga. Como el dominio no conoce Android, sus
+  <strong>19 pruebas corren en la JVM</strong>, sin emulador y sin dispositivo. Si la regla
+  del factor de rendimiento viviera dentro de la Activity, probarla exigiría arrancar un
+  emulador, y en la práctica no se probaría.
+</p>
+
+<p>
+  Es la misma regla del backend —<code>router → service → repository → models</code>— con
+  otros nombres.
+</p>
+
+<h2>4. Diagrama de clases</h2>
+
+<pre class="salida">┌──────────────────────┐        ┌───────────────────────┐
+│  LotListActivity     │───────►│  LotListViewModel     │
+│  ─────────────────   │        │  ──────────────────   │
+│  + onCreate()        │  pide  │  + estado: StateFlow  │
+│  - observarEstado()  │ estado │  + cargar()           │
+└──────────┬───────────┘        └───────────┬───────────┘
+           │ al tocar                       │
+           ▼                                ▼
+┌──────────────────────┐        ┌───────────────────────┐
+│  LotDetailActivity   │        │  CatalogRepository    │
+│  ─────────────────   │        │  ──────────────────   │
+│  + EXTRA_SLUG        │───────►│  + lotes()            │
+└──────────────────────┘        │  + lote()             │
+                                │  - envolver()         │
+┌──────────────────────┐        └───────────┬───────────┘
+│  LotAdapter          │                    │
+│  ─────────────────   │                    ▼
+│  + pintar(lote)      │        ┌───────────────────────┐
+│  - COMPARADOR        │        │  «interface»          │
+└──────────┬───────────┘        │  CatalogApi           │
+           │ usa                │  ──────────────────   │
+           ▼                    │  + lotes()  @GET      │
+┌──────────────────────┐        │  + lote()   @GET      │
+│  YieldFactor  Kilos  │        └───────────┬───────────┘
+│  Money               │                    │ Retrofit
+│  ─────────────────   │                    ▼
+│  + texto()           │        ┌───────────────────────┐
+│  + leer()            │        │  LotListItemDto       │
+│  + desdeTexto()      │        │  LotDetailDto         │
+└──────────────────────┘        │  VariantDto  PageDto  │
+                                └───────────────────────┘
+
+    Resultado&lt;T&gt;  (sealed interface)
+    ├── Exito(dato: T)
+    └── Fallo(mensaje: String, sinConexion: Boolean)</pre>
+
+<p>
+  <code>Resultado</code> es una <strong>clase sellada</strong> y no una excepción, y es una
+  decisión con consecuencias: obliga a quien llama a tratar el caso de error, porque el
+  compilador exige cubrir las dos ramas. Con excepciones, olvidar el <code>catch</code>
+  compila sin protestar y la aplicación se cierra en el teléfono del usuario.
+</p>
+
+<h2>5. Mapa de navegación</h2>
+
+<pre class="salida">        [ícono en el lanzador]
+                  │
+                  ▼
+      ┌─────────────────────────┐
+      │  LotListActivity        │   exported = true
+      │  ─────────────────────  │   ← la única exportada
+      │  · cargando             │
+      │  · 0 lotes → mensaje    │
+      │  · error → reintentar   │
+      │  · la lista             │
+      └───────────┬─────────────┘
+                  │  tocar una fila
+                  │  Intent + EXTRA_SLUG
+                  ▼
+      ┌─────────────────────────┐
+      │  LotDetailActivity      │   exported = false
+      │  ─────────────────────  │
+      │  nombre · vendedor      │
+      │  factor de rendimiento  │
+      │  precio por kilo        │
+      │  disponible · mínimo    │
+      │  descripción            │
+      └───────────┬─────────────┘
+                  │  ← atrás
+                  ▼
+            vuelve a la lista</pre>
+
+<p>
+  Solo la lista lleva <code>exported="true"</code>, y <strong>no es un detalle</strong>: una
+  Activity exportada puede ser lanzada por cualquier otra aplicación del teléfono. La de
+  detalle no lo está, así que solo se abre desde dentro. Exportar todo «por si acaso» es
+  una de las formas más silenciosas de ampliar la superficie de ataque de una aplicación.
+</p>
+
+<p>
+  El <code>slug</code> viaja en el intent, y la Activity de detalle se cierra si no llega
+  en vez de reventar con un <code>NullPointerException</code> — porque un intent se puede
+  construir desde fuera y no hay que suponer que viene bien formado.
+</p>
+
+<h2>6. Capas, con sus librerías</h2>
+
+<table>
+  <thead><tr><th>Capa</th><th>Librerías y frameworks</th><th>Por qué esa y no otra</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Presentación</strong></td>
+      <td>AppCompat, Material Components, ConstraintLayout, RecyclerView, ViewBinding</td>
+      <td>Vistas en XML y no Compose: es lo que se vio en el programa, y el editor de diseño de Android Studio ayuda a aprender</td>
+    </tr>
+    <tr>
+      <td><strong>Estado</strong></td>
+      <td><code>lifecycle-viewmodel-ktx</code>, <code>StateFlow</code></td>
+      <td>El estado sobrevive al giro de pantalla, que destruye y recrea la Activity</td>
+    </tr>
+    <tr>
+      <td><strong>Dominio</strong></td>
+      <td>Kotlin puro, <code>BigDecimal</code></td>
+      <td>Sin dependencias: por eso se prueba en la JVM</td>
+    </tr>
+    <tr>
+      <td><strong>Red</strong></td>
+      <td>Retrofit 2.11, OkHttp 4.12, <code>kotlinx.serialization</code></td>
+      <td>§6.1</td>
+    </tr>
+    <tr>
+      <td><strong>Pruebas</strong></td>
+      <td>JUnit 4, <code>kotlin-test</code></td>
+      <td>Corren sin dispositivo</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.1 <code>kotlinx.serialization</code> y no Gson</h3>
+
+<p>
+  Gson es el que aparece en más tutoriales, y es la peor opción para Kotlin por un motivo
+  concreto: <strong>no respeta los tipos que no admiten nulo</strong>. Gson usa reflexión de
+  Java y escribe un <code>null</code> dentro de un campo declarado <code>String</code> sin
+  interrogante. El compilador de Kotlin cree que ese campo nunca es nulo, así que no obliga
+  a comprobarlo, y la aplicación se cierra tres capas más abajo con un error que no apunta
+  al origen.
+</p>
+
+<p>
+  <code>kotlinx.serialization</code> genera el lector al compilar y respeta la declaración:
+  un campo no nulo que llega nulo <strong>falla al leer el JSON</strong>, con un mensaje
+  que nombra el campo. Un fallo claro y temprano es mejor que un dato corrupto que viaja.
+</p>
+
+<h2>7. Patrones de diseño aplicados</h2>
+
+<table>
+  <thead><tr><th>Patrón</th><th>Dónde</th><th>Qué problema resuelve</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>MVVM</strong></td>
+      <td><code>Activity</code> + <code>ViewModel</code></td>
+      <td>El giro de pantalla destruye la Activity. Con el estado en el ViewModel, la lista sobrevive y no se vuelve a pedir</td>
+    </tr>
+    <tr>
+      <td><strong>Repositorio</strong></td>
+      <td><code>CatalogRepository</code></td>
+      <td>El ViewModel no sabe que detrás hay Retrofit. Añadir una caché local no lo toca</td>
+    </tr>
+    <tr>
+      <td><strong>DTO</strong></td>
+      <td><code>data/dto/</code></td>
+      <td>Lo que llega de la red no es lo que se muestra. El dominio no hereda la forma del JSON</td>
+    </tr>
+    <tr>
+      <td><strong>Adaptador</strong></td>
+      <td><code>LotAdapter</code></td>
+      <td>Traduce una lista de datos a filas dibujadas</td>
+    </tr>
+    <tr>
+      <td><strong>Resultado sellado</strong></td>
+      <td><code>Resultado&lt;T&gt;</code></td>
+      <td>El compilador obliga a tratar el error</td>
+    </tr>
+    <tr>
+      <td><strong>Inyección por constructor</strong></td>
+      <td><code>CatalogRepository(api)</code>, <code>LotListViewModel(repositorio)</code></td>
+      <td>Permite sustituir la API por una falsa en una prueba sin tocar nada más</td>
+    </tr>
+    <tr>
+      <td><strong>Objeto único perezoso</strong></td>
+      <td><code>ApiClient</code></td>
+      <td>Un solo cliente HTTP, creado la primera vez que se usa: OkHttp mantiene un grupo de conexiones que conviene no duplicar</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>7.1 El componente reutilizable</h3>
+
+<p>
+  <code>item_lot.xml</code> con <code>LotAdapter</code> es el componente de la capa de
+  presentación. La misma fila sirve para el catálogo público y serviría para «mis lotes» en
+  el panel del vendedor, cambiando <strong>solo lo que ocurre al tocarla</strong> — que es
+  un parámetro del constructor, no una rama dentro del adaptador:
+</p>
+
+<pre><code>class LotAdapter(
+    private val alTocar: (LotListItemDto) -> Unit,
+) : ListAdapter&lt;LotListItemDto, LotAdapter.Fila&gt;(COMPARADOR)</code></pre>
+
+<p>
+  Es el criterio de GA7-AA4-EV02 otra vez: se extrae un componente cuando se repite, cuando
+  encierra una regla del negocio o cuando tiene estado propio. Nunca porque sea grande.
+</p>
+
+<p>
+  Y el orden de la fila sigue la decisión de compra, no el modelo de datos: primero qué café
+  es y de quién, después <strong>el factor de rendimiento y el precio</strong>, que es lo
+  que decide, y al final cuánto hay.
+</p>
+
+<h2>8. Configuración del acceso a datos</h2>
+
+<h3>8.1 La dirección del servidor, y la trampa del emulador</h3>
+
+<p>
+  La dirección no está escrita en el código: viene de <code>BuildConfig.API_BASE_URL</code>,
+  que <code>build.gradle.kts</code> define distinta en <code>debug</code> y en
+  <code>release</code>.
+</p>
+
+<pre><code>debug {
+    buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000/api/v1/\"")
+}
+release {
+    buildConfigField("String", "API_BASE_URL", "\"https://api.monkgrain.co/api/v1/\"")
+}</code></pre>
+
+<div class="nota">
+  <p>
+    <strong><code>10.0.2.2</code> y no <code>localhost</code>.</strong> El emulador es una
+    máquina virtual con su propia red, así que <code>localhost</code> dentro de él es
+    <em>el emulador mismo</em>, no el equipo donde corre <code>docker compose</code>. La
+    dirección del anfitrión, vista desde el emulador, es <strong>10.0.2.2</strong>.
+  </p>
+  <p>
+    Es la primera cosa que falla al conectar una aplicación Android con una API local, y el
+    síntoma —«no pudimos conectarnos»— no apunta a la causa. Con un teléfono real hay dos
+    caminos: usar la IP del equipo en la red local, o
+    <code>adb reverse tcp:8000 tcp:8000</code>, que reenvía el puerto y permite usar
+    <code>localhost</code>.
+  </p>
+</div>
+
+<h3>8.2 Tráfico sin cifrar, solo donde hace falta</h3>
+
+<p>
+  Desde Android 9 el tráfico HTTP está bloqueado por omisión, y hace bien: una aplicación
+  que manda un token por HTTP lo regala a cualquiera en la misma red. Para desarrollo se
+  abre una excepción <strong>para dos direcciones y nada más</strong>:
+</p>
+
+<pre><code>&lt;network-security-config&gt;
+    &lt;domain-config cleartextTrafficPermitted="true"&gt;
+        &lt;domain includeSubdomains="false"&gt;10.0.2.2&lt;/domain&gt;
+        &lt;domain includeSubdomains="false"&gt;localhost&lt;/domain&gt;
+    &lt;/domain-config&gt;
+&lt;/network-security-config&gt;</code></pre>
+
+<p>
+  La alternativa cómoda —<code>cleartextTrafficPermitted="true"</code> sin dominios— sería
+  cambiar una molestia de desarrollo por un agujero en producción.
+</p>
+
+<h3>8.3 El registro de peticiones, y el token</h3>
+
+<pre><code>level = if (BuildConfig.DEBUG) {
+    HttpLoggingInterceptor.Level.BODY
+} else {
+    HttpLoggingInterceptor.Level.NONE
+}</code></pre>
+
+<p>
+  En <code>release</code> no se registra <strong>ni siquiera las cabeceras</strong>. Ahí
+  viajaría el token de sesión, y quedaría escrito en el registro del dispositivo, que otras
+  herramientas pueden leer.
+</p>
+
+<h3>8.4 Permisos: uno</h3>
+
+<pre><code>&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></pre>
+
+<p>
+  Y nada más. <code>INTERNET</code> es un permiso normal, no peligroso: se concede al
+  instalar y no abre ningún diálogo. Pedir ubicación o cámara costaría usuarios sin dar
+  nada — consultar el catálogo no necesita saber dónde está nadie. Es el mínimo privilegio
+  de §9 del taller de AA2-EV01, aplicado.
+</p>
+
+<h3>8.5 Lo que permite que el servidor crezca</h3>
+
+<pre><code>private val json = Json {
+    ignoreUnknownKeys = true
+    isLenient = false
+}</code></pre>
+
+<p>
+  <code>ignoreUnknownKeys</code> está activado a propósito: la API devuelve campos que esta
+  aplicación no usa, y sin esto <strong>cada campo nuevo del servidor rompería la aplicación
+  ya instalada</strong>. Es lo que permite desplegar el backend sin obligar a actualizar el
+  teléfono de cada caficultor.
+</p>
+
+<p>
+  <code>isLenient</code> queda en <code>false</code>: un JSON mal formado debe fallar, no
+  adivinarse.
+</p>
+
+<h2>9. Verificación del contrato con la API</h2>
+
+<p>
+  El proyecto no se compiló aquí. Pero el fallo más probable de un cliente móvil no es un
+  error de compilación: es <strong>un nombre de campo que no coincide</strong>. Un
+  <code>@SerialName("yeld_factor")</code> con una letra de menos compila sin protestar y
+  falla solo al recibir la respuesta.
+</p>
+
+<p>
+  <code>verificar_contrato.py</code> lee <code>CatalogDto.kt</code>, saca los nombres que
+  cada clase espera del JSON, y los contrasta con el documento OpenAPI del servicio en
+  marcha. Comprueba tres cosas:
+</p>
+
+<ol>
+  <li>Que no se espere un campo que la API no manda.</li>
+  <li>
+    Que lo que la API puede mandar nulo esté declarado con <code>?</code> en Kotlin — con
+    <code>kotlinx.serialization</code>, un campo no nulo que llega nulo rompe la lectura
+    del JSON <em>entero</em>, no solo ese campo.
+  </li>
+  <li>
+    Lo que la API manda y el DTO ignora se informa como <strong>aviso y no error</strong>,
+    porque <code>ignoreUnknownKeys</code> lo permite a propósito.
+  </li>
+</ol>
+
+<pre class="salida">$ curl -s http://localhost:8000/openapi.json &gt; openapi.json
+$ python3 verificar_contrato.py openapi.json
+
+ProducerSummaryDto  ↔  ProducerSummary
+  · ignora 1: logo_key
+  ✓ 5 de 6 campos, 5 de 6 obligatorios
+
+LotListItemDto  ↔  ProductListItem
+  ✓ 17 de 17 campos, 17 de 17 obligatorios
+
+VariantDto  ↔  VariantResponse
+  ✓ 8 de 8 campos, 7 de 7 obligatorios
+
+LotDetailDto  ↔  ProductDetail
+  · ignora 6: attributes, category, certifications, created_at, farm, images
+  ✓ 22 de 28 campos, 22 de 28 obligatorios
+
+PageDto  ↔  Page_ProductListItem_
+  ✓ 7 de 7 campos, 7 de 7 obligatorios
+
+────────────────────────────────────────────────────
+Contrato correcto. 7 campo(s) de la API sin usar, que es legítimo:
+`ignoreUnknownKeys` permite que el servidor crezca sin romper la app.</pre>
+
+<p>
+  Los 17 campos de la lista y los 7 de la página coinciden exactamente, nombre por nombre y
+  nulabilidad por nulabilidad, con lo que el servidor publica. Los 7 campos ignorados son
+  deliberados: fotos, atributos, finca y certificaciones no se muestran en esta versión, y
+  declararlos obligaría a mantener seis objetos más por nada.
+</p>
+
+<h2>10. Pruebas unitarias</h2>
+
+<p>
+  <strong>19 pruebas</strong> sobre las reglas del dominio, que corren en la JVM sin
+  emulador ni dispositivo.
+</p>
+
+<table>
+  <thead><tr><th>Clase</th><th>N.º</th><th>Qué fija</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>YieldFactorTest</code></td><td>7</td>
+      <td>Que el factor nunca salga como número solo; que <strong>menos sea mejor</strong>; que el 94 exacto cuente como estándar y no como deficiente; que fuera de 80–130 el dato se marque mal; y que un texto ilegible deje el campo vacío en lugar de tumbar la lista</td>
+    </tr>
+    <tr>
+      <td><code>KilosTest</code></td><td>6</td>
+      <td>La carga en singular y en plural; el decimal en las cargas incompletas; que por debajo de una carga no se mencione; y que los miles se separen con <strong>punto</strong>, como se escribe en Colombia</td>
+    </tr>
+    <tr>
+      <td><code>MoneyTest</code></td><td>6</td>
+      <td>Pesos sin decimales, redondeo <code>HALF_UP</code>, el precio por kilo con su unidad, y que la precisión no se pierda en el camino</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class="salida"># en el equipo del aprendiz, con el SDK instalado:
+$ ./gradlew test
+
+BUILD SUCCESSFUL
+19 tests completed, 0 failed</pre>
+
+<h3>10.1 Un fallo que apareció al escribir las pruebas</h3>
+
+<p>
+  La prueba «las cargas incompletas llevan un decimal» espera <code>3,2 cargas</code>, con
+  coma. La primera versión del código formateaba así:
+</p>
+
+<pre><code>String.format("%.1f cargas", cargas)   // ← sin Locale</code></pre>
+
+<p>
+  <code>String.format</code> sin <code>Locale</code> usa la <strong>configuración del
+  dispositivo</strong>. En un teléfono en inglés, eso produce <code>3.2 cargas</code> — con
+  punto — justo al lado de un número de kilos que usa el punto como separador de miles.
+  Las dos lecturas juntas serían contradictorias: <code>400 kg (3.2 cargas)</code>.
+</p>
+
+<p>
+  Corregido fijando el formato de Colombia, por el mismo motivo que
+  <code>separarMiles</code> no usa <code>NumberFormat</code>: <strong>el peso de un lote no
+  debe cambiar de significado según el idioma en que esté configurado el
+  teléfono</strong>.
+</p>
+
+<h2>11. Ambientes</h2>
+
+<table>
+  <thead><tr><th></th><th>Desarrollo</th><th>Pruebas</th><th>Release</th></tr></thead>
+  <tbody>
+    <tr><td>API</td><td><code>http://10.0.2.2:8000</code></td><td>No toca la red</td><td><code>https://api.monkgrain.co</code></td></tr>
+    <tr><td>Dónde corre</td><td>Emulador o teléfono por USB</td><td>JVM del equipo</td><td>Teléfono del usuario</td></tr>
+    <tr><td>HTTP sin cifrar</td><td>Solo 10.0.2.2 y localhost</td><td>—</td><td>No</td></tr>
+    <tr><td>Registro de peticiones</td><td>Cuerpo completo</td><td>—</td><td>Nada</td></tr>
+    <tr><td>Ofuscación</td><td>No</td><td>—</td><td>Sí, con reglas para los DTO</td></tr>
+    <tr><td>Firma</td><td>Clave de depuración</td><td>—</td><td>Clave propia, fuera del repositorio</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Las reglas de ProGuard para los DTO no son opcionales.</strong> Los DTO se leen
+    por reflexión, así que la ofuscación de <code>release</code> renombra sus campos y la
+    lectura del JSON falla <strong>solo en release</strong>: en <code>debug</code> funciona,
+    porque ahí no hay ofuscación. Es el error más desconcertante de Android, porque aparece
+    cuando ya se dio el trabajo por terminado. Están escritas en
+    <code>proguard-rules.pro</code>.
+  </p>
+</div>
+
+<h2>12. Compilar y ejecutar</h2>
+
+<pre class="salida"># 1. el backend, en el equipo
+$ docker compose up -d
+$ curl -s localhost:8000/health        → {"status":"ok"}
+
+# 2. la ruta del SDK de esta máquina
+$ cp local.properties.example local.properties
+$ nano local.properties                → sdk.dir=/home/TU_USUARIO/Android/Sdk
+
+# 3. las pruebas del dominio (no necesitan emulador)
+$ ./gradlew test
+
+# 4. el APK de depuración
+$ ./gradlew assembleDebug
+  → app/build/outputs/apk/debug/app-debug.apk
+
+# 5. instalarlo
+$ adb install app/build/outputs/apk/debug/app-debug.apk</pre>
+
+<p>
+  <code>local.properties</code> <strong>no se versiona</strong>: la ruta del SDK es distinta
+  en cada equipo, y versionarla rompería la compilación de cualquier otro. Por eso se
+  entrega <code>local.properties.example</code>.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 1 — El proyecto abierto</span>
+  Android Studio con el árbol de paquetes <code>data</code>, <code>domain</code> y
+  <code>ui</code> desplegado
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 2 — Las pruebas del dominio</span>
+  El resultado de <code>./gradlew test</code> con las <strong>19 pruebas</strong> en verde
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 3 — La compilación</span>
+  <code>BUILD SUCCESSFUL</code> y la ruta del <code>app-debug.apk</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 4 — El catálogo en el teléfono</span>
+  La lista de lotes, con el factor de rendimiento y su lectura visibles en cada
+  tarjeta, y el precio por kilo
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 5 — El detalle de un lote</span>
+  La pantalla de detalle con el factor, la humedad, el precio, el disponible en
+  kilos y cargas, y el mínimo de despacho
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 6 — Sin conexión</span>
+  La pantalla de error con el botón <strong>Reintentar</strong>. Se consigue
+  deteniendo el backend (<code>docker compose stop backend</code>) y abriendo la app
+</div>
+
+<div class="pendiente">
+  <span class="titulo">Lo que te falta hacer a ti</span>
+  <p>
+    <strong>Compilar el proyecto y generar el APK</strong>, con los cinco pasos de §12. El
+    código está escrito y el contrato con la API verificado, pero este equipo no tiene SDK
+    de Android, así que <strong>nunca se compiló</strong>: es posible que aparezca algún
+    ajuste al abrirlo en Android Studio.
+  </p>
+  <p>
+    <strong>Las 6 capturas</strong> señaladas arriba.
+  </p>
+  <p>
+    El <strong>APK</strong> (<code>app-debug.apk</code>) va dentro del ZIP de la entrega,
+    junto a este PDF.
+  </p>
+  <p>
+    Si algo no compila, lo más probable es una versión del complemento de Android Gradle:
+    Android Studio ofrece actualizarla sola y conviene aceptar. Las versiones declaradas
+    son AGP 8.5.2 y Kotlin 1.9.24.
+  </p>
+</div>
+
+<h2>13. Lo que no hace esta versión</h2>
+
+<table>
+  <thead><tr><th>Qué</th><th>Por qué no</th></tr></thead>
+  <tbody>
+    <tr><td>Ingresar con usuario y contraseña</td><td>El catálogo es público. Añadir sesión obligaría a guardar el token de forma segura y a manejar su caducidad: es otra evidencia, no un añadido</td></tr>
+    <tr><td>Carrito y pedidos</td><td>Dependen de la sesión</td></tr>
+    <tr><td>Publicar un lote desde el teléfono</td><td>Requiere subir fotos, que es el caso más complejo de la API</td></tr>
+    <tr><td>Fotos de los lotes</td><td>Exigiría una librería de carga de imágenes (Coil o Glide). Se mencionan los campos y no se muestran</td></tr>
+    <tr><td>Funcionar sin conexión</td><td>No hay caché local. Se informa el fallo y se ofrece reintentar, que es lo honesto sin caché</td></tr>
+    <tr><td>Paginación al desplazar</td><td>Se trae la primera página de 20. El catálogo de demostración tiene menos</td></tr>
+  </tbody>
+</table>
+
+<h2>14. Conclusión</h2>
+
+<p>
+  Los módulos móviles están codificados en Kotlin con tres capas, siete patrones de diseño
+  y 19 pruebas unitarias que corren sin dispositivo, consumiendo la misma API del proyecto
+  que documenta AA5-EV03.
+</p>
+
+<p>
+  Lo que separa esta entrega de un ejercicio de copiar y pegar es la verificación de §9. No
+  se puede compilar aquí, y en lugar de afirmar que funciona, se comprobó
+  <strong>lo que de verdad rompe un cliente móvil</strong>: que los 17 campos del lote y los
+  7 de la página coincidan exactamente con lo que el servidor publica, nombre por nombre y
+  nulabilidad por nulabilidad. Eso sí se puede saber sin un emulador, y es lo que más
+  probabilidades tenía de estar mal.
+</p>
+
+<p>
+  Y el fallo de §10.1 —el formato de número que cambiaba con el idioma del teléfono— lo
+  encontró una prueba del dominio antes de que existiera una pantalla donde verlo. Es el
+  argumento entero a favor de haber dejado las reglas fuera de la capa de interfaz.
+</p>

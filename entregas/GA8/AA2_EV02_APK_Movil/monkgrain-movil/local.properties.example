@@ -1,0 +1,5 @@
+# Copiar como `local.properties` y poner la ruta del SDK de esta máquina.
+#
+# local.properties NO se versiona: la ruta del SDK es distinta en cada
+# equipo, y versionarla rompería la compilación de cualquier otro.
+sdk.dir=/home/TU_USUARIO/Android/Sdk

@@ -1,0 +1,80 @@
+GA8-220501096-AA2-EV02
+APK — módulos móviles de MONK GRAIN para Android
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     2 de noviembre de 2026
+
+Proyecto entregado:  monkgrain-movil  (Kotlin, Android, minSdk 24)
+                     1.041 lineas de Kotlin en 12 archivos
+                     19 pruebas unitarias del dominio
+
+Ruta en el repositorio:
+  entregas/GA8/AA2_EV02_APK_Movil/monkgrain-movil/
+  entregas/GA8/AA2_EV02_APK_Movil/verificar_contrato.py
+
+Estructura
+----------
+  app/src/main/java/co/monkgrain/movil/
+    ui/        LotListActivity, LotListViewModel, LotAdapter,
+               LotDetailActivity, LotDetailViewModel
+    domain/    YieldFactor, Kilos, Money     (sin dependencias de Android)
+    data/      CatalogApi, ApiClient, CatalogRepository, dto/CatalogDto
+
+Compilar
+--------
+  # 1. el backend, en el equipo
+  docker compose up -d
+  curl -s localhost:8000/health              # {"status":"ok"}
+
+  # 2. la ruta del SDK de ESTA maquina
+  cd entregas/GA8/AA2_EV02_APK_Movil/monkgrain-movil
+  cp local.properties.example local.properties
+  # editar: sdk.dir=/home/TU_USUARIO/Android/Sdk
+
+  # 3. las pruebas del dominio (no necesitan emulador)
+  ./gradlew test                             # 19 pruebas
+
+  # 4. el APK
+  ./gradlew assembleDebug
+  # queda en app/build/outputs/apk/debug/app-debug.apk
+
+  # 5. instalarlo
+  adb install app/build/outputs/apk/debug/app-debug.apk
+
+IMPORTANTE: 10.0.2.2 y no localhost
+-----------------------------------
+El emulador es una maquina virtual con su propia red: `localhost` dentro de
+el es el emulador mismo, no el equipo donde corre docker compose. La
+direccion del anfitrion, vista desde el emulador, es 10.0.2.2, y es la que
+usa la version de depuracion.
+
+Con un telefono real por USB hay dos caminos:
+  - usar la IP del equipo en la red local, o
+  - adb reverse tcp:8000 tcp:8000   (reenvia el puerto y permite localhost)
+
+Verificacion del contrato con la API
+------------------------------------
+Este equipo NO tiene Android Studio ni el SDK, asi que el proyecto NO SE
+COMPILO aqui. Lo que si se verifico es el contrato con la API, que es lo que
+de verdad rompe un cliente movil sin que el compilador avise:
+
+  curl -s http://localhost:8000/openapi.json > openapi.json
+  python3 entregas/GA8/AA2_EV02_APK_Movil/verificar_contrato.py openapi.json
+
+Resultado del 2 de noviembre de 2026:
+  LotListItemDto  ↔ ProductListItem         17 de 17 campos
+  VariantDto      ↔ VariantResponse          8 de 8 campos
+  LotDetailDto    ↔ ProductDetail           22 de 28 campos (6 sin usar)
+  PageDto         ↔ Page_ProductListItem_    7 de 7 campos
+  ProducerSummaryDto ↔ ProducerSummary       5 de 6 campos (1 sin usar)
+
+  0 problemas. Los 7 campos sin usar son deliberados: ignoreUnknownKeys
+  permite que el servidor crezca sin romper la app instalada.
+
+Pendiente del aprendiz:  compilar el proyecto, generar el APK y tomar las
+6 capturas (seccion 12 del documento). El APK va dentro del ZIP de la
+entrega.
