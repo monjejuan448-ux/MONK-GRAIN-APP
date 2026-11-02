@@ -355,8 +355,8 @@ Lo que sigue pendiente, sin adornos. El pago al vendedor —que encabezaba esta 
 - **No hay proceso en segundo plano.** Nada vigila el vencimiento de las certificaciones ni los plazos de las devoluciones, que la revisión legal dejó anotado.
 - **Ocho páginas de contenido sin escribir:** `/regiones`, `/blog`, `/nosotros`, `/trazabilidad`, `/sostenibilidad`, `/ayuda`, `/contacto` y `/envios`. **Ya no están enlazadas**, porque prometerlas en las 41 páginas del sitio era peor que no tenerlas; sus enlaces vuelven cuando exista el texto. Una prueba vigila que no reaparezcan antes.
 - **Hay esquema sin código detrás:** `conversations` y `messages` (mensajería), `blog_posts` y los cupones, que el carrito consume pero ningún endpoint crea. Construirlo o retirarlo es una decisión de alcance.
-- **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino. Quedan once decisiones de negocio sin resolver en [docs/10](docs/10-revision-legal.md); la que más urge es **D-7**, quién recauda el dinero, porque condiciona el punto primero de esta lista.
-- **El repositorio no tiene remoto.** Todo el historial vive en un solo disco, y el CI nunca se ha ejecutado: está escrito, no probado.
+- **Los textos legales son un borrador sin revisión jurídica**, con los datos de la empresa entre corchetes, y además fueron redactados para el negocio anterior: requieren una segunda revisión tras el pivote a pergamino. Quedan diez decisiones de negocio sin resolver en [docs/10](docs/10-revision-legal.md): **D-7** —quién recauda el dinero— sí se resolvió, a favor de que la plataforma recaude y liquide ([docs/18](docs/18-liquidaciones.md)), pero ese recaudo y la facultad de retención (**D-6**) siguen sin contrato que los respalde.
+- **El hook `useProtectedResource` cubre una sola pantalla de las veintiocho que lo necesitan.** Existe y está probado, y `/productor/posturas` ya pasó a usarlo (AA4-EV03); migrar las otras veintisiete es trabajo mecánico que conviene hacer por tandas, verificando cada pantalla, no de una sola vez.
 - **El precio no está indexado al precio interno de referencia de la FNC.** Fue una decisión, no un olvido: exigía una fuente del precio diario y decidir quién la mantiene.
 
 ---
@@ -375,11 +375,11 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/a-word.sh GA7/AA3_EV02_Pruebas_Modulo
 ```
 
-**Estado: 9 de 23 construidas.** GA7-AA1, AA2 y AA3, completas.
+**Estado: 12 de 23 construidas.** GA7-AA1, AA2, AA3 y AA4, completas.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
-Estas cuatro cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
+Estas seis cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
 
 | Qué | Dónde | Detalle |
 |---|---|---|
@@ -405,9 +405,9 @@ Las demás evidencias con video o captura —AA5-EV02 y AA5-EV04— se irán añ
 | AA2-EV02 Servlets y JSP | **`catalogo-web`** (Jakarta Servlet 6 + JSP + JSTL, sobre `catalogo-pergamino`) | [`entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/`](entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/) | ✅ PDF 8 pág. · WAR desplegado y probado por HTTP en Tomcat 10 | — |
 | AA3-EV01 Framework Java | **`negociacion-pergamino`** (Spring Boot 3.3 + JPA + Bean Validation) | [`entregas/GA7/AA3_EV01_Modulo_Framework/`](entregas/GA7/AA3_EV01_Modulo_Framework/) | ✅ PDF 8 pág. · 21 pruebas · 11 endpoints probados por HTTP | — |
 | AA3-EV02 Pruebas del módulo | **`negociacion-pergamino`** + pantallas Thymeleaf | [`entregas/GA7/AA3_EV02_Pruebas_Modulo/`](entregas/GA7/AA3_EV02_Pruebas_Modulo/) | ✅ Word y PDF, 10 pág. · 16 requisitos y 5 categorías de validación verificados | **11 capturas** (listadas en §8) y **el video** (guion en §9) |
-| AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
-| AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | `entregas/GA7/AA4_EV02_Componentes_Front/` | ⬜ pendiente | — |
-| AA4-EV03 Componente del proyecto | módulo **`trading`** | `entregas/GA7/AA4_EV03_Componente_Proyecto/` | ⬜ pendiente | — |
+| AA4-EV01 Taller React | — (teórico) | [`entregas/GA7/AA4_EV01_Taller_React/`](entregas/GA7/AA4_EV01_Taller_React/) | ✅ PDF 7 pág. · mapa conceptual en SVG vectorial | — |
+| AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | [`entregas/GA7/AA4_EV02_Componentes_Front/`](entregas/GA7/AA4_EV02_Componentes_Front/) | ✅ PDF 7 pág. · inventario de 24 componentes · duplicación medida (22/14/28) | — |
+| AA4-EV03 Componente del proyecto | módulo **`trading`** (oferta y demanda) | [`entregas/GA7/AA4_EV03_Componente_Proyecto/`](entregas/GA7/AA4_EV03_Componente_Proyecto/) | ✅ PDF 7 pág. · 1 hook + 4 componentes · 12 pruebas nuevas (53 en total) | — |
 | AA5-EV01 Servicio registro/login | módulo **`auth`** (10 endpoints) | `entregas/GA7/AA5_EV01_API_Registro_Login/` | ⬜ pendiente | — |
 | AA5-EV02 Postman sobre EV01 | colección de `auth` | `entregas/GA7/AA5_EV02_Postman_API/` | ⬜ pendiente | Video del testing |
 | AA5-EV03 API del proyecto | los 107 endpoints + `docs/06` | `entregas/GA7/AA5_EV03_APIs_Proyecto/` | ⬜ pendiente | — |
@@ -444,7 +444,7 @@ docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
 
 ### Repositorios
 
-- **Proyecto:** <https://github.com/monjejuan448-ux/MONK-GRAIN-APP> — público, con `main` y `correcciones-auditoria`, y la [PR #1](https://github.com/monjejuan448-ux/MONK-GRAIN-APP/pull/1) abierta para revisión.
+- **Proyecto:** <https://github.com/monjejuan448-ux/MONK-GRAIN-APP> — público. La [PR #1](https://github.com/monjejuan448-ux/MONK-GRAIN-APP/pull/1), con las correcciones de la auditoría, está revisada y fusionada; `main` es la rama por defecto.
 - **Ejercicio AA1-EV05:** <https://github.com/monjejuan448-ux/Programa-Git>
 
 ### El CI, ejecutado por fin
@@ -455,7 +455,15 @@ Estaba escrito desde el principio y **nunca se había ejecutado**. Al publicar e
 2. **El lockfile del frontend solo servía para Alpine.** Se generó en el contenedor de desarrollo, que es musl, y los ejecutores de GitHub son glibc: `npm ci` no encontraba `@rollup/rollup-linux-x64-gnu`. Ahora las dos variantes se declaran como `optionalDependencies`.
 3. **MinIO ya no se puede descargar sin credenciales**, ni de Docker Hub ni de quay.io. Se usa `adobe/s3mock`, que implementa la misma API y está pensado para pruebas.
 
-**Verde desde la cuarta vuelta**: 453 pruebas de backend, 41 de frontend, imágenes de producción construidas y escaneo de secretos sin hallazgos.
+**Verde desde la cuarta vuelta**: 453 pruebas de backend, 53 de frontend, imágenes de producción construidas y escaneo de secretos sin hallazgos.
+
+### Lo que AA4 dejó en el producto
+
+A diferencia de AA2 y AA3, que son módulos Java aparte, **AA4 se codificó dentro del producto**: lo que entrega la evidencia es código que el sitio usa.
+
+- `web/src/hooks/useProtectedResource.ts` — el primer hook propio del proyecto. Encapsula las veinticinco líneas de token, 401, 403 y `finally` que se repetían en veintiocho pantallas.
+- `web/src/features/trading/components/` — `CoverageBar`, `YieldFactorReading`, `OfferResponse` y `DemandCard`. El módulo de oferta y demanda no tenía ningún componente propio: sus 1.359 líneas vivían en tres páginas.
+- `web/tests/TradingComponents.test.tsx` — 12 pruebas que fijan las reglas, no la maquetación: que la cobertura muestre kilos *y* porcentaje, que el factor de rendimiento nunca aparezca como número suelto, y que el motivo de un rechazo se vea completo.
 
 ### Nota sobre Java en GA7
 

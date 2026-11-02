@@ -1,19 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, HandCoins } from "lucide-react";
 
 import { EmptyState, ErrorState, Skeleton } from "@/components/shared/states";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  OFFER_STATUS_META,
-  sellerTradingApi,
-  type MyOfferSummary,
-} from "@/features/trading/api";
+import { sellerTradingApi, type MyOfferSummary } from "@/features/trading/api";
+import { OfferResponse } from "@/features/trading/components/OfferResponse";
+import { useProtectedResource } from "@/hooks/useProtectedResource";
 import { ApiError } from "@/lib/api";
 import {
   formatCurrency,
@@ -28,48 +24,27 @@ import { session } from "@/lib/session";
  *
  * El motivo de un rechazo se muestra completo: es lo que le dice al caficultor
  * qué ajustar en la siguiente, y esconderlo convertiría el rechazo en un «no»
- * sin salida.
+ * sin salida. De eso se encarga `OfferResponse`, que además dice con palabras
+ * cuando no hubo motivo en lugar de dejar un hueco vacío.
+ *
+ * La carga va por `useProtectedResource`: antes esta página repetía a mano las
+ * veinticinco líneas de token, 401, 403 y `finally`, igual que otras
+ * veintisiete.
  */
-
 export default function ProducerOffersPage() {
-  const router = useRouter();
-  const [offers, setOffers] = useState<MyOfferSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [forbidden, setForbidden] = useState(false);
+  const {
+    data: page,
+    isLoading,
+    hasError,
+    isForbidden,
+    reload,
+  } = useProtectedResource((token) => sellerTradingApi.myOffers(token));
+
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const token = session.getAccessToken();
-    if (!token) {
-      router.push("/ingresar");
-      return;
-    }
-
-    setError(false);
-    try {
-      const page = await sellerTradingApi.myOffers(token);
-      setOffers(page.items);
-    } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.isUnauthorized) {
-        router.push("/ingresar");
-        return;
-      }
-      if (requestError instanceof ApiError && requestError.status === 403) {
-        setForbidden(true);
-        return;
-      }
-      setError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const offers = page?.items ?? [];
 
   async function withdraw(offer: MyOfferSummary): Promise<void> {
     const token = session.getAccessToken();
@@ -81,7 +56,7 @@ export default function ProducerOffersPage() {
     try {
       await sellerTradingApi.withdraw(token, offer.id);
       setNotice("Postura retirada.");
-      await load();
+      await reload();
     } catch (requestError) {
       setActionError(
         requestError instanceof ApiError
@@ -93,7 +68,7 @@ export default function ProducerOffersPage() {
     }
   }
 
-  if (forbidden) {
+  if (isForbidden) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16">
         <EmptyState
@@ -135,9 +110,9 @@ export default function ProducerOffersPage() {
       )}
 
       {isLoading && <Skeleton className="h-48 w-full" />}
-      {!isLoading && error && <ErrorState onRetry={() => void load()} />}
+      {!isLoading && hasError && <ErrorState onRetry={() => void reload()} />}
 
-      {!isLoading && !error && offers.length === 0 && (
+      {!isLoading && !hasError && offers.length === 0 && (
         <EmptyState
           icon={<HandCoins className="size-10" aria-hidden="true" />}
           title="No has enviado ninguna postura"
@@ -150,70 +125,66 @@ export default function ProducerOffersPage() {
         />
       )}
 
-      {!isLoading && !error && offers.length > 0 && (
+      {!isLoading && !hasError && offers.length > 0 && (
         <ul className="space-y-4">
-          {offers.map((offer) => {
-            const meta = OFFER_STATUS_META[offer.status];
-            return (
-              <li key={offer.id}>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-display font-semibold">{offer.demand_title}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {offer.buyer_name} · busca{" "}
-                          {formatKilosWithCargas(offer.wanted_kg)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Ofreciste {formatKilosWithCargas(offer.offered_kg)} de{" "}
-                          {offer.product_name}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <Badge variant={meta.variant}>{meta.label}</Badge>
-                        <span className="font-display font-semibold">
-                          {formatCurrency(offer.line_total)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatPricePerKilo(offer.price_per_kg)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Enviada el {formatDateShort(offer.created_at)}
-                      {offer.responded_at &&
-                        ` · respondida el ${formatDateShort(offer.responded_at)}`}
-                      {!offer.responded_at &&
-                        ` · la solicitud vence el ${formatDateShort(offer.demand_expires_on)}`}
-                    </p>
-
-                    {offer.response_note && (
-                      <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">
-                        <span className="font-medium">Respuesta del comprador:</span>{" "}
-                        {offer.response_note}
+          {offers.map((offer) => (
+            <li key={offer.id}>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-display font-semibold">{offer.demand_title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {offer.buyer_name} · busca{" "}
+                        {formatKilosWithCargas(offer.wanted_kg)}
                       </p>
-                    )}
+                      <p className="text-sm text-muted-foreground">
+                        Ofreciste {formatKilosWithCargas(offer.offered_kg)} de{" "}
+                        {offer.product_name}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <span className="font-display font-semibold">
+                        {formatCurrency(offer.line_total)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatPricePerKilo(offer.price_per_kg)}
+                      </span>
+                    </div>
+                  </div>
 
-                    {offer.status === "pending" && (
-                      <div className="mt-4 border-t border-border pt-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:bg-destructive/10"
-                          disabled={busyId === offer.id}
-                          onClick={() => void withdraw(offer)}
-                        >
-                          Retirar la postura
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
+                  <div className="mt-3">
+                    <OfferResponse
+                      status={offer.status}
+                      responseNote={offer.response_note}
+                    />
+                  </div>
+
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Enviada el {formatDateShort(offer.created_at)}
+                    {offer.responded_at &&
+                      ` · respondida el ${formatDateShort(offer.responded_at)}`}
+                    {!offer.responded_at &&
+                      ` · la solicitud vence el ${formatDateShort(offer.demand_expires_on)}`}
+                  </p>
+
+                  {offer.status === "pending" && (
+                    <div className="mt-4 border-t border-border pt-4">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:bg-destructive/10"
+                        disabled={busyId === offer.id}
+                        onClick={() => void withdraw(offer)}
+                      >
+                        Retirar la postura
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </li>
+          ))}
         </ul>
       )}
     </div>

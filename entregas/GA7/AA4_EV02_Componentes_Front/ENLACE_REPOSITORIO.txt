@@ -1,0 +1,33 @@
+GA7-220501096-AA4-EV02
+Verificación de componentes front-end
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Documento:
+  entregas/GA7/AA4_EV02_Componentes_Front/Verificacion_Componentes_Front_End.pdf
+
+Código verificado en el documento:
+  web/src/components/shared/      componentes transversales
+  web/src/components/ui/          primitivas
+  web/src/features/*/components/  componentes de dominio
+  web/src/hooks/useProtectedResource.ts
+
+Reproducir la medición de duplicación que cita el documento:
+  cd web
+
+  # 22 páginas leen el token a mano para cargar
+  find src/app -name page.tsx | xargs grep -l 'const token = session.getAccessToken()' | wc -l
+
+  # 14 repiten el manejo del prohibido
+  grep -rl 403 src/app | wc -l
+
+  # 28 repiten el trío cargando / error / prohibido
+  grep -rl 'setIsLoading(false)' src/app | wc -l
+
+El último da 27 y no 28 después de esta actividad: /productor/posturas ya
+no lo repite, porque pasó a usar el hook.

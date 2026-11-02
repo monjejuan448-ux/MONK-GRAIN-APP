@@ -1,0 +1,434 @@
+<!-- GA7-220501096-AA4-EV01 · Taller sobre componentes front-end -->
+<header class="portada">
+  <h1>Taller: Componentes Front-End con React</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este taller responde las cuatro preguntas de la guía sobre React, el framework con el
+  que está construida la interfaz web de <strong>MONK GRAIN</strong>. Los ejemplos no son
+  genéricos: salen del código del proyecto, de modo que cada concepto se puede ir a ver
+  funcionando.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Explicar la diferencia entre React y JSX, qué son las clases en React, cuáles son sus
+  principales eventos, y representar sus conceptos en un mapa, junto con las
+  características principales del framework.
+</p>
+
+<h2>3. Características principales de React</h2>
+
+<table>
+  <thead>
+    <tr><th>Característica</th><th>Qué significa en la práctica</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Basado en componentes</strong></td>
+      <td>La interfaz se arma con piezas que se combinan. En MONK GRAIN, <code>CoverageBar</code> muestra cuánto se cubrió de una solicitud, y la misma pieza sirve al comprador y al vendedor</td>
+    </tr>
+    <tr>
+      <td><strong>Declarativo</strong></td>
+      <td>Se describe <em>qué</em> debe verse según el estado, no <em>cómo</em> llegar ahí paso a paso. No se escribe «borra esta fila y añade aquella»: se dice cómo se ve la lista y React calcula la diferencia</td>
+    </tr>
+    <tr>
+      <td><strong>Flujo de datos en un solo sentido</strong></td>
+      <td>Los datos bajan de padre a hijo por propiedades. Un hijo no modifica lo que recibe: avisa con una función. Así, cuando algo se ve mal, se busca hacia arriba y no en todas partes</td>
+    </tr>
+    <tr>
+      <td><strong>DOM virtual</strong></td>
+      <td>React mantiene una representación en memoria, la compara con la anterior y toca el documento real solo donde cambió. Tocar el DOM es caro; compararlo en memoria, no</td>
+    </tr>
+    <tr>
+      <td><strong>Hooks</strong></td>
+      <td>Funciones que dan estado y efectos a un componente sin necesidad de clases, y que permiten extraer lógica repetida. En este proyecto, <code>useProtectedResource</code> encapsula lo que 28 pantallas repetían</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Diferencia entre React y JSX</h2>
+
+<p>
+  Es la confusión más común, y la respuesta corta es que <strong>no son cosas
+  comparables</strong>: React es una biblioteca y JSX es una sintaxis.
+</p>
+
+<table>
+  <thead>
+    <tr><th></th><th>React</th><th>JSX</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Qué es</strong></td><td>Una biblioteca de JavaScript para construir interfaces</td><td>Una extensión de sintaxis que permite escribir marcado dentro de JavaScript</td></tr>
+    <tr><td><strong>Qué aporta</strong></td><td>Componentes, estado, hooks, el DOM virtual y la reconciliación</td><td>Solo una forma más legible de escribir la estructura</td></tr>
+    <tr><td><strong>¿Es obligatorio?</strong></td><td>Sí, si se quiere usar React</td><td><strong>No.</strong> React funciona sin JSX</td></tr>
+    <tr><td><strong>¿El navegador lo entiende?</strong></td><td>Sí, es JavaScript</td><td>No. Hay que transformarlo antes</td></tr>
+  </tbody>
+</table>
+
+<h3>4.1 La demostración</h3>
+
+<p>Esto es JSX, tomado de <code>CoverageBar</code>:</p>
+
+<pre><code>&lt;div className="mt-1 h-1.5 w-full rounded-full bg-muted"&gt;
+  &lt;div style={{ width: `${percentage}%` }} /&gt;
+&lt;/div&gt;</code></pre>
+
+<p>Y esto es <strong>exactamente lo mismo</strong>, escrito sin JSX:</p>
+
+<pre><code>React.createElement(
+  "div",
+  { className: "mt-1 h-1.5 w-full rounded-full bg-muted" },
+  React.createElement("div", { style: { width: percentage + "%" } })
+);</code></pre>
+
+<p>
+  El compilador —Babel, o el de Next.js— convierte el primero en el segundo antes de que
+  el navegador vea nada. <strong>JSX es azúcar sintáctico sobre
+  <code>React.createElement</code></strong>: desaparece al compilar y no llega al
+  navegador.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Por qué existe de todos modos.</strong> Las dos versiones hacen lo mismo, pero
+    una estructura de seis niveles escrita con <code>createElement</code> es ilegible: los
+    paréntesis se acumulan y no se ve qué contiene qué. JSX conserva la forma de árbol que
+    tiene el resultado.
+  </p>
+</div>
+
+<h3>4.2 Lo que JSX no es</h3>
+
+<p>
+  No es HTML, aunque se le parezca. Las diferencias importan porque son errores frecuentes:
+</p>
+
+<table>
+  <thead><tr><th>En HTML</th><th>En JSX</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>class</code></td><td><code>className</code></td><td><code>class</code> es palabra reservada de JavaScript</td></tr>
+    <tr><td><code>for</code></td><td><code>htmlFor</code></td><td>Igual: <code>for</code> es un bucle</td></tr>
+    <tr><td><code>onclick="..."</code></td><td><code>onClick={...}</code></td><td>En JSX son <em>camelCase</em> y reciben una función, no una cadena</td></tr>
+    <tr><td><code>style="width: 50%"</code></td><td><code>style={{ width: "50%" }}</code></td><td>Un objeto de JavaScript, no texto</td></tr>
+    <tr><td>Etiquetas sin cerrar</td><td>Toda etiqueta se cierra</td><td>JSX debe poder convertirse en una llamada a función</td></tr>
+  </tbody>
+</table>
+
+<h2>5. Las clases en React</h2>
+
+<p>
+  Hasta la versión 16.8 de React, un componente que necesitara <strong>estado</strong> o
+  reaccionar a su <strong>ciclo de vida</strong> tenía que ser una clase. Una función no
+  podía recordar nada entre renders.
+</p>
+
+<pre><code>class ContadorDePosturas extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { posturas: 0 };          // el estado vive en this.state
+    this.sumar = this.sumar.bind(this);    // había que atar el `this`
+  }
+
+  componentDidMount() {                    // al montarse
+    this.cargar();
+  }
+
+  componentDidUpdate(prevProps) {          // al cambiar algo
+    if (prevProps.id !== this.props.id) this.cargar();
+  }
+
+  componentWillUnmount() {                 // al desmontarse
+    this.cancelar();
+  }
+
+  sumar() {
+    this.setState({ posturas: this.state.posturas + 1 });
+  }
+
+  render() {                               // obligatorio: lo que se ve
+    return &lt;p&gt;{this.state.posturas} posturas&lt;/p&gt;;
+  }
+}</code></pre>
+
+<table>
+  <thead><tr><th>Elemento</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>extends React.Component</code></td><td>Hereda el comportamiento de un componente</td></tr>
+    <tr><td><code>this.state</code></td><td>Los datos que, al cambiar, vuelven a dibujar</td></tr>
+    <tr><td><code>this.setState()</code></td><td>La <strong>única</strong> forma de cambiarlo. Asignar directamente no redibuja</td></tr>
+    <tr><td><code>this.props</code></td><td>Lo que recibe del padre. Es de solo lectura</td></tr>
+    <tr><td><code>render()</code></td><td>Devuelve lo que se ve. Es obligatorio</td></tr>
+    <tr><td>Métodos de ciclo de vida</td><td><code>componentDidMount</code>, <code>componentDidUpdate</code>, <code>componentWillUnmount</code></td></tr>
+  </tbody>
+</table>
+
+<h3>5.1 Por qué hoy casi no se usan</h3>
+
+<p>
+  Los <em>hooks</em> dieron a las funciones lo que antes solo tenían las clases. El mismo
+  componente de arriba, en la forma que usa MONK GRAIN:
+</p>
+
+<pre><code>function ContadorDePosturas({ id }) {
+  const [posturas, setPosturas] = useState(0);
+
+  useEffect(() =&gt; {
+    cargar();
+    return () =&gt; cancelar();   // esto reemplaza a componentWillUnmount
+  }, [id]);                     // y esta lista, a componentDidUpdate
+
+  return &lt;p&gt;{posturas} posturas&lt;/p&gt;;
+}</code></pre>
+
+<table>
+  <thead><tr><th>Con clases</th><th>Con hooks</th></tr></thead>
+  <tbody>
+    <tr><td><code>this.state</code> y <code>setState</code></td><td><code>useState</code></td></tr>
+    <tr><td><code>componentDidMount</code></td><td><code>useEffect(fn, [])</code></td></tr>
+    <tr><td><code>componentDidUpdate</code></td><td><code>useEffect(fn, [deps])</code></td></tr>
+    <tr><td><code>componentWillUnmount</code></td><td>Lo que devuelve el <code>useEffect</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Las tres ventajas que lo decidieron: desaparece el problema del <code>this</code>, que
+  obligaba a atar cada método; la lógica de una misma preocupación queda junta en lugar de
+  repartida entre tres métodos de ciclo de vida; y se puede <strong>extraer a un hook
+  propio</strong> y reutilizar, que es lo que hace <code>useProtectedResource</code> en
+  este proyecto.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Las clases no están obsoletas.</strong> React las sigue soportando y hay
+    código que las usa. Pero en MONK GRAIN no hay ninguna: los 67 componentes son
+    funciones.
+  </p>
+</div>
+
+<h2>6. Principales eventos de React</h2>
+
+<p>
+  React envuelve los eventos del navegador en un <strong>evento sintético</strong>, que se
+  comporta igual en todos los navegadores. Se nombran en <em>camelCase</em> y reciben una
+  función, no una cadena de texto.
+</p>
+
+<h3>6.1 Eventos de ratón</h3>
+
+<table>
+  <thead><tr><th>Evento</th><th>Cuándo ocurre</th><th>En el proyecto</th></tr></thead>
+  <tbody>
+    <tr><td><code>onClick</code></td><td>Al pulsar</td><td>Retirar una postura, aceptar, rechazar</td></tr>
+    <tr><td><code>onDoubleClick</code></td><td>Al pulsar dos veces</td><td>—</td></tr>
+    <tr><td><code>onMouseEnter</code> / <code>onMouseLeave</code></td><td>Al entrar o salir el puntero</td><td>Resaltar una fila</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 Eventos de formulario</h3>
+
+<table>
+  <thead><tr><th>Evento</th><th>Cuándo ocurre</th><th>En el proyecto</th></tr></thead>
+  <tbody>
+    <tr><td><code>onChange</code></td><td>Al cambiar el valor de un campo</td><td>Los kilos del carrito, los filtros del catálogo</td></tr>
+    <tr><td><code>onSubmit</code></td><td>Al enviar un formulario</td><td>Publicar una solicitud, registrar la cuenta bancaria</td></tr>
+    <tr><td><code>onFocus</code> / <code>onBlur</code></td><td>Al entrar o salir del campo</td><td>Validar al salir</td></tr>
+  </tbody>
+</table>
+
+<h3>6.3 Eventos de teclado</h3>
+
+<table>
+  <thead><tr><th>Evento</th><th>Cuándo ocurre</th></tr></thead>
+  <tbody>
+    <tr><td><code>onKeyDown</code></td><td>Al pulsar una tecla. Es el que sirve para atajos</td></tr>
+    <tr><td><code>onKeyUp</code></td><td>Al soltarla</td></tr>
+  </tbody>
+</table>
+
+<h3>6.4 Dos detalles que son errores frecuentes</h3>
+
+<p><strong>Evitar el envío por omisión.</strong> Un formulario recarga la página si no se lo impide:</p>
+
+<pre><code>async function handleSave(event: React.FormEvent) {
+  event.preventDefault();   // sin esto, la página se recarga y se pierde todo
+  ...
+}</code></pre>
+
+<p>
+  <strong>Pasar la función, no llamarla.</strong> Es el error que más desconcierta a quien
+  empieza:
+</p>
+
+<pre><code>&lt;button onClick={withdraw(offer)}&gt;      {/* MAL: se ejecuta al dibujar */}
+&lt;button onClick={() =&gt; withdraw(offer)}&gt; {/* BIEN: se ejecuta al pulsar */}</code></pre>
+
+<p>
+  En el primero, <code>withdraw(offer)</code> se evalúa mientras React construye la
+  pantalla, y lo que recibe <code>onClick</code> es su resultado. La postura se retira
+  sola, sin que nadie pulse nada.
+</p>
+
+<h2>7. Mapa conceptual de React</h2>
+
+<figure>
+<svg viewBox="0 0 760 540" width="100%" role="img"
+     aria-label="Mapa conceptual de React: la biblioteca se escribe con JSX, se organiza en componentes, que reciben propiedades, guardan estado, usan hooks y responden a eventos; el DOM virtual decide qué redibujar">
+  <defs>
+    <style>
+      .caja { fill: #FFFFFF; stroke: #6F4E37; stroke-width: 1.4; }
+      .raiz { fill: #6F4E37; stroke: #3B2417; stroke-width: 1.6; }
+      .rama { fill: #F4EBDD; stroke: #6F4E37; stroke-width: 1.3; }
+      .hoja { fill: #FBF8F3; stroke: #B5A697; stroke-width: 1; }
+      .t  { font-family: Georgia, serif; font-size: 13px; fill: #241A14; }
+      .tb { font-family: Georgia, serif; font-size: 15px; font-weight: bold; fill: #241A14; }
+      .tw { font-family: Georgia, serif; font-size: 17px; font-weight: bold; fill: #F4EBDD; }
+      .ts { font-family: Georgia, serif; font-size: 11px; fill: #5A463A; }
+      .l  { stroke: #8A7A6D; stroke-width: 1.2; fill: none; }
+      .et { font-family: Georgia, serif; font-size: 10px; fill: #6B5A4D; font-style: italic; }
+    </style>
+  </defs>
+
+  <!-- Raíz -->
+  <rect class="raiz" x="300" y="14" width="160" height="42" rx="4"/>
+  <text class="tw" x="380" y="41" text-anchor="middle">REACT</text>
+  <text class="ts" x="380" y="72" text-anchor="middle" fill="#5A463A">Biblioteca para construir interfaces</text>
+
+  <!-- Nivel 1 -->
+  <line class="l" x1="380" y1="78" x2="380" y2="96"/>
+  <line class="l" x1="130" y1="96" x2="630" y2="96"/>
+  <line class="l" x1="130" y1="96" x2="130" y2="116"/>
+  <line class="l" x1="380" y1="96" x2="380" y2="116"/>
+  <line class="l" x1="630" y1="96" x2="630" y2="116"/>
+
+  <rect class="rama" x="52" y="116" width="156" height="38" rx="3"/>
+  <text class="tb" x="130" y="140" text-anchor="middle">Se escribe con JSX</text>
+
+  <rect class="rama" x="296" y="116" width="168" height="38" rx="3"/>
+  <text class="tb" x="380" y="140" text-anchor="middle">Componentes</text>
+
+  <rect class="rama" x="548" y="116" width="164" height="38" rx="3"/>
+  <text class="tb" x="630" y="140" text-anchor="middle">DOM virtual</text>
+
+  <!-- JSX -->
+  <line class="l" x1="130" y1="154" x2="130" y2="178"/>
+  <rect class="hoja" x="36" y="178" width="188" height="34" rx="3"/>
+  <text class="t" x="130" y="194" text-anchor="middle">Azúcar sintáctico sobre</text>
+  <text class="t" x="130" y="207" text-anchor="middle">React.createElement</text>
+
+  <line class="l" x1="130" y1="212" x2="130" y2="232"/>
+  <rect class="hoja" x="36" y="232" width="188" height="34" rx="3"/>
+  <text class="t" x="130" y="248" text-anchor="middle">No es HTML: className,</text>
+  <text class="t" x="130" y="261" text-anchor="middle">htmlFor, onClick</text>
+
+  <line class="l" x1="130" y1="266" x2="130" y2="286"/>
+  <rect class="hoja" x="36" y="286" width="188" height="30" rx="3"/>
+  <text class="t" x="130" y="305" text-anchor="middle">Desaparece al compilar</text>
+
+  <!-- DOM virtual -->
+  <line class="l" x1="630" y1="154" x2="630" y2="178"/>
+  <rect class="hoja" x="536" y="178" width="188" height="34" rx="3"/>
+  <text class="t" x="630" y="194" text-anchor="middle">Copia en memoria del</text>
+  <text class="t" x="630" y="207" text-anchor="middle">árbol de la pantalla</text>
+
+  <line class="l" x1="630" y1="212" x2="630" y2="232"/>
+  <rect class="hoja" x="536" y="232" width="188" height="34" rx="3"/>
+  <text class="t" x="630" y="248" text-anchor="middle">Reconciliación: compara</text>
+  <text class="t" x="630" y="261" text-anchor="middle">y toca solo lo que cambió</text>
+
+  <line class="l" x1="630" y1="266" x2="630" y2="286"/>
+  <rect class="hoja" x="536" y="286" width="188" height="30" rx="3"/>
+  <text class="t" x="630" y="305" text-anchor="middle">Tocar el DOM real es caro</text>
+
+  <!-- Componentes -->
+  <line class="l" x1="380" y1="154" x2="380" y2="176"/>
+  <line class="l" x1="262" y1="176" x2="498" y2="176"/>
+  <line class="l" x1="262" y1="176" x2="262" y2="196"/>
+  <line class="l" x1="498" y1="176" x2="498" y2="196"/>
+
+  <rect class="caja" x="238" y="196" width="112" height="34" rx="3"/>
+  <text class="tb" x="294" y="218" text-anchor="middle">Función</text>
+
+  <rect class="caja" x="444" y="196" width="112" height="34" rx="3"/>
+  <text class="tb" x="500" y="218" text-anchor="middle">Clase</text>
+  <text class="et" x="500" y="244" text-anchor="middle">heredada; sin uso aquí</text>
+
+  <!-- Qué tiene un componente -->
+  <line class="l" x1="294" y1="230" x2="294" y2="268"/>
+  <line class="l" x1="190" y1="268" x2="470" y2="268"/>
+  <line class="l" x1="190" y1="268" x2="190" y2="288"/>
+  <line class="l" x1="294" y1="268" x2="294" y2="288"/>
+  <line class="l" x1="400" y1="268" x2="400" y2="288"/>
+  <line class="l" x1="470" y1="268" x2="470" y2="288"/>
+
+  <rect class="caja" x="132" y="288" width="116" height="34" rx="3"/>
+  <text class="tb" x="190" y="310" text-anchor="middle">Propiedades</text>
+
+  <rect class="caja" x="240" y="288" width="108" height="34" rx="3"/>
+  <text class="tb" x="294" y="310" text-anchor="middle">Estado</text>
+
+  <rect class="caja" x="350" y="288" width="100" height="34" rx="3"/>
+  <text class="tb" x="400" y="310" text-anchor="middle">Hooks</text>
+
+  <rect class="caja" x="452" y="288" width="104" height="34" rx="3"/>
+  <text class="tb" x="504" y="310" text-anchor="middle">Eventos</text>
+
+  <!-- Hojas finales -->
+  <line class="l" x1="190" y1="322" x2="190" y2="344"/>
+  <rect class="hoja" x="112" y="344" width="156" height="46" rx="3"/>
+  <text class="t" x="190" y="362" text-anchor="middle">Bajan del padre</text>
+  <text class="t" x="190" y="378" text-anchor="middle">Solo lectura</text>
+
+  <line class="l" x1="294" y1="322" x2="294" y2="344"/>
+  <rect class="hoja" x="222" y="344" width="146" height="46" rx="3"/>
+  <text class="t" x="295" y="362" text-anchor="middle">Al cambiar,</text>
+  <text class="t" x="295" y="378" text-anchor="middle">vuelve a dibujar</text>
+
+  <line class="l" x1="400" y1="322" x2="400" y2="344"/>
+  <rect class="hoja" x="330" y="344" width="142" height="60" rx="3"/>
+  <text class="t" x="401" y="362" text-anchor="middle">useState</text>
+  <text class="t" x="401" y="378" text-anchor="middle">useEffect</text>
+  <text class="t" x="401" y="394" text-anchor="middle">propios</text>
+
+  <line class="l" x1="504" y1="322" x2="504" y2="344"/>
+  <rect class="hoja" x="434" y="344" width="146" height="60" rx="3"/>
+  <text class="t" x="507" y="362" text-anchor="middle">onClick</text>
+  <text class="t" x="507" y="378" text-anchor="middle">onChange</text>
+  <text class="t" x="507" y="394" text-anchor="middle">onSubmit</text>
+
+  <!-- Flujo de datos -->
+  <line class="l" x1="190" y1="390" x2="190" y2="424"/>
+  <line class="l" x1="190" y1="424" x2="507" y2="424"/>
+  <line class="l" x1="507" y1="404" x2="507" y2="424"/>
+  <line class="l" x1="348" y1="424" x2="348" y2="446"/>
+
+  <rect class="rama" x="212" y="446" width="272" height="56" rx="3"/>
+  <text class="tb" x="348" y="468" text-anchor="middle">Flujo en un solo sentido</text>
+  <text class="t" x="348" y="488" text-anchor="middle">Los datos bajan · los eventos suben</text>
+</svg>
+<figcaption>Mapa conceptual de React, con los conceptos del taller y su relación</figcaption>
+</figure>
+
+<h2>8. Conclusión</h2>
+
+<p>
+  React y JSX no compiten: React es la biblioteca que mantiene la interfaz al día con el
+  estado, y JSX solo la forma legible de escribir la estructura, que desaparece al
+  compilar. Las clases fueron la única manera de tener estado hasta 2019 y siguen
+  funcionando, pero los hooks resolvieron sus tres problemas —el <code>this</code>, la
+  lógica repartida entre métodos de ciclo de vida, y la imposibilidad de reutilizarla—.
+</p>
+
+<p>
+  Esa última ventaja no es teórica en este proyecto: la evidencia AA4-EV03 extrae un hook
+  propio que elimina un bloque repetido en 28 pantallas.
+</p>

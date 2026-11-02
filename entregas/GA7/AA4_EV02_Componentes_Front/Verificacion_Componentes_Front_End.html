@@ -1,0 +1,256 @@
+<!-- GA7-220501096-AA4-EV02 · Verificación de procedimientos para la definición de componentes -->
+<header class="portada">
+  <h1>Verificación de Procedimientos para la Definición de Componentes Front-End</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este documento describe los componentes front-end de <strong>MONK GRAIN</strong>, la
+  plataforma de compra y venta de café pergamino seco, con la justificación de cada uno.
+</p>
+
+<p>
+  La pregunta que responde no es «¿qué componentes tiene React?», sino
+  <strong>«¿cuándo algo merece ser un componente y cuándo no?»</strong>. Convertir cada
+  trozo de interfaz en una pieza propia produce un proyecto con doscientos archivos que
+  nadie recuerda, y dejar todo en línea produce páginas de quinientas líneas donde la
+  regla de negocio se esconde entre maquetación. Aquí queda escrito el criterio que se
+  usó, y la medición en la que se apoya.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Describir los componentes front-end que se usan en el proyecto, justificando cada uno,
+  y dejar establecido el procedimiento por el que se decide si algo debe serlo.
+</p>
+
+<h2>3. El procedimiento de decisión</h2>
+
+<p>
+  Un trozo de interfaz se convierte en componente cuando cumple <strong>al menos uno</strong>
+  de estos tres criterios. Si no cumple ninguno, se deja donde está:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Criterio</th><th>Qué significa</th><th>Ejemplo</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Se repite</strong></td>
+      <td>Aparece en dos o más pantallas. Copiarlo garantiza que un arreglo llegue a una copia y no a la otra</td>
+      <td><code>ProductCard</code>, en el catálogo y en favoritos</td>
+    </tr>
+    <tr>
+      <td><strong>2. Encierra una regla del dominio</strong></td>
+      <td>Traduce un dato a una decisión. La traducción debe ser una sola en todo el producto</td>
+      <td><code>YieldFactorReading</code>: «88,50» → «Excepcional»</td>
+    </tr>
+    <tr>
+      <td><strong>3. Tiene estado propio</strong></td>
+      <td>Gestiona algo que solo le concierne a él, y sacarlo descarga la página</td>
+      <td><code>AddToCart</code>, con su cantidad y su mínimo</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>El criterio que no se usa: «es grande».</strong> Un bloque largo de maquetación
+    sin lógica ni repetición no gana nada al extraerse; solo añade un salto entre archivos
+    para leer lo mismo.
+  </p>
+</div>
+
+<h2>4. La organización en tres capas</h2>
+
+<pre class="salida">components/ui/        primitivas sin dominio       4 componentes
+components/shared/    compartidos del producto      6 componentes
+features/*/components dominio, uno por módulo      14 componentes
+hooks/                lógica reutilizable           1 hook</pre>
+
+<table>
+  <thead>
+    <tr><th>Capa</th><th>Regla</th><th>Cómo se reconoce</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>ui/</code></td>
+      <td>No sabe nada de café. Serviría igual en otro proyecto</td>
+      <td>Si menciona «lote», «factor» o «pergamino», está en la capa equivocada</td>
+    </tr>
+    <tr>
+      <td><code>shared/</code></td>
+      <td>Es de este producto pero no de un módulo</td>
+      <td>La barra de navegación es de MONK GRAIN, pero no del catálogo ni del carrito</td>
+    </tr>
+    <tr>
+      <td><code>features/</code></td>
+      <td>Pertenece a un módulo y <strong>espeja el backend</strong></td>
+      <td><code>features/trading/</code> ↔ <code>modules/trading/</code> del servidor</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  El espejo con el backend no es simetría por gusto: cuando una regla cambia en el
+  servidor, se sabe sin buscar qué carpeta del frontend hay que revisar.
+</p>
+
+<h2>5. Los componentes, con su justificación</h2>
+
+<h3>5.1 Primitivas — <code>components/ui/</code></h3>
+
+<table>
+  <thead><tr><th>Componente</th><th>Qué resuelve</th><th>Por qué existe</th></tr></thead>
+  <tbody>
+    <tr><td><code>Button</code></td><td>Botón con variantes y tamaños</td><td>Sin él, cada pantalla inventa su botón y la interfaz deja de parecer una sola</td></tr>
+    <tr><td><code>Badge</code></td><td>Etiqueta de estado</td><td>Los estados se repiten en pedidos, posturas, devoluciones y liquidaciones</td></tr>
+    <tr><td><code>Card</code></td><td>Contenedor con su relleno</td><td>Unifica el ritmo visual de todos los listados</td></tr>
+    <tr><td><code>Input</code></td><td>Campo con sus estados de foco y error</td><td>El foco visible es un requisito de accesibilidad, no un detalle estético</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 Compartidos — <code>components/shared/</code></h3>
+
+<table>
+  <thead><tr><th>Componente</th><th>Qué resuelve</th><th>Por qué existe</th></tr></thead>
+  <tbody>
+    <tr><td><code>Navbar</code> · <code>Footer</code></td><td>Navegación global</td><td>Salen en las 43 páginas. Un enlace equivocado aquí son 43 enlaces rotos — ya ocurrió, y hoy una prueba lo vigila</td></tr>
+    <tr><td><code>Logo</code></td><td>La marca</td><td>Un solo sitio donde cambiarla</td></tr>
+    <tr><td><code>CoffeeImage</code></td><td>Foto del lote con su respaldo</td><td>Un lote sin foto no debe dejar un hueco roto; esto pone un marcador de la paleta</td></tr>
+    <tr><td><code>StatCard</code></td><td>Cifra con su rótulo y su énfasis</td><td>Los tres paneles —comprador, vendedor, administración— muestran cifras igual</td></tr>
+    <tr><td><code>states</code></td><td><code>EmptyState</code>, <code>ErrorState</code>, <code>Skeleton</code></td><td><strong>Los tres estados que toda pantalla con datos remotos tiene</strong>, y que sin un componente se olvidan: lo más común es dibujar solo el caso con datos</td></tr>
+  </tbody>
+</table>
+
+<h3>5.3 De dominio — <code>features/*/components/</code></h3>
+
+<table>
+  <thead><tr><th>Módulo</th><th>Componente</th><th>Por qué existe</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3"><code>catalog</code></td><td><code>ProductCard</code></td><td>Se repite en catálogo, favoritos y perfil del vendedor</td></tr>
+    <tr><td><code>CatalogFilters</code></td><td>Encierra que el factor y la humedad se filtran por su <strong>máximo</strong>: en esos datos, menos es mejor</td></tr>
+    <tr><td><code>AddToCart</code></td><td>Tiene estado propio y hace cumplir el mínimo de compra, que es regla del negocio</td></tr>
+    <tr><td rowspan="3"><code>producer</code></td><td><code>ProductForm</code></td><td>La ficha de análisis del pergamino: factor, humedad, pasilla, broca, malla</td></tr>
+    <tr><td><code>VariantManager</code></td><td>Las ofertas del lote, cada una con su mínimo y su precio por kilo</td></tr>
+    <tr><td><code>ImageManager</code></td><td>Subida con orden y portada</td></tr>
+    <tr><td rowspan="4"><code>trading</code></td><td><code>CoverageBar</code></td><td><strong>Una solicitud grande no la cubre un solo caficultor.</strong> Comprador y vendedor necesitan ver cuánto falta</td></tr>
+    <tr><td><code>YieldFactorReading</code></td><td>Traduce el factor a su lectura comercial. Dos traducciones del mismo número en pantallas distintas sería peor que ninguna</td></tr>
+    <tr><td><code>OfferResponse</code></td><td>Muestra el motivo del rechazo <strong>completo</strong>: es lo que le dice al caficultor qué ajustar</td></tr>
+    <tr><td><code>DemandCard</code></td><td>La misma tarjeta para el comprador y el vendedor, con <code>href</code> distinto</td></tr>
+    <tr><td><code>reviews</code></td><td><code>Stars</code> · <code>ProductReviews</code></td><td>La calificación aparece en la ficha, en el perfil y en la moderación</td></tr>
+    <tr><td><code>account</code></td><td><code>AddressForm</code></td><td>Departamento y municipio en cascada contra el catálogo DANE</td></tr>
+    <tr><td><code>returns</code></td><td><code>ReturnReceipt</code></td><td>La constancia con número de radicación, que la ley exige</td></tr>
+  </tbody>
+</table>
+
+<h3>5.4 Lógica reutilizable — <code>hooks/</code></h3>
+
+<p>
+  <code>useProtectedResource</code> no dibuja nada: encapsula <strong>comportamiento</strong>.
+  Es la capacidad que los hooks añadieron a React y que las clases no tenían.
+</p>
+
+<p>
+  Nace de una duplicación medida en el propio repositorio:
+</p>
+
+<pre class="salida">$ grep -rl "session.getAccessToken" web/src/app | wc -l
+22        páginas leen el token a mano
+
+$ grep -rl "requestError.status === 403" web/src/app | wc -l
+14        repiten el mismo manejo del prohibido
+
+$ grep -rl "const [isLoading, setIsLoading] = useState(true)" web/src/app | wc -l
+28        repiten el trío cargando / error / prohibido</pre>
+
+<p>
+  Veinticinco líneas copiadas veintiocho veces. Y lo que convierte eso en un defecto y no
+  en una incomodidad: <strong>basta con que una copia olvide el <code>finally</code></strong>
+  para que esa pantalla se quede cargando para siempre, y nadie lo nota hasta que alguien
+  lo reporta.
+</p>
+
+<h2>6. Reglas de escritura de un componente</h2>
+
+<table>
+  <thead><tr><th>Regla</th><th>Motivo</th></tr></thead>
+  <tbody>
+    <tr><td>Nombre en <code>PascalCase</code>, archivo igual al componente</td><td>Encontrarlo por el nombre que se ve en el JSX</td></tr>
+    <tr><td>Propiedades tipadas, sin <code>any</code></td><td><code>tsc</code> en modo estricto rechaza el envío</td></tr>
+    <tr><td>Un componente no modifica lo que recibe</td><td>Avisa con una función. Así, cuando algo se ve mal, se busca hacia arriba</td></tr>
+    <tr><td>Las consultas de las pruebas van por texto accesible</td><td>Un cambio de maquetación no debe romper una prueba de una regla</td></tr>
+    <tr><td>El comentario explica el <em>porqué</em></td><td>El código ya dice qué hace; lo que no puede decir es qué se descartó</td></tr>
+  </tbody>
+</table>
+
+<h3>6.1 Un componente como ejemplo</h3>
+
+<p>
+  <code>CoverageBar</code> reúne las cinco reglas y una decisión de dominio:
+</p>
+
+<pre><code>export function CoverageBar({
+  wantedKg, coveredKg, remainingKg,
+}: {
+  wantedKg: number; coveredKg: number; remainingKg: number;
+}) {
+  const percentage = wantedKg &gt; 0 ? Math.round((coveredKg / wantedKg) * 100) : 0;
+
+  return (
+    &lt;div&gt;
+      &lt;span&gt;{formatKilosWithCargas(coveredKg)} de {formatKilosWithCargas(wantedKg)}&lt;/span&gt;
+      &lt;span&gt;{percentage} %&lt;/span&gt;
+
+      {/* role y aria: un lector de pantalla no ve el ancho de un div */}
+      &lt;div role="progressbar" aria-valuenow={coveredKg} aria-valuemax={wantedKg}
+           aria-label={`Cubierto ${percentage} por ciento`}&gt;
+        &lt;div style={{ width: `${percentage}%` }} /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+<p>
+  <strong>Muestra los kilos y el porcentaje juntos a propósito.</strong> El porcentaje solo
+  engaña —«80 %» de una solicitud pequeña puede ser menos café que el 20 % de una grande—
+  y los kilos solos obligan a dividir mentalmente. Esa decisión está fijada por una prueba.
+</p>
+
+<h2>7. Verificación</h2>
+
+<p>El procedimiento se comprueba, no se declara:</p>
+
+<table>
+  <thead><tr><th>Qué se verifica</th><th>Cómo</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr><td>Tipos correctos en todos los componentes</td><td><code>tsc --noEmit</code> en modo estricto</td><td>Sin hallazgos</td></tr>
+    <tr><td>Reglas de React y de los hooks</td><td><code>eslint</code></td><td>Sin hallazgos</td></tr>
+    <tr><td>Formato uniforme</td><td><code>prettier --check</code></td><td>Sin hallazgos</td></tr>
+    <tr><td>Comportamiento de los componentes</td><td><code>vitest</code> con Testing Library</td><td><strong>53 pruebas</strong></td></tr>
+    <tr><td>Que la navegación no prometa páginas inexistentes</td><td>Prueba que cruza los <code>href</code> contra el árbol de rutas</td><td>3 pruebas</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Conclusión</h2>
+
+<p>
+  El proyecto tiene 24 componentes y un hook, repartidos en tres capas con una regla clara
+  de pertenencia: las primitivas no saben de café, los compartidos son del producto pero
+  no de un módulo, y los de dominio espejan los módulos del servidor.
+</p>
+
+<p>
+  Lo que distingue este inventario de una lista es el criterio: un trozo de interfaz se
+  extrae porque <strong>se repite</strong>, porque <strong>encierra una regla</strong> o
+  porque <strong>tiene estado propio</strong>. Nunca por ser grande. La evidencia
+  siguiente aplica ese criterio al módulo de oferta y demanda.
+</p>

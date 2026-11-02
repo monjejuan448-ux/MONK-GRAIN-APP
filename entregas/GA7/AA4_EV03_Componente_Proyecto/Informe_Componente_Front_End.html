@@ -1,0 +1,314 @@
+<!-- GA7-220501096-AA4-EV03 · Componente front-end del proyecto -->
+<header class="portada">
+  <h1>Informe Técnico: Componentes Front-End del Módulo de Oferta y Demanda</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia codifica el componente front-end del proyecto <strong>MONK GRAIN</strong>
+  aplicando React, sobre el módulo de <strong>oferta y demanda</strong>: el mercado en su
+  segundo sentido, donde el comprador publica lo que busca y los caficultores responden.
+</p>
+
+<p>
+  No parte de cero ni inventa una pantalla para la entrega. Parte de algo medido en el
+  repositorio: el módulo tenía <strong>1.359 líneas repartidas en tres páginas y cero
+  componentes reutilizables</strong>, y el proyecto entero repetía el mismo bloque de
+  carga en 28 pantallas. Lo que esta evidencia hace es aplicar el criterio de AA4-EV02 a
+  ese caso.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar el componente front-end del proyecto aplicando React, usando los artefactos
+  previos, incluyendo comentarios, cumpliendo los estándares de codificación y
+  versionando el trabajo con Git.
+</p>
+
+<h2>3. El punto de partida, medido</h2>
+
+<pre class="salida">features/trading/api.ts                           172 líneas
+app/(public)/productor/posturas/page.tsx          221 líneas
+app/(public)/mi-cuenta/solicitudes/page.tsx       508 líneas
+app/(public)/mi-cuenta/solicitudes/[id]/page.tsx  458 líneas
+                                                 ─────────────
+                                                1.359 líneas
+                                        componentes propios: 0</pre>
+
+<p>Y la duplicación que atraviesa todo el proyecto:</p>
+
+<table>
+  <thead><tr><th>Patrón repetido</th><th>Páginas</th></tr></thead>
+  <tbody>
+    <tr><td>Leen el token de sesión a mano</td><td><strong>22</strong></td></tr>
+    <tr><td>Repiten el manejo del 403</td><td><strong>14</strong></td></tr>
+    <tr><td>Repiten el trío cargando / error / prohibido</td><td><strong>28</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>4. Lo construido</h2>
+
+<h3>4.1 El hook <code>useProtectedResource</code></h3>
+
+<p>
+  Encapsula las veinticinco líneas que se repetían: leer el token, redirigir si no hay,
+  pedir el dato, distinguir el 401 del 403, y apagar el indicador de carga.
+</p>
+
+<pre><code>export function useProtectedResource&lt;T&gt;(
+  fetcher: (token: string) =&gt; Promise&lt;T&gt;,
+  deps: readonly unknown[] = [],
+): ProtectedResource&lt;T&gt; {
+  const router = useRouter();
+  const [data, setData] = useState&lt;T | null&gt;(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [isForbidden, setIsForbidden] = useState(false);
+
+  const load = useCallback(async () =&gt; {
+    const token = session.getAccessToken();
+    if (!token) { router.push("/ingresar"); return; }
+
+    setHasError(false);
+    setIsForbidden(false);
+
+    try {
+      setData(await fetcher(token));
+    } catch (requestError) {
+      if (requestError instanceof ApiError &amp;&amp; requestError.isUnauthorized) {
+        // La sesión caducó. No es un error que mostrar: es volver a entrar.
+        router.push("/ingresar");
+        return;
+      }
+      if (requestError instanceof ApiError &amp;&amp; requestError.status === 403) {
+        setIsForbidden(true);
+        return;
+      }
+      setHasError(true);
+    } finally {
+      // En el `finally` y no al final del `try`: sin esto, un error deja la
+      // pantalla cargando para siempre. Es el olvido que más se repetía.
+      setIsLoading(false);
+    }
+  }, [router, ...deps]);
+
+  useEffect(() =&gt; { void load(); }, [load]);
+
+  return { data, isLoading, hasError, isForbidden, reload: load, setData };
+}</code></pre>
+
+<h4>Las decisiones, con su motivo</h4>
+
+<table>
+  <thead><tr><th>Decisión</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Devuelve <strong>cuatro estados separados</strong> y no uno combinado</td>
+      <td>No son intercambiables: <em>prohibido</em> es una explicación —el usuario no hizo nada mal—, <em>error</em> ofrece reintentar, y <em>cargando</em> no sabe nada todavía</td>
+    </tr>
+    <tr>
+      <td>El <strong>401 no es ninguno de los cuatro</strong></td>
+      <td>Significa que la sesión caducó. Lo que corresponde es volver a la pantalla de ingreso, no mostrar un mensaje que el usuario no puede resolver</td>
+    </tr>
+    <tr>
+      <td><code>setIsLoading(false)</code> en el <code>finally</code></td>
+      <td>Fuera de él, un error deja el indicador girando para siempre. Era el olvido más repetido</td>
+    </tr>
+    <tr>
+      <td><code>deps</code> explícito y <code>fetcher</code> fuera de ellas</td>
+      <td><code>fetcher</code> se recrea en cada render: depender de él provocaría una petición infinita</td>
+    </tr>
+    <tr>
+      <td>Devuelve también <code>setData</code></td>
+      <td>Permite reflejar un cambio sin volver a pedir todo al servidor</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>4.2 Cuatro componentes de dominio</h3>
+
+<table>
+  <thead><tr><th>Componente</th><th>Criterio que cumple</th><th>Regla que encierra</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>CoverageBar</code></td>
+      <td>Se repite · regla</td>
+      <td>Una solicitud grande se cubre con varios caficultores. Muestra kilos <em>y</em> porcentaje</td>
+    </tr>
+    <tr>
+      <td><code>YieldFactorReading</code></td>
+      <td>Regla</td>
+      <td>Traduce el factor a su lectura comercial. <strong>Nunca muestra el número solo</strong></td>
+    </tr>
+    <tr>
+      <td><code>OfferResponse</code></td>
+      <td>Regla</td>
+      <td>El motivo del rechazo se muestra completo, y la falta de motivo se dice con palabras</td>
+    </tr>
+    <tr>
+      <td><code>DemandCard</code></td>
+      <td>Se repite</td>
+      <td>La misma tarjeta para comprador y vendedor, con <code>href</code> distinto</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Por qué cada uno, en una frase</h4>
+
+<p>
+  <strong><code>CoverageBar</code>.</strong> El porcentaje solo engaña: «80 %» de una
+  solicitud pequeña puede ser menos café que el 20 % de una grande. Y los kilos solos
+  obligan a dividir mentalmente. Los muestra juntos, con la barra marcada como
+  <code>progressbar</code> porque un lector de pantalla no ve el ancho de un
+  <code>div</code>.
+</p>
+
+<p>
+  <strong><code>YieldFactorReading</code>.</strong> Un «88,50» no le dice nada a quien no
+  sabe que el estándar de la Federación es 94 y que menos es mejor. La traducción vive en
+  una sola función compartida con el catálogo: dos lecturas del mismo número en pantallas
+  distintas sería peor que ninguna.
+</p>
+
+<p>
+  <strong><code>OfferResponse</code>.</strong> Lo que hace y no haría una etiqueta suelta:
+  muestra el motivo del rechazo <em>completo</em>. Es lo que le dice al caficultor si el
+  problema fue el precio, el factor o la cantidad, y esconderlo tras un «ver más» convierte
+  el rechazo en un «no» sin salida. Cuando no hubo motivo lo dice con palabras, porque un
+  recuadro vacío parece un fallo de la página.
+</p>
+
+<p>
+  <strong><code>DemandCard</code>.</strong> El orden de la información sigue la decisión de
+  compra, no el modelo de datos: primero qué busca y cuánto falta, después las condiciones,
+  y el estado al final. Un vendedor decide si postura mirando lo primero.
+</p>
+
+<h3>4.3 La página refactorizada</h3>
+
+<p>
+  <code>/productor/posturas</code> pasa de 221 a 192 líneas, y lo que desaparece no es
+  maquetación sino el bloque de carga repetido:
+</p>
+
+<pre class="salida">ANTES                                 DESPUÉS
+
+const [offers, setOffers]   = ...     const { data: page, isLoading,
+const [isLoading, ...]      = ...              hasError, isForbidden,
+const [error, setError]     = ...              reload }
+const [forbidden, ...]      = ...       = useProtectedResource(
+                                            (t) =&gt; sellerTradingApi.myOffers(t));
+const load = useCallback(async () =&gt; {
+  const token = session.getAccessToken();
+  if (!token) { router.push("/ingresar"); return; }
+  setError(false);
+  try { ... }
+  catch (e) { ...401... ...403... }
+  finally { setIsLoading(false); }
+}, [router]);
+
+useEffect(() =&gt; { void load(); }, [load]);</pre>
+
+<h2>5. Estándares aplicados</h2>
+
+<table>
+  <thead><tr><th>Estándar (AA1-EV02)</th><th>Cómo se cumple</th></tr></thead>
+  <tbody>
+    <tr><td>Componentes en <code>PascalCase</code></td><td><code>CoverageBar.tsx</code>, <code>DemandCard.tsx</code></td></tr>
+    <tr><td>Hooks en <code>camelCase</code> con prefijo <code>use</code></td><td><code>useProtectedResource.ts</code></td></tr>
+    <tr><td>Código en inglés, comentarios en español</td><td><code>remainingKg</code>, con su porqué en español encima</td></tr>
+    <tr><td>Tipos explícitos, sin <code>any</code></td><td><code>tsc</code> en modo estricto, sin hallazgos</td></tr>
+    <tr><td>El comentario explica el porqué</td><td><em>«En el <code>finally</code> y no al final del <code>try</code>…»</em></td></tr>
+    <tr><td>Espejo con el backend</td><td><code>features/trading/</code> ↔ <code>modules/trading/</code></td></tr>
+  </tbody>
+</table>
+
+<h2>6. Pruebas</h2>
+
+<p>
+  <strong>12 pruebas nuevas</strong>, que llevan el frontend de 41 a <strong>53</strong>.
+  Consultan por lo que el usuario percibe —texto accesible, atributos de accesibilidad— y
+  no por la estructura interna que React produjo: un cambio de maquetación no debe romper
+  una prueba que verifica una regla del negocio.
+</p>
+
+<table>
+  <thead><tr><th>Componente</th><th>Qué fijan</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>CoverageBar</code> (5)</td>
+      <td>Que muestre kilos <em>y</em> porcentaje; que diga cuánto falta mientras no esté cubierta y deje de pedirlo cuando lo esté; que sea legible por voz; y que <strong>no divida por cero</strong></td>
+    </tr>
+    <tr>
+      <td><code>YieldFactorReading</code> (3)</td>
+      <td>Que <strong>nunca muestre el número solo</strong>; que diga «o mejor» cuando es un techo; y que diga «cualquier factor» cuando no hay requisito</td>
+    </tr>
+    <tr>
+      <td><code>OfferResponse</code> (4)</td>
+      <td>Que el motivo salga completo; que la falta de motivo se diga con palabras; que no hable de motivos si fue aceptada; y que distinga esperar de haber sido rechazada</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class="salida">$ npm test
+
+ ✓ tests/navigation.test.ts         (3 tests)
+ ✓ tests/quality.test.ts            (11 tests)
+ ✓ tests/format.test.ts             (16 tests)
+ ✓ tests/TradingComponents.test.tsx (12 tests)   ← nuevas
+ ✓ tests/AddToCart.test.tsx         (11 tests)
+
+ Test Files  5 passed (5)
+      Tests  53 passed (53)</pre>
+
+<h3>6.1 Las puertas de calidad</h3>
+
+<pre class="salida">$ npx tsc --noEmit        sin hallazgos
+$ npm run lint            sin hallazgos
+$ npm run format:check    All matched files use Prettier code style!
+$ npm test                53 passed
+$ curl /productor/posturas → 200</pre>
+
+<h2>7. Qué cambió en el proyecto</h2>
+
+<table>
+  <thead><tr><th></th><th>Antes</th><th>Después</th></tr></thead>
+  <tbody>
+    <tr><td>Componentes del módulo <code>trading</code></td><td>0</td><td><strong>4</strong></td></tr>
+    <tr><td>Hooks propios en el proyecto</td><td>0</td><td><strong>1</strong></td></tr>
+    <tr><td>Componentes en total</td><td>20</td><td><strong>24</strong></td></tr>
+    <tr><td>Pruebas de frontend</td><td>41</td><td><strong>53</strong></td></tr>
+    <tr><td><code>/productor/posturas</code></td><td>221 líneas</td><td>192 líneas</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Las otras 27 páginas siguen repitiendo el bloque.</strong> El hook existe y
+    está probado en una; migrar el resto es trabajo mecánico que conviene hacer por tandas
+    y verificando cada pantalla, no de una sola vez. Queda anotado como pendiente en el
+    README del proyecto, no dado por hecho.
+  </p>
+</div>
+
+<h2>8. Conclusión</h2>
+
+<p>
+  El módulo de oferta y demanda pasa de no tener componentes propios a tener cuatro, cada
+  uno justificado por el criterio de AA4-EV02 —se repite, encierra una regla, o tiene
+  estado propio— y ninguno extraído por ser grande.
+</p>
+
+<p>
+  El hook <code>useProtectedResource</code> es lo que mejor ilustra para qué sirven los
+  hooks, que era la pregunta del taller: no dibuja nada, encapsula
+  <strong>comportamiento</strong>, y resuelve una duplicación de veinticinco líneas en
+  veintiocho pantallas que con clases no se habría podido extraer.
+</p>
