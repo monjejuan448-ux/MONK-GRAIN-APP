@@ -1,0 +1,467 @@
+<!-- GA8-220501096-AA1-EV01 · Integración de los módulos del software -->
+<header class="portada">
+  <h1>Desarrollo del Software a partir de la Integración de sus Módulos</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Las evidencias de GA7 construyeron piezas: un módulo de acceso a datos, una capa web con
+  servlets, un módulo con framework, componentes de interfaz, servicios web. Esta evidencia
+  documenta el paso siguiente y más difícil de demostrar: <strong>que esas piezas forman un
+  solo sistema que arranca, se comunica y se puede probar de punta a punta</strong>.
+</p>
+
+<p>
+  La diferencia no es retórica. Un módulo puede estar bien escrito y no integrarse: porque
+  su esquema no coincide con el de la base, porque dos capas se llaman en la dirección
+  equivocada, o porque funciona en la máquina de quien lo escribió y en ninguna otra. Este
+  documento no afirma que MONK GRAIN esté integrado: lo <strong>comprueba</strong>, y las
+  comprobaciones están en el texto con su salida.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar e integrar los módulos de MONK GRAIN en una aplicación orientada a la web, a
+  partir de los requerimientos del sistema, identificando capas, mecanismos de seguridad,
+  librerías y frameworks por capa; dividiendo en componentes reutilizables y paquetes con
+  nombres claros; aplicando patrones de diseño; con pruebas unitarias por módulo, control
+  de versiones, configuración de servidores y bases de datos, y documentación de los
+  ambientes de desarrollo y pruebas.
+</p>
+
+<h2>3. El sistema, de un vistazo</h2>
+
+<pre class="salida">                       NAVEGADOR
+                           │
+                           ▼
+    ┌──────────────────────────────────────────┐
+    │  web   ·  Next.js 15 + React 19 + TS     │   43 páginas
+    │          Tailwind · 24 componentes       │   9 features
+    └──────────────────────────────────────────┘
+                           │  HTTP/JSON  ·  Bearer
+                           ▼
+    ┌──────────────────────────────────────────┐
+    │  backend  ·  FastAPI + Python 3.12       │   107 endpoints
+    │             router → service → repository │   11 módulos
+    │             SQLAlchemy 2 + Pydantic 2     │   53 modelos
+    └──────────────────────────────────────────┘
+          │              │              │
+          ▼              ▼              ▼
+    ┌──────────┐   ┌──────────┐   ┌──────────┐
+    │ postgres │   │  redis   │   │  minio   │
+    │    16    │   │ 7 (topes │   │ (fotos   │
+    │ 54 tablas│   │ y caché) │   │ de lotes)│
+    └──────────┘   └──────────┘   └──────────┘
+                           │
+                     ┌──────────┐
+                     │ mailpit  │  correo en desarrollo
+                     └──────────┘</pre>
+
+<p>
+  Seis servicios en <code>docker-compose.yml</code>. Un solo comando los levanta, y esa es
+  la primera prueba de integración que vale: si hiciera falta instalar PostgreSQL, Redis y
+  MinIO a mano, el sistema estaría integrado solo en la máquina de quien lo escribió.
+</p>
+
+<h2>4. Las capas, y qué framework vive en cada una</h2>
+
+<table>
+  <thead><tr><th>Capa</th><th>Dónde</th><th>Librerías y frameworks</th><th>Responsabilidad</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Presentación</strong></td><td><code>web/src/app/</code>, <code>web/src/components/</code></td>
+      <td>Next.js 15, React 19, TypeScript, Tailwind, lucide-react</td>
+      <td>Dibujar y recoger. No decide reglas</td>
+    </tr>
+    <tr>
+      <td><strong>Cliente de API</strong></td><td><code>web/src/features/*/api.ts</code>, <code>web/src/lib/api.ts</code></td>
+      <td><code>fetch</code> nativo</td>
+      <td>Hablar HTTP y traducir errores a <code>ApiError</code></td>
+    </tr>
+    <tr>
+      <td><strong>Entrada HTTP</strong></td><td><code>backend/app/modules/*/router.py</code></td>
+      <td>FastAPI, Pydantic 2</td>
+      <td>Validar la forma, autorizar, traducir a llamadas del servicio</td>
+    </tr>
+    <tr>
+      <td><strong>Negocio</strong></td><td><code>backend/app/modules/*/service.py</code></td>
+      <td>Python puro</td>
+      <td>Las reglas. Es la única capa que decide</td>
+    </tr>
+    <tr>
+      <td><strong>Datos</strong></td><td><code>backend/app/modules/*/repository.py</code>, <code>app/models/</code></td>
+      <td>SQLAlchemy 2</td>
+      <td>Leer y escribir. No conoce HTTP</td>
+    </tr>
+    <tr>
+      <td><strong>Infraestructura</strong></td><td><code>backend/app/core/</code></td>
+      <td>Argon2, Redis, boto3, structlog</td>
+      <td>Lo transversal: seguridad, topes, archivos, bitácora</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>4.1 La regla de dependencia</h3>
+
+<p>
+  <code>router → service → repository → models</code>, <strong>en una sola dirección</strong>.
+  Un repositorio que importara el router cerraría el ciclo y haría imposible probar el
+  servicio sin levantar un servidor. Es la regla que más se gana por respetarla: las 435
+  funciones de prueba del backend existen porque la lógica se puede llamar directamente.
+</p>
+
+<p>
+  La misma regla tiene espejo en el frontend: <code>features/trading/</code> corresponde a
+  <code>modules/trading/</code>. Quien busca dónde se dibuja algo del mercado de dos
+  sentidos sabe dónde mirar sin preguntar.
+</p>
+
+<h2>5. Los módulos</h2>
+
+<table>
+  <thead><tr><th>Módulo</th><th>Endpoints</th><th>Capas presentes</th><th>Qué resuelve</th></tr></thead>
+  <tbody>
+    <tr><td><code>auth</code></td><td>10</td><td>router · service · repository</td><td>Registro, ingreso, renovación, recuperación</td></tr>
+    <tr><td><code>catalog</code></td><td>5</td><td>router · service · repository</td><td>Lo que se puede comprar</td></tr>
+    <tr><td><code>cart</code></td><td>9</td><td>router · service</td><td>La selección antes de pagar</td></tr>
+    <tr><td><code>orders</code></td><td>6</td><td>router · service</td><td>Pedidos y sub-órdenes</td></tr>
+    <tr><td><code>returns</code></td><td>10</td><td>router · service</td><td>Devoluciones y sus plazos</td></tr>
+    <tr><td><code>reviews</code></td><td>8</td><td>router · service</td><td>Reseñas de quien compró</td></tr>
+    <tr><td><code>trading</code></td><td>10</td><td>router · service</td><td>Oferta y demanda</td></tr>
+    <tr><td><code>producers</code></td><td>27</td><td>router · service</td><td>Panel del vendedor</td></tr>
+    <tr><td><code>payments</code></td><td>7</td><td>router · service</td><td>Liquidación al vendedor</td></tr>
+    <tr><td><code>admin</code></td><td>7</td><td>router · service</td><td>Aprobación, moderación, parámetros</td></tr>
+    <tr><td><code>users</code></td><td>7</td><td><strong>router</strong></td><td>Perfil, direcciones, consentimientos</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Dos irregularidades que se encontraron midiendo, y que conviene nombrar.</strong>
+  </p>
+  <p>
+    La primera: <code>users</code> tiene router y <strong>no tiene servicio</strong>. Sus
+    siete endpoints resuelven la lógica dentro del propio router. Funciona y está probado
+    —36 pruebas entre perfil y direcciones— pero rompe la regla de §4.1, y el día que una
+    regla de direcciones haya que usarla desde otro sitio habrá que extraerla.
+  </p>
+  <p>
+    La segunda: solo <code>auth</code> y <code>catalog</code> tienen
+    <code>repository.py</code>; los demás hacen el acceso a datos desde el servicio. No es
+    un defecto en sí —SQLAlchemy ya es una capa de acceso— pero significa que la
+    separación que describe §4 es menos estricta de lo que el diagrama sugiere. Se dice
+    aquí en vez de dibujar una arquitectura más limpia que la real.
+  </p>
+</div>
+
+<h3>5.1 Tres carpetas de módulo vacías</h3>
+
+<pre class="salida">backend/app/modules/content/     solo __init__.py
+backend/app/modules/messaging/   solo __init__.py
+backend/app/modules/shipments/   solo __init__.py</pre>
+
+<p>
+  Tienen modelo y tabla —<code>conversations</code>, <code>messages</code>,
+  <code>blog_posts</code>, envíos— y ningún endpoint detrás. Son alcance planeado y no
+  construido. Están aquí porque un informe de integración que solo enumera lo que funciona
+  no sirve para planear lo que falta.
+</p>
+
+<h2>6. Mecanismos de seguridad, por capa</h2>
+
+<table>
+  <thead><tr><th>Capa</th><th>Mecanismo</th><th>Qué impide</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="2">Navegador</td><td><code>Content-Security-Policy</code>, <code>X-Frame-Options: DENY</code></td><td>Que la página se embeba en un marco ajeno</td></tr>
+    <tr><td><code>X-Content-Type-Options: nosniff</code>, <code>Referrer-Policy</code></td><td>Que el navegador adivine el tipo, y la fuga de rutas internas</td></tr>
+    <tr><td rowspan="3">Entrada HTTP</td><td>Validación con Pydantic 2</td><td>Que un cuerpo mal formado llegue a la lógica</td></tr>
+    <tr><td><code>require_permissions(...)</code> — 24 permisos</td><td>Que alguien haga lo que su rol no concede</td></tr>
+    <tr><td>Topes de frecuencia en Redis, por cliente <em>y</em> por cuenta</td><td>Probar contraseñas y recorrer el padrón de correos</td></tr>
+    <tr><td>Negocio</td><td>404 en vez de 403 sobre recursos ajenos</td><td>Confirmar que un pedido existe</td></tr>
+    <tr><td rowspan="2">Datos</td><td>Argon2id para contraseñas</td><td>Que una tabla robada entregue las contraseñas</td></tr>
+    <tr><td>Cifrado Fernet para los datos bancarios</td><td>Que una copia de la base entregue las cuentas</td></tr>
+    <tr><td>Despliegue</td><td><code>requirements.lock</code> con 78 paquetes fijados</td><td>Que una dependencia cambie sola entre dos despliegues</td></tr>
+  </tbody>
+</table>
+
+<p>Comprobado contra el servicio en marcha:</p>
+
+<pre class="salida">$ curl -D - -o /dev/null http://localhost:8000/health
+
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: strict-origin-when-cross-origin
+content-security-policy: default-src 'none'; frame-ancestors 'none';
+                         base-uri 'none'; form-action 'none'</pre>
+
+<h2>7. Patrones y componentes reutilizables</h2>
+
+<table>
+  <thead><tr><th>Patrón</th><th>Dónde</th><th>Qué problema resolvió</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Repositorio</strong></td><td><code>auth/repository.py</code>, <code>catalog/repository.py</code></td><td>Que el servicio no arme consultas a mano</td></tr>
+    <tr><td><strong>Servicio</strong></td><td>Los 10 <code>service.py</code></td><td>Probar las reglas sin levantar un servidor</td></tr>
+    <tr><td><strong>Inyección de dependencias</strong></td><td><code>Depends(get_session)</code>, <code>Depends(require_permissions(...))</code></td><td>Que la prueba sustituya la sesión por una de pruebas</td></tr>
+    <tr><td><strong>DTO</strong></td><td><code>app/schemas/</code></td><td>Que un <code>{"role":"ADMIN"}</code> en el cuerpo no conceda nada</td></tr>
+    <tr><td><strong>Manejador central de errores</strong></td><td><code>app/core/exceptions.py</code></td><td>Que los 107 endpoints respondan el error con la misma forma</td></tr>
+    <tr><td><strong>POST-Redirect-GET</strong></td><td><code>catalogo-web</code> (GA7-AA2-EV02)</td><td>Que recargar no repita el envío</td></tr>
+    <tr><td><strong>Hook propio</strong></td><td><code>useProtectedResource</code></td><td>25 líneas repetidas en 28 pantallas</td></tr>
+  </tbody>
+</table>
+
+<p>
+  En el frontend hay <strong>24 componentes</strong> repartidos en tres niveles: primitivas
+  (<code>components/ui/</code>), transversales (<code>components/shared/</code>) y de
+  dominio (<code>features/*/components/</code>). El criterio para extraer uno está
+  documentado en GA7-AA4-EV02: se extrae cuando se repite, cuando encierra una regla del
+  negocio o cuando tiene estado propio; <strong>nunca porque sea grande</strong>.
+</p>
+
+<h2>8. Base de datos y migraciones</h2>
+
+<p>
+  PostgreSQL 16, <strong>54 tablas</strong>, con el esquema versionado en siete migraciones
+  de Alembic que cuentan la historia del proyecto:
+</p>
+
+<pre class="salida">&lt;base&gt;       →  db2be3833cad   initial schema
+             →  59c2f7a91062   order number sequence
+             →  ae0cdd0bb859   seller notification data and withdrawal reason
+             →  6cd4b72f44fd   returns flow: items, evidence, deadlines
+             →  2840b05b463c   review reports moderation queue
+             →  99716e5f6986   Pivote del dominio: de café tostado al detal
+                               a pergamino seco por kilogramo
+             →  4ad7359adcf8   Oferta y demanda: el comprador publica lo que
+                               busca y el vendedor responde          (head)</pre>
+
+<h3>8.1 La comprobación que de verdad importa</h3>
+
+<p>
+  Que existan migraciones no prueba que el esquema y los modelos coincidan. Lo que lo
+  prueba es pedirle a Alembic que compare:
+</p>
+
+<pre class="salida">$ docker compose exec backend alembic current
+4ad7359adcf8 (head)
+
+$ docker compose exec backend alembic check
+No new upgrade operations detected.</pre>
+
+<p>Y el contraste directo entre los modelos y la base:</p>
+
+<pre class="salida">tablas en los modelos: 53
+tablas en la base    : 54        (la de más es `alembic_version`)
+
+EN LOS MODELOS Y NO EN LA BASE: ninguna
+EN LA BASE Y NO EN LOS MODELOS: ninguna</pre>
+
+<p>
+  Esto es lo que separa «hay migraciones» de «el esquema está integrado». Un modelo con una
+  columna que la base no tiene no falla al arrancar: falla la primera vez que alguien
+  consulta esa tabla, y para entonces ya está en producción. El CI ejecuta esta misma
+  comprobación en cada subida, en el paso <em>«Comprobar que no faltan migraciones»</em>.
+</p>
+
+<h2>9. Pruebas por módulo</h2>
+
+<p>
+  <strong>453 pruebas</strong> en 23 archivos, con <strong>87 % de cobertura</strong> sobre
+  6.055 líneas.
+</p>
+
+<table>
+  <thead><tr><th>Archivo</th><th>Pruebas</th><th>Módulo que cubre</th></tr></thead>
+  <tbody>
+    <tr><td><code>test_trading.py</code></td><td>40</td><td><code>trading</code></td></tr>
+    <tr><td><code>test_returns.py</code></td><td>32</td><td><code>returns</code></td></tr>
+    <tr><td><code>test_settlements.py</code></td><td>27</td><td><code>payments</code></td></tr>
+    <tr><td><code>test_addresses.py</code></td><td>25</td><td><code>users</code></td></tr>
+    <tr><td><code>test_producer_catalog.py</code></td><td>25</td><td><code>producers</code></td></tr>
+    <tr><td><code>test_reviews.py</code></td><td>25</td><td><code>reviews</code></td></tr>
+    <tr><td><code>test_admin.py</code></td><td>21</td><td><code>admin</code></td></tr>
+    <tr><td><code>test_catalog.py</code>, <code>test_pergamino.py</code></td><td>40</td><td><code>catalog</code></td></tr>
+    <tr><td><code>test_certifications.py</code>, <code>test_fulfillment.py</code></td><td>38</td><td><code>producers</code></td></tr>
+    <tr><td><code>test_checkout.py</code>, <code>test_receipt.py</code></td><td>29</td><td><code>cart</code>, <code>orders</code></td></tr>
+    <tr><td><code>test_auth_flow.py</code>, <code>test_rate_limit.py</code></td><td>36</td><td><code>auth</code></td></tr>
+    <tr><td><code>test_profile.py</code>, <code>test_wishlist.py</code></td><td>22</td><td><code>users</code>, <code>cart</code></td></tr>
+    <tr><td>5 archivos de <code>tests/unit/</code></td><td>72</td><td><code>core</code>: seguridad, DANE, archivos, días hábiles</td></tr>
+    <tr><td><code>test_performance.py</code></td><td>3</td><td>Transversal</td></tr>
+  </tbody>
+</table>
+
+<pre class="salida">$ docker compose exec backend pytest -q --cov=app
+
+TOTAL      6055   771   87%
+453 passed in 206.09s</pre>
+
+<div class="nota">
+  <p>
+    Las funciones <code>def test_...</code> son <strong>435</strong> y las pruebas
+    ejecutadas son <strong>453</strong>. La diferencia no es un error de cuenta: algunas
+    están parametrizadas y una sola función produce varias pruebas. Se anotan las dos
+    cifras porque cada una contesta una pregunta distinta —cuánto código de prueba hay, y
+    cuántos casos se verifican—.
+  </p>
+</div>
+
+<p>
+  En el frontend, <strong>53 pruebas</strong> en 5 archivos. Dos de ellas no prueban
+  componentes sino <em>el proyecto</em>: <code>navigation.test.ts</code> contrasta los
+  enlaces del menú y el pie contra el árbol de páginas reales, y
+  <code>quality.test.ts</code> vigila convenciones. Son pruebas de integración en el
+  sentido más literal: fallan cuando dos partes dejan de corresponderse.
+</p>
+
+<h2>10. Integración continua</h2>
+
+<p>
+  Cuatro trabajos en GitHub Actions, en cada subida y en cada propuesta de cambio:
+</p>
+
+<table>
+  <thead><tr><th>Trabajo</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>backend</code></td>
+      <td>Levanta PostgreSQL, Redis y almacenamiento de objetos; linting, formato, tipos; <strong>aplica las migraciones</strong>; comprueba que no falten; 453 pruebas con cobertura</td>
+    </tr>
+    <tr>
+      <td><code>frontend</code></td>
+      <td>Tipos, linting, formato, 53 pruebas y compilación de producción</td>
+    </tr>
+    <tr>
+      <td><code>docker</code></td>
+      <td>Construye las dos imágenes de producción</td>
+    </tr>
+    <tr>
+      <td><code>security</code></td>
+      <td>Dependencias con vulnerabilidades conocidas, reglas de seguridad del código, y búsqueda de secretos en el historial</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  El flujo estaba escrito desde el principio y <strong>nunca se había ejecutado</strong>. Al
+  publicar el repositorio falló tres veces seguidas, y las tres causas eran reales: faltaba
+  declarar el almacenamiento de objetos, el lockfile del frontend se había generado en
+  Alpine y los ejecutores son glibc, y las imágenes de MinIO dejaron de poder descargarse
+  sin credenciales. Está contado en el README. Es la demostración más honesta de para qué
+  sirve un CI: ninguno de los tres se veía desde la máquina de desarrollo.
+</p>
+
+<h2>11. Ambientes</h2>
+
+<table>
+  <thead><tr><th></th><th>Desarrollo</th><th>Pruebas</th><th>Producción</th></tr></thead>
+  <tbody>
+    <tr><td>Orquestación</td><td><code>docker-compose.yml</code></td><td>GitHub Actions + <code>conftest.py</code></td><td><code>docker-compose.prod.yml</code></td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL 16 en contenedor</td><td>PostgreSQL de servicio, esquema por migraciones</td><td>PostgreSQL gestionado</td></tr>
+    <tr><td>Archivos</td><td>MinIO</td><td><code>adobe/s3mock</code></td><td>S3 o compatible</td></tr>
+    <tr><td>Correo</td><td>Mailpit (no sale nada)</td><td>—</td><td>Proveedor SMTP</td></tr>
+    <tr><td>Recarga</td><td>Sí, código montado</td><td>—</td><td>No, imagen fija</td></tr>
+    <tr><td>Secretos</td><td><code>.env</code> local</td><td>Variables del flujo</td><td>Variables del entorno</td></tr>
+    <tr><td>Datos</td><td>Semilla + demostración</td><td>Creados por cada prueba</td><td>Reales</td></tr>
+  </tbody>
+</table>
+
+<h3>11.1 Levantar el sistema entero</h3>
+
+<pre class="salida">$ git clone https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+$ cd MONK-GRAIN-APP
+$ cp .env.example .env
+$ docker compose up -d
+
+$ docker compose exec backend alembic upgrade head
+$ docker compose exec backend python -m app.db.seed
+$ docker compose exec backend python -m app.db.demo_data
+
+  http://localhost:3000     el sitio
+  http://localhost:8000/docs  la API, con Swagger
+  http://localhost:8025     el correo de desarrollo</pre>
+
+<div class="nota">
+  <p>
+    <strong>Una trampa del entorno que cuesta horas.</strong> <code>pytest</code> debe
+    ejecutarse <strong>de a uno</strong>. Dos sesiones simultáneas comparten la base de
+    pruebas y producen cientos de errores que no existen —326 la primera vez que pasó—. No
+    es un defecto del código: es que el aislamiento de las pruebas es por transacción y no
+    por base.
+  </p>
+</div>
+
+<h2>12. Control de versiones</h2>
+
+<table>
+  <thead><tr><th></th><th></th></tr></thead>
+  <tbody>
+    <tr><td>Repositorio</td><td><a href="https://github.com/monjejuan448-ux/MONK-GRAIN-APP">github.com/monjejuan448-ux/MONK-GRAIN-APP</a></td></tr>
+    <tr><td>Rama por defecto</td><td><code>main</code></td></tr>
+    <tr><td>Flujo</td><td>Rama por tema → propuesta de cambio → revisión → fusión</td></tr>
+    <tr><td>Mensajes</td><td>Asunto en imperativo; el cuerpo explica <em>por qué</em>, no qué</td></tr>
+    <tr><td>Fuera del repositorio</td><td><code>.env</code>, <code>target/</code>, <code>node_modules/</code>, <code>__pycache__</code>, los ZIP de entrega</td></tr>
+  </tbody>
+</table>
+
+<h2>13. Verificación de la integración</h2>
+
+<p>
+  Lo anterior describe. Esto comprueba. Cada línea es una orden que se puede repetir.
+</p>
+
+<table>
+  <thead><tr><th>Qué se comprueba</th><th>Cómo</th><th>Resultado</th></tr></thead>
+  <tbody>
+    <tr><td>Los seis servicios arrancan</td><td><code>docker compose ps</code></td><td>6 <em>running</em></td></tr>
+    <tr><td>El backend responde</td><td><code>curl /health</code></td><td><code>{"status":"ok"}</code></td></tr>
+    <tr><td>Los 107 endpoints están montados</td><td><code>curl /openapi.json</code></td><td>107</td></tr>
+    <tr><td>El esquema coincide con los modelos</td><td><code>alembic check</code></td><td><em>No new upgrade operations</em></td></tr>
+    <tr><td>Las reglas de negocio funcionan</td><td><code>pytest</code></td><td>453 pruebas, 87 %</td></tr>
+    <tr><td>El frontend compila y pasa</td><td><code>tsc</code>, <code>lint</code>, <code>format</code>, <code>test</code></td><td>53 pruebas, 4 puertas limpias</td></tr>
+    <tr><td>El frontend habla con el backend</td><td>Colección de Postman (GA7-AA5-EV04)</td><td>28 peticiones, 48 comprobaciones</td></tr>
+    <tr><td>Los enlaces no mienten</td><td><code>navigation.test.ts</code></td><td>Ningún enlace a página inexistente</td></tr>
+  </tbody>
+</table>
+
+<h2>14. Lo que no está integrado</h2>
+
+<table>
+  <thead><tr><th>Qué</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr><td><code>content</code>, <code>messaging</code>, <code>shipments</code></td><td>Modelo y tabla, sin endpoints. Alcance planeado, no construido</td></tr>
+    <tr><td>Los cupones</td><td>El carrito los consume y ningún endpoint los crea</td></tr>
+    <tr><td>Proceso en segundo plano</td><td>No existe. Nada vigila el vencimiento de certificaciones ni los plazos de devolución</td></tr>
+    <tr><td>Módulo <code>users</code></td><td>Sin capa de servicio: la lógica vive en el router</td></tr>
+    <tr><td>Despliegue público</td><td><code>docker-compose.prod.yml</code> está escrito y <strong>nunca se ha desplegado</strong></td></tr>
+    <tr><td>Los módulos Java de GA7</td><td>Corren aparte (8080, 8081, 8082) contra su propia base <code>monkgrain_java</code>. No están integrados con el producto, y es deliberado: son ejercicios de aprendizaje y no deben tocar los datos reales</td></tr>
+  </tbody>
+</table>
+
+<h2>15. Conclusión</h2>
+
+<p>
+  Los once módulos del backend, los nueve del frontend y los cuatro servicios de
+  infraestructura arrancan con un comando, se comunican por HTTP con tokens, comparten un
+  esquema que Alembic verifica contra los modelos, y se prueban con 453 pruebas de backend
+  y 53 de frontend que un CI ejecuta en cada subida.
+</p>
+
+<p>
+  De todo lo anterior, la comprobación que más dice sobre la integración no es el número de
+  pruebas: es <code>alembic check</code> devolviendo <em>«No new upgrade operations
+  detected»</em>. Significa que lo que el código cree de la base y lo que la base es
+  coinciden exactamente — y esa es la costura por donde los sistemas integrados se rompen
+  en silencio.
+</p>
+
+<p>
+  Lo que falta está dicho en §14 sin suavizarlo, incluidas las dos irregularidades de
+  arquitectura que aparecieron al medir para escribir este documento y que no se conocían
+  antes: un módulo sin capa de servicio y tres carpetas de módulo vacías.
+</p>

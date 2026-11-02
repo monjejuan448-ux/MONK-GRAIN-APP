@@ -1,0 +1,403 @@
+<!-- GA8-220501096-AA1-EV02 · Módulos integrados -->
+<header class="portada">
+  <h1>Módulos Integrados del Sistema MONK GRAIN</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  AA1-EV01 explicó cómo se integran los módulos de MONK GRAIN. Esta evidencia es el
+  <strong>expediente de entrega</strong>: dice, pieza por pieza, dónde está cada cosa que
+  la guía pide, qué recibe y devuelve cada módulo, qué pruebas lo cubren y con qué
+  resultado.
+</p>
+
+<p>
+  Es un documento de ubicación, no de relleno. Donde algo no existe —y hay una cosa
+  importante que no existe— se dice en su lugar en vez de rodearlo.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Entregar los módulos integrados del sistema con su documentación: aprobación de
+  requerimientos, repositorio, ejecutables, URL de despliegue, documentación por módulo y
+  componente con sus datos de entrada y salida, informe de pruebas por módulo, configuración
+  de servidores y bases de datos, ambientes de desarrollo y pruebas, y manuales técnicos.
+</p>
+
+<h2>3. Dónde está cada cosa</h2>
+
+<table>
+  <thead><tr><th>Lo que pide la guía</th><th>Dónde está</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Aprobación de requerimientos</td>
+      <td><code>docs/01-analisis-producto.md</code>, <code>docs/02-historias-usuario.md</code> (531 líneas), y las guías GA1–GA3 de la carpeta del proyecto</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Repositorio con el código fuente</td>
+      <td><a href="https://github.com/monjejuan448-ux/MONK-GRAIN-APP">github.com/monjejuan448-ux/MONK-GRAIN-APP</a>, rama <code>main</code></td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Archivos ejecutables</td>
+      <td>Dos imágenes de Docker, construidas por el CI en cada subida. §5</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><strong>URL de despliegue</strong></td>
+      <td>No hay. §9</td>
+      <td>⬜</td>
+    </tr>
+    <tr>
+      <td>Documentación por módulo, con entradas y salidas</td>
+      <td><code>MODULOS.md</code>, junto a este documento. §4</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Informe de pruebas por módulo</td>
+      <td><code>MODULOS.md</code> §Resumen, y §6 de aquí</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Configuración de servidores y bases de datos</td>
+      <td><code>docker-compose.yml</code>, <code>docker-compose.prod.yml</code>, <code>infra/</code>, <code>docs/07-despliegue.md</code> (311 líneas). §7</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Ambientes de desarrollo y pruebas</td>
+      <td>§8, y <code>docs/07</code></td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td>Manuales técnicos</td>
+      <td>Los 18 documentos de <code>docs/</code>. §10</td>
+      <td>✅</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>4. Documentación por módulo: entradas y salidas</h2>
+
+<p>
+  Está en <code>MODULOS.md</code>: los <strong>107 endpoints</strong> de los 12 módulos,
+  cada uno con los datos que recibe —parámetros de ruta, de consulta y campos del cuerpo,
+  con su tipo y si es obligatorio— y los que devuelve.
+</p>
+
+<p>
+  <strong>No se escribió a mano</strong>, y es una decisión de fondo más que de comodidad.
+  Una tabla de 107 endpoints redactada a mano se desactualiza en la primera semana: alguien
+  añade un campo y no se acuerda del documento. <code>generar_modulos.py</code> lo produce
+  del documento OpenAPI que publica el servicio en marcha y del XML de JUnit que produce
+  <code>pytest</code>, resolviendo las referencias a los esquemas para que los campos
+  aparezcan en el texto y no como un <code>$ref</code> que nadie va a seguir.
+</p>
+
+<p>Así queda cada endpoint:</p>
+
+<pre class="salida">### `POST /auth/login`
+
+Iniciar sesión.
+
+**Entrada**
+
+| Dato                      | Tipo               |         |
+|---------------------------|--------------------|---------|
+| **cuerpo** `LoginRequest` | *application/json* | **ob.** |
+|   · email                 | texto              | **ob.** |
+|   · password              | texto              | **ob.** |
+
+**Salida** · `200` · `TokenResponse`
+
+| Campo         | Tipo  |
+|---------------|-------|
+| access_token  | texto |
+| refresh_token | texto |
+| token_type    | texto |
+| expires_at    | texto |</pre>
+
+<p>
+  Lo único escrito a mano es el párrafo que describe cada módulo y la correspondencia entre
+  la etiqueta de la API —en español— y el paquete del código —en inglés—, que una máquina no
+  puede deducir.
+</p>
+
+<h2>5. Los ejecutables</h2>
+
+<p>
+  El sistema no se entrega como un binario sino como <strong>dos imágenes de Docker</strong>,
+  que es la forma en que de verdad se despliega. El trabajo <code>docker</code> del CI las
+  construye en cada subida, así que la comprobación de que son construibles ocurre sola:
+</p>
+
+<pre class="salida">backend/Dockerfile   →  FastAPI + Python 3.12, dependencias fijadas con
+                        requirements.lock (78 paquetes)
+web/Dockerfile       →  Next.js 15 compilado para producción</pre>
+
+<p>
+  Para reconstruirlas a mano:
+</p>
+
+<pre class="salida">$ docker compose -f docker-compose.prod.yml build
+$ docker compose -f docker-compose.prod.yml up -d</pre>
+
+<p>
+  Los módulos Java de GA7 sí producen artefactos convencionales:
+  <code>catalogo-pergamino-1.0.0.jar</code>, <code>catalogo-pergamino.war</code>,
+  <code>negociacion-pergamino.jar</code> y <code>autenticacion-pergamino.jar</code>, cada
+  uno con <code>mvn package</code>. No se versionan: se regeneran del código, y un JAR de
+  48 MB en el repositorio no aporta nada.
+</p>
+
+<h2>6. Informe de pruebas por módulo</h2>
+
+<p>
+  <strong>453 pruebas, 0 fallos</strong>, 87 % de cobertura sobre 6.055 líneas. Los números
+  salen del XML de JUnit de la ejecución, no de contar funciones a ojo.
+</p>
+
+<table>
+  <thead><tr><th>Módulo</th><th>Endpoints</th><th>Pruebas</th><th>Fallos</th></tr></thead>
+  <tbody>
+    <tr><td>sistema</td><td>1</td><td>3</td><td>0</td></tr>
+    <tr><td>autenticación</td><td>10</td><td>38</td><td>0</td></tr>
+    <tr><td>usuarios</td><td>7</td><td>36</td><td>0</td></tr>
+    <tr><td>catálogo</td><td>5</td><td>40</td><td>0</td></tr>
+    <tr><td>carrito</td><td>9</td><td>29</td><td>0</td></tr>
+    <tr><td>pedidos</td><td>6</td><td>29</td><td>0</td></tr>
+    <tr><td>devoluciones</td><td>10</td><td>32</td><td>0</td></tr>
+    <tr><td>reseñas</td><td>8</td><td>25</td><td>0</td></tr>
+    <tr><td>oferta y demanda</td><td>10</td><td>40</td><td>0</td></tr>
+    <tr><td>panel del productor</td><td>27</td><td>63</td><td>0</td></tr>
+    <tr><td>liquidaciones</td><td>7</td><td>27</td><td>0</td></tr>
+    <tr><td>administración</td><td>7</td><td>21</td><td>0</td></tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Esa columna suma 383 y las pruebas ejecutadas son 453.</strong> No es un error
+    de cuenta, y <code>MODULOS.md</code> lo explica con la resta hecha:
+  </p>
+  <ul>
+    <li>
+      <code>test_checkout.py</code> (18 pruebas) cuenta en <strong>dos</strong> módulos
+      —carrito y pedidos— porque recorre justamente el paso de uno al otro. Sumado dos
+      veces, infla la columna en 18.
+    </li>
+    <li>
+      <strong>88 pruebas no pertenecen a ningún módulo de dominio</strong>: verifican
+      <code>app/core/</code> —seguridad, catálogo DANE, archivos, días hábiles— y el mapeo
+      de los modelos.
+    </li>
+  </ul>
+  <p>Cuadra así: <code>383 − 18 + 88 = 453</code>.</p>
+</div>
+
+<p>
+  En el frontend, <strong>53 pruebas</strong> en 5 archivos, más cuatro puertas de calidad
+  que deben pasar todas: <code>tsc</code>, <code>eslint</code>, <code>prettier</code> y las
+  pruebas. Y los módulos Java de GA7 suman <strong>80 pruebas</strong> más: 13 en el de
+  JDBC, 23 en el de negociación con Spring y 44 en el de autenticación. El de servlets y
+  JSP no tiene pruebas automáticas —se verificó por HTTP contra Tomcat—, y es la pieza más
+  débil del conjunto en ese aspecto.
+</p>
+
+<h2>7. Configuración de servidores y bases de datos</h2>
+
+<table>
+  <thead><tr><th>Servicio</th><th>Versión</th><th>Puerto</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>postgres</code></td><td>16</td><td>5432</td><td>54 tablas. La base del sistema</td></tr>
+    <tr><td><code>redis</code></td><td>7</td><td>6379</td><td>Topes de frecuencia y caché</td></tr>
+    <tr><td><code>minio</code></td><td>—</td><td>9000 / 9001</td><td>Fotos de lotes y evidencias</td></tr>
+    <tr><td><code>mailpit</code></td><td>—</td><td>8025</td><td>Correo de desarrollo: nada sale a internet</td></tr>
+    <tr><td><code>backend</code></td><td>Python 3.12</td><td>8000</td><td>La API</td></tr>
+    <tr><td><code>web</code></td><td>Node 22</td><td>3000</td><td>El sitio</td></tr>
+    <tr><td><code>nginx</code></td><td>—</td><td>80 / 443</td><td><strong>Solo en producción</strong>: TLS y entrada única</td></tr>
+  </tbody>
+</table>
+
+<h3>7.1 La base de datos</h3>
+
+<pre class="salida">PostgreSQL 16 · 54 tablas · 7 migraciones de Alembic
+
+$ docker compose exec backend alembic current
+4ad7359adcf8 (head)
+
+$ docker compose exec backend alembic check
+No new upgrade operations detected.</pre>
+
+<p>
+  <code>infra/postgres/init/01-extensions.sql</code> crea las extensiones antes de que
+  arranque la aplicación —hace falta para los UUID y la búsqueda de texto— porque una
+  migración no puede crear la extensión que ella misma necesita.
+</p>
+
+<p>
+  Los módulos Java de GA7 usan una base <strong>distinta</strong>,
+  <code>monkgrain_java</code>, en el mismo PostgreSQL. Es deliberado: un módulo de
+  aprendizaje que inserta y borra no debe acercarse a los datos del producto.
+</p>
+
+<h3>7.2 Secretos</h3>
+
+<table>
+  <thead><tr><th>Variable</th><th>Qué protege</th></tr></thead>
+  <tbody>
+    <tr><td><code>SECRET_KEY</code></td><td>La firma de los tokens</td></tr>
+    <tr><td><code>ENCRYPTION_KEY</code></td><td>El cifrado de los datos bancarios</td></tr>
+    <tr><td><code>POSTGRES_PASSWORD</code></td><td>La base de datos</td></tr>
+    <tr><td><code>S3_SECRET_KEY</code></td><td>El almacenamiento de archivos</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Ninguna está en el repositorio. <code>.env.example</code> lista los nombres con valores de
+  ejemplo; <code>.env</code> está excluido de Git, y el CI tiene un paso que
+  <strong>busca secretos en el historial completo</strong> —no solo en el último cambio—
+  porque una clave filtrada hace seis commits sigue filtrada.
+</p>
+
+<h2>8. Ambientes de desarrollo y pruebas</h2>
+
+<table>
+  <thead><tr><th></th><th>Desarrollo</th><th>Pruebas</th><th>Producción</th></tr></thead>
+  <tbody>
+    <tr><td>Dónde corre</td><td>El equipo del aprendiz</td><td>Ejecutores de GitHub</td><td>Sin desplegar</td></tr>
+    <tr><td>Orquestación</td><td><code>docker-compose.yml</code></td><td><code>.github/workflows/ci.yml</code></td><td><code>docker-compose.prod.yml</code></td></tr>
+    <tr><td>Esquema</td><td><code>alembic upgrade head</code></td><td><code>create_all</code> en <code>conftest.py</code></td><td><code>alembic upgrade head</code></td></tr>
+    <tr><td>Archivos</td><td>MinIO</td><td><code>adobe/s3mock</code></td><td>S3 o compatible</td></tr>
+    <tr><td>Datos</td><td>Semilla + demostración</td><td>Creados y deshechos por prueba</td><td>Reales</td></tr>
+    <tr><td>Correo</td><td>Mailpit</td><td>—</td><td>SMTP real</td></tr>
+    <tr><td>Recarga en caliente</td><td>Sí</td><td>—</td><td>No</td></tr>
+  </tbody>
+</table>
+
+<h3>8.1 Aislamiento de las pruebas, y su límite</h3>
+
+<p>
+  Cada prueba corre dentro de una transacción que se deshace al terminar. Eso las hace
+  independientes del orden… y comparten la misma base.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Consecuencia que cuesta horas:</strong> <code>pytest</code> debe ejecutarse
+    <strong>de a uno</strong>. Dos sesiones simultáneas produjeron <strong>326 errores que
+    no existían</strong>. No es un defecto del código; es que el aislamiento es por
+    transacción y no por base. Arreglarlo de verdad exigiría una base por trabajador
+    (<code>pytest-xdist</code> con esquemas separados), y se decidió no pagar esa
+    complejidad: la ejecución completa tarda dos minutos y medio.
+  </p>
+</div>
+
+<p>
+  En el CI el problema no aparece porque cada trabajo levanta su propio PostgreSQL.
+  Curiosamente, <strong>el ambiente de pruebas está mejor aislado que el de desarrollo</strong>.
+</p>
+
+<h2>9. La URL de despliegue: lo que falta</h2>
+
+<p>
+  La guía pide «URL donde están desplegados los módulos». <strong>No la hay.</strong>
+  <code>docker-compose.prod.yml</code> está escrito, con nginx, TLS y las dos imágenes, y
+  <code>docs/07-despliegue.md</code> documenta el procedimiento en 311 líneas, pero
+  <strong>nunca se ha ejecutado contra un servidor</strong>.
+</p>
+
+<p>
+  Decirlo así es más útil que improvisar un enlace. Y hay una razón por la que este paso no
+  lo puede dar el agente: desplegar implica contratar un servidor, registrar un dominio y
+  poner claves reales de un proveedor de correo y de almacenamiento. Son decisiones con
+  costo y con un responsable, y ese responsable es el aprendiz.
+</p>
+
+<h3>9.1 Qué hace falta, en orden</h3>
+
+<table>
+  <thead><tr><th>#</th><th>Paso</th><th>Qué decidir</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Un servidor con Docker</td><td>2 GB de RAM alcanzan. Una máquina pequeña de cualquier proveedor</td></tr>
+    <tr><td>2</td><td>Un dominio apuntando a su dirección</td><td>El nombre</td></tr>
+    <tr><td>3</td><td>Certificado TLS</td><td>Let's Encrypt. El procedimiento está en <code>docs/07</code> §3</td></tr>
+    <tr><td>4</td><td>Las cuatro claves de §7.2, generadas de nuevo</td><td><strong>No reutilizar las de desarrollo</strong></td></tr>
+    <tr><td>5</td><td>Un proveedor de correo real</td><td>Mailpit no envía nada fuera</td></tr>
+    <tr><td>6</td><td><code>alembic upgrade head</code> y la semilla</td><td>Semilla sí, datos de demostración no</td></tr>
+    <tr><td>7</td><td>Respaldos de la base</td><td><code>docs/07</code> §5. Sin esto, el despliegue es una demostración, no un servicio</td></tr>
+  </tbody>
+</table>
+
+<div class="pendiente">
+  <span class="titulo">Lo que te falta hacer a ti</span>
+  <p>
+    <strong>Desplegar el sistema y anotar la URL</strong>, siguiendo los siete pasos de
+    §9.1 y <code>docs/07-despliegue.md</code>.
+  </p>
+  <p>
+    Si la entrega no exige que esté accesible en internet, una alternativa honesta es
+    mostrarlo corriendo en tu equipo con <code>docker compose up -d</code> y entregar
+    <code>http://localhost:3000</code> con capturas, <strong>diciendo que es local</strong>.
+    Lo que no conviene es entregar un enlace que no responda.
+  </p>
+  <p>
+    Lo primero es decidir con la instructora si para esta evidencia hace falta un
+    despliegue público o basta el local.
+  </p>
+</div>
+
+<h2>10. Manuales técnicos</h2>
+
+<p>18 documentos en <code>docs/</code>, escritos a lo largo del proyecto:</p>
+
+<table>
+  <thead><tr><th>Documento</th><th>De qué trata</th></tr></thead>
+  <tbody>
+    <tr><td><code>01-analisis-producto.md</code></td><td>Qué se construye y para quién</td></tr>
+    <tr><td><code>02-historias-usuario.md</code></td><td>Las historias con sus criterios de aceptación</td></tr>
+    <tr><td><code>03-arquitectura-y-datos.md</code></td><td>Capas y modelo de datos</td></tr>
+    <tr><td><code>04-estructura-proyecto.md</code></td><td><strong>Los estándares de codificación</strong></td></tr>
+    <tr><td><code>05-diseno-visual.md</code></td><td>Paleta, tipografía y componentes</td></tr>
+    <tr><td><code>06-api.md</code></td><td>La API, en prosa (652 líneas)</td></tr>
+    <tr><td><code>07-despliegue.md</code></td><td><strong>Instalación, despliegue y operación</strong> (311 líneas)</td></tr>
+    <tr><td><code>08</code>, <code>09</code>, <code>17</code></td><td>Las tres auditorías y lo que se corrigió</td></tr>
+    <tr><td><code>10-revision-legal.md</code></td><td>Contraste con la normativa colombiana</td></tr>
+    <tr><td><code>11</code> a <code>16</code>, <code>18</code></td><td>Devoluciones, reseñas, comprobante, pergamino, oferta y demanda, liquidaciones</td></tr>
+  </tbody>
+</table>
+
+<h2>11. Verificación de la entrega</h2>
+
+<pre class="salida">$ docker compose ps                        6 servicios running
+$ curl -s localhost:8000/health            {"status":"ok"}
+$ curl -s localhost:8000/openapi.json      107 endpoints
+$ alembic current                          4ad7359adcf8 (head)
+$ alembic check                            No new upgrade operations detected
+$ pytest -q --cov=app                      453 passed · 87 %
+$ npm test                                 53 passed
+$ newman run (GA7-AA5-EV04)                28 peticiones · 48 comprobaciones</pre>
+
+<h2>12. Conclusión</h2>
+
+<p>
+  El expediente está completo salvo una cosa, y esa cosa está dicha en §9 con nombre propio:
+  <strong>no hay URL de despliegue</strong>, porque desplegar exige un servidor, un dominio
+  y claves reales que solo el aprendiz puede contratar y asumir.
+</p>
+
+<p>
+  De todo lo que se entrega, lo que más vale a medio plazo no es ninguno de los documentos
+  sino <code>generar_modulos.py</code>. Las entradas y salidas de 107 endpoints es
+  exactamente el tipo de documentación que se escribe una vez, se desactualiza en una
+  semana y a partir de entonces estorba más que ayuda. Generada del servicio en marcha, no
+  puede decir una cosa distinta del código: si alguien añade un campo, el documento lo trae
+  la próxima vez que se ejecute.
+</p>

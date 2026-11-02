@@ -1,0 +1,51 @@
+GA8-220501096-AA1-EV01
+Desarrollar software a partir de la integración de sus módulos componentes
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Sistema entregado:  MONK GRAIN completo
+  11 módulos de backend   107 endpoints
+   9 features de frontend  43 páginas · 24 componentes
+   6 servicios             postgres, redis, minio, mailpit, backend, web
+
+Documento:
+  entregas/GA8/AA1_EV01_Integracion_Modulos/Informe_Integracion_Modulos.pdf
+
+Levantar el sistema entero
+--------------------------
+  git clone https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+  cd MONK-GRAIN-APP
+  cp .env.example .env
+  docker compose up -d
+
+  docker compose exec backend alembic upgrade head
+  docker compose exec backend python -m app.db.seed
+  docker compose exec backend python -m app.db.demo_data
+
+  http://localhost:3000        el sitio
+  http://localhost:8000/docs   la API con Swagger
+  http://localhost:8025        el correo de desarrollo
+
+Cuentas de prueba (contraseña MonkGrain2026Demo):
+  comprador : trilladora.popayan@ejemplo.co
+  vendedor  : finca.elmirador@ejemplo.co
+
+Comprobaciones que cita el documento
+------------------------------------
+  docker compose ps                              6 servicios running
+  curl -s localhost:8000/health                  {"status":"ok"}
+  curl -s localhost:8000/openapi.json            107 endpoints
+  docker compose exec backend alembic current    4ad7359adcf8 (head)
+  docker compose exec backend alembic check      No new upgrade operations
+  docker compose exec backend pytest -q --cov=app   453 passed · 87 %
+  docker compose exec web npm test               53 passed
+
+IMPORTANTE: ejecutar pytest UNA sola vez a la vez. Dos sesiones simultáneas
+comparten la base de pruebas y producen cientos de errores que no existen.
+
+Verificado el 1 de noviembre de 2026.

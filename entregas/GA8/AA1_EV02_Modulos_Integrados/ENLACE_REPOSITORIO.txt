@@ -1,0 +1,51 @@
+GA8-220501096-AA1-EV02
+Módulos integrados
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+URL de despliegue:  NO HAY TODAVIA
+  docker-compose.prod.yml esta escrito y docs/07-despliegue.md documenta el
+  procedimiento, pero nunca se ha ejecutado contra un servidor. Los siete
+  pasos que faltan estan en la seccion 9 del documento. Desplegar exige
+  contratar un servidor, registrar un dominio y poner claves reales: es una
+  decision con costo y con un responsable.
+
+Contenido de la entrega:
+  entregas/GA8/AA1_EV02_Modulos_Integrados/
+    Informe_Modulos_Integrados.pdf   el expediente
+    MODULOS.md                       entradas y salidas de los 107 endpoints
+    generar_modulos.py               lo que genera MODULOS.md
+
+MODULOS.md no se escribe a mano. Para regenerarlo:
+  docker compose up -d
+  curl -s http://localhost:8000/openapi.json > openapi.json
+  docker compose exec backend pytest -q --junitxml=/tmp/junit.xml
+  docker compose exec backend cat /tmp/junit.xml > junit.xml
+  python3 entregas/GA8/AA1_EV02_Modulos_Integrados/generar_modulos.py \
+          openapi.json junit.xml \
+          entregas/GA8/AA1_EV02_Modulos_Integrados/MODULOS.md
+
+Lo que pide la guia, y donde esta
+---------------------------------
+  Aprobacion de requerimientos   docs/01 y docs/02 · guias GA1-GA3
+  Codigo fuente                  el repositorio, rama main
+  Ejecutables                    dos imagenes Docker (CI las construye)
+  URL de despliegue              NO HAY — seccion 9 del documento
+  Doc. por modulo (E/S)          MODULOS.md
+  Informe de pruebas por modulo  MODULOS.md · seccion 6 del documento
+  Config. de servidores y BD     docker-compose*.yml · infra/ · docs/07
+  Ambientes                      seccion 8 del documento · docs/07
+  Manuales tecnicos              los 18 documentos de docs/
+
+Resultado de las pruebas, verificado el 1 de noviembre de 2026:
+  backend    453 pruebas · 0 fallos · 87 % de cobertura
+  frontend    53 pruebas · 0 fallos
+  Java GA7    80 pruebas · 0 fallos
+
+Pendiente del aprendiz:  desplegar el sistema y anotar la URL, o acordar con
+la instructora que para esta evidencia basta el despliegue local.
