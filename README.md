@@ -373,13 +373,50 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 
 # Las evidencias que piden «documento Word» salen del mismo HTML:
 ./entregas/_plantilla/a-word.sh GA7/AA3_EV02_Pruebas_Modulo
+
+# Las nueve que se entregan comprimidas:
+./entregas/_plantilla/empaquetar.sh              # las nueve
+./entregas/_plantilla/empaquetar.sh AA5_EV01     # una sola
 ```
+
+### Los ZIP de entrega
+
+De las 17 evidencias de GA7, **nueve se entregan en ZIP** y el resto en PDF o
+en video. La regla de la guía es `NOMBRE_APELLIDO_AA#_EV##`, y cada archivo
+debe llevar dentro el enlace del repositorio.
+
+| ZIP | Lleva dentro |
+|---|---|
+| `ELIANA_CHACON_AA2_EV01.zip` | `catalogo-pergamino/` + informe + enlace |
+| `ELIANA_CHACON_AA2_EV02.zip` | `catalogo-web/` + informe + enlace |
+| `ELIANA_CHACON_AA3_EV01.zip` | `negociacion-pergamino/` + informe + enlace |
+| `ELIANA_CHACON_AA3_EV02.zip` | lo anterior + informe en **Word** y PDF + enlace |
+| `ELIANA_CHACON_AA4_EV03.zip` | el hook, los 4 componentes, la página y las pruebas + informe + enlace |
+| `ELIANA_CHACON_AA5_EV01.zip` | `autenticacion-pergamino/` + informe + enlace |
+| `ELIANA_CHACON_AA5_EV02.zip` | lo anterior + colección Postman + `ENDPOINTS.md` + informe + enlace |
+| `ELIANA_CHACON_AA5_EV03.zip` | `backend/app/{main,modules,schemas,core}` + `ENDPOINTS.md` + informe + enlace |
+| `ELIANA_CHACON_AA5_EV04.zip` | lo anterior + colección Postman + `ENDPOINTS.md` + informe + enlace |
+
+Salen en `entregas/_zip/`, que **no se versiona**: se regeneran con el guion y
+el código ya vive en el repositorio. Se excluye siempre `target/`,
+`__pycache__` y `node_modules` — un ZIP con el JAR dentro pesa 48 MB y no
+aporta nada que no salga de `mvn package`.
+
+> **Dos nombres de la guía parecen errata.** En AA5-EV03 dice
+> `NOMBRE_APELLIDO_AA5_EV01` y en AA5-EV04 dice `NOMBRE_APELLIDO_AA5_EV02`,
+> repitiendo los de las evidencias anteriores. Aquí se usa el nombre que
+> corresponde a cada una (`..._AA5_EV03` y `..._AA5_EV04`), porque subir dos
+> archivos con el mismo nombre haría que el segundo pisara al primero.
+> **Confírmalo con la instructora** antes de entregar.
+
+> Los videos y las capturas que faltan **no están dentro de los ZIP**: hay que
+> añadirlos antes de subir AA3-EV02, AA5-EV02 y AA5-EV04.
 
 **Estado: 16 de 23 construidas.** GA7 completa: AA1, AA2, AA3, AA4 y AA5.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
-Estas ocho cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
+Estas nueve cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
 
 | Qué | Dónde | Detalle |
 |---|---|---|
@@ -390,6 +427,7 @@ Estas ocho cosas no las puede dejar hechas nadie más. Están sueltas en la colu
 | **Grabar el video** (8–10 min) | AA3-EV02 | Guion por bloques en §9 del documento |
 | **12 capturas + video** (8–10 min) | AA5-EV02 | Sobre Postman contra el servicio de autenticación. Guion por bloques en §8 |
 | **12 capturas + video** (8–10 min) | AA5-EV04 | Sobre Postman contra la API del proyecto. Guion por bloques en §8 |
+| **Confirmar dos nombres de ZIP** | AA5-EV03 y EV04 | La guía repite los nombres de EV01 y EV02; parece errata. Preguntar a la instructora |
 | **Grabar el video** (10 min) | GA8 AA2-EV04 | Sobre *machine learning*. El guion se escribirá al llegar a esa evidencia |
 
 Con AA5 cerrada, esta lista ya está completa para GA7. Lo que falte vendrá de GA8.

@@ -55,3 +55,6 @@ entregas/GA7/AA1_EV05_Programa_Git/Programa-Git/
 # fuente y el pom.xml sí se versionan; los .class y los .jar se regeneran con
 # `mvn package` y versionarlos solo añade binarios al historial.
 entregas/**/target/
+
+# Los ZIP de entrega se regeneran con entregas/_plantilla/empaquetar.sh
+entregas/_zip/
