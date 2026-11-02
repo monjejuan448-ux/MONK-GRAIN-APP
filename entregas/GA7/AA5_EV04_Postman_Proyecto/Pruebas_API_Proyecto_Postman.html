@@ -1,0 +1,566 @@
+<!-- GA7-220501096-AA5-EV04 · Testing de la API del proyecto con Postman -->
+<header class="portada">
+  <h1>Testing de la API del Proyecto MONK GRAIN con Postman</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia prueba con Postman la API del proyecto formativo documentada en AA5-EV03:
+  107 endpoints en 12 grupos.
+</p>
+
+<p>
+  Probar los 107 uno por uno daría una colección enorme y poco útil. La colección recorre
+  en cambio <strong>tres caminos completos</strong> —el del comprador, el del vendedor y el
+  de la autorización— encadenando los datos: el identificador de la variante sale del
+  catálogo, el del renglón sale del carrito, la fecha de vencimiento se calcula. No hay
+  nada escrito a mano.
+</p>
+
+<p>
+  <strong>28 peticiones, 48 comprobaciones.</strong> Y la parte más útil de la evidencia no
+  es que pasen: es que en el primer intento <strong>fallaron cuatro</strong>, y cada fallo
+  enseñó algo distinto. Dos eran errores míos y dos eran defectos reales del proyecto. La
+  sección 7 los cuenta.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Probar con Postman las API construidas en AA5-EV03: instalar la herramienta, construir la
+  colección, documentar con pantallazos, grabar el video del testing y entregar el archivo
+  de endpoints.
+</p>
+
+<h2>3. Preparación</h2>
+
+<pre class="salida"># 1. levantar el proyecto completo
+docker compose up -d
+
+# 2. comprobar que responde
+curl -s http://localhost:8000/health
+{"status":"ok"}
+
+# 3. importar en Postman
+#    entregas/GA7/AA5_EV04_Postman_Proyecto/postman/
+#        MONK_GRAIN_API_Proyecto.postman_collection.json</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 1 — El proyecto en marcha</span>
+  Terminal con <code>docker compose ps</code> mostrando los seis servicios
+  (<code>backend</code>, <code>web</code>, <code>postgres</code>, <code>redis</code>,
+  <code>minio</code>, <code>mailpit</code>) en estado <em>running</em>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 2 — La colección importada</span>
+  Postman con «MONK GRAIN — API del proyecto (AA5-EV03)» y sus cinco carpetas
+</div>
+
+<h3>3.1 Las cuentas de prueba</h3>
+
+<table>
+  <thead><tr><th>Variable</th><th>Valor</th><th>Rol</th></tr></thead>
+  <tbody>
+    <tr><td><code>correoComprador</code></td><td><code>trilladora.popayan@ejemplo.co</code></td><td><code>consumer</code></td></tr>
+    <tr><td><code>correoVendedor</code></td><td><code>finca.elmirador@ejemplo.co</code></td><td><code>producer</code></td></tr>
+    <tr><td><code>claveDemo</code></td><td><code>MonkGrain2026Demo</code></td><td>—</td></tr>
+  </tbody>
+</table>
+
+<p>
+  La primera de las dos <strong>no existía</strong> hasta que esta colección la echó de
+  menos. Está contado en §7.2.
+</p>
+
+<h2>4. La colección</h2>
+
+<table>
+  <thead><tr><th>Carpeta</th><th>Peticiones</th><th>Qué recorre</th></tr></thead>
+  <tbody>
+    <tr><td>1. Salud y autenticación</td><td>5</td><td>Que el servicio esté vivo y las dos cuentas entren</td></tr>
+    <tr><td>2. Catálogo</td><td>4</td><td>Lista, filtro por factor, detalle con variantes</td></tr>
+    <tr><td>3. Carrito</td><td>8</td><td>La regla del mínimo de kilos, por los dos caminos</td></tr>
+    <tr><td>4. Oferta y demanda</td><td>5</td><td>El comprador publica, el vendedor lo ve</td></tr>
+    <tr><td><strong>5. Autorización</strong></td><td><strong>6</strong></td><td><strong>Lo que la API NO debe dejar hacer</strong></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Todo lo que hace falta entre peticiones viaja en variables que las propias pruebas
+  escriben:
+</p>
+
+<pre class="salida">1.2  →  tokenComprador          1.3  →  tokenVendedor
+2.1  →  slugProducto           2.3  →  idVariante, minimoKg
+3.3  →  idItemCarrito          4.1  →  idSolicitud</pre>
+
+<p>
+  Ninguna petición lleva un identificador escrito a mano. Si los llevara, la colección
+  dejaría de funcionar la primera vez que alguien recargara los datos de demostración.
+</p>
+
+<h2>5. Lo que comprueba cada carpeta</h2>
+
+<h3>5.1 Salud y autenticación</h3>
+
+<p>
+  <code>/health</code> es el único endpoint fuera de <code>/api/v1</code>, y una prueba lo
+  fija a propósito: el orquestador que comprueba si el servicio está vivo no debe tener que
+  saber en qué versión va la API, porque entonces migrar a <code>/v2</code> tumbaría la
+  comprobación de salud antes que ninguna otra cosa.
+</p>
+
+<p>El ingreso devuelve <strong>dos</strong> tokens, y la prueba exige los dos:</p>
+
+<pre><code>pm.test('Entrega los dos tokens', function () {
+    const c = pm.response.json();
+    // Dos y no uno: el de acceso dura 30 minutos y viaja en cada
+    // petición; el de renovación dura mucho más y solo viaja al renovar,
+    // así que se expone muchas menos veces.
+    pm.expect(c.access_token).to.be.a('string').and.not.empty;
+    pm.expect(c.refresh_token).to.be.a('string').and.not.empty;
+});</code></pre>
+
+<p>
+  Y <code>/auth/me</code> comprueba que vengan los <strong>permisos</strong> y no solo el
+  rol: la API autoriza por permiso, hay 24 de ellos, y el cliente necesita la lista para
+  decidir qué botones mostrar.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 3 — Ingreso del comprador (1.2)</span>
+  La respuesta <code>200</code> con los dos tokens, y las tres comprobaciones en verde
+</div>
+
+<h3>5.2 Catálogo</h3>
+
+<p>
+  Tres comprobaciones que fijan reglas del dominio, no solo códigos de estado:
+</p>
+
+<pre><code>pm.test('Ningún lote pasa del factor pedido', function () {
+    // El filtro es max_ y no min_, y eso resume el dominio: en el factor
+    // de rendimiento MENOS ES MEJOR. El estándar de la Federación es 94,
+    // así que pedir «92 o mejor» es pedir café por encima del estándar.
+    pm.response.json().items.forEach(function (lote) {
+        pm.expect(Number(lote.yield_factor)).to.be.at.most(92);
+    });
+});</code></pre>
+
+<pre><code>pm.test('El precio viaja como cadena, no como número', function () {
+    // Un float no representa exactamente 0,1. Sobre una carga de 125 kg,
+    // un redondeo mal hecho son miles de pesos de diferencia entre lo
+    // que el comprador ve y lo que el vendedor cobra.
+    pm.expect(pm.response.json().items[0].base_price).to.be.a('string');
+});</code></pre>
+
+<p>
+  Y una que fija la envoltura de página —<code>items</code>, <code>total</code>,
+  <code>page</code>, <code>page_size</code>, <code>total_pages</code>,
+  <code>has_next</code>, <code>has_previous</code>— con <code>to.have.all.keys</code>, de
+  modo que añadir o quitar un campo rompe la prueba. Es la misma forma en las once listas
+  de la API: un cliente que la aprende una vez sabe recorrerlas todas.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 4 — Filtro por factor de rendimiento (2.2)</span>
+  La respuesta con los lotes de factor 92 o mejor, y la comprobación que recorre
+  todos los resultados en verde
+</div>
+
+<h3>5.3 Carrito: la regla del mínimo, por los dos caminos</h3>
+
+<p>
+  El pergamino se vende desde un mínimo —250 kg en el lote de la prueba— y no se despacha
+  un kilo suelto. La regla vive en el servidor: si solo estuviera en el formulario,
+  bastaría con hablarle a la API directamente para saltársela.
+</p>
+
+<p>El orden de esta carpeta importa más que en las demás:</p>
+
+<table>
+  <thead><tr><th>#</th><th>Petición</th><th>Esperado</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr><td>3.1</td><td>Vaciar el carrito</td><td><code>200/204</code></td><td>Punto de partida limpio</td></tr>
+    <tr><td>3.2</td><td>Un kilo, carrito <strong>vacío</strong></td><td><code>422</code></td><td>Aquí la regla tiene que actuar</td></tr>
+    <tr><td>3.3</td><td>Añadir el mínimo</td><td><code>201</code>, 250 kg</td><td>—</td></tr>
+    <tr><td>3.4</td><td><code>GET /cart</code></td><td>un renglón</td><td>—</td></tr>
+    <tr><td>3.5</td><td>Un kilo <strong>más</strong></td><td><code>201</code>, 251 kg</td><td>Suma: 251 sigue respetando el mínimo</td></tr>
+    <tr><td>3.6</td><td><code>PATCH</code> a 1 kg</td><td><code>422</code></td><td>No basta validar al añadir</td></tr>
+    <tr><td>3.7</td><td>Variante inventada</td><td><code>404/422</code></td><td>—</td></tr>
+    <tr><td>3.8</td><td>Sin token</td><td><code>401</code></td><td>El carrito es de quien lo presenta</td></tr>
+  </tbody>
+</table>
+
+<p>
+  3.2 y 3.5 envían <strong>exactamente el mismo cuerpo</strong> —un kilo de la misma
+  variante— y esperan cosas distintas, porque el estado del carrito es distinto. Esa pareja
+  es la que hace honesta a la carpeta: la primera versión de la colección probaba el kilo
+  suelto <em>después</em> de llenar el carrito y daba por defectuoso un comportamiento
+  correcto (§7.1).
+</p>
+
+<p>
+  3.6 es la otra mitad de la regla, y la que más se olvida: validar solo al añadir deja
+  abierta la vía de modificar la cantidad después.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 5 — Un kilo en el carrito vacío (3.2)</span>
+  La respuesta <code>422</code> con <code>"Este lote se vende desde 250 kg."</code> y
+  <code>details.min_qty_kg</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 6 — El mismo kilo, ya con el mínimo dentro (3.5)</span>
+  La respuesta <code>201</code> con la cantidad en 251. Misma petición que la
+  captura anterior, resultado distinto porque el estado es distinto
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 7 — Bajar por debajo del mínimo (3.6)</span>
+  El <code>PATCH</code> a un kilo rechazado con <code>422</code>
+</div>
+
+<h3>5.4 Oferta y demanda</h3>
+
+<p>
+  Un recorrido corto por el mercado en su segundo sentido: el comprador publica una
+  solicitud de 4.000 kg con factor 92 o mejor, comprueba que aparece en la lista y en el
+  detalle con su cobertura en cero, y <strong>el vendedor la ve desde su propia ruta</strong>.
+  Al final se cierra, para no dejar solicitudes de prueba abiertas en los datos de
+  demostración.
+</p>
+
+<p>La fecha de vencimiento se calcula en el guion previo:</p>
+
+<pre><code>// El vencimiento se calcula, no se escribe: una fecha fija en el cuerpo
+// haría que la colección dejara de funcionar el día que pasara.
+const d = new Date();
+d.setDate(d.getDate() + 30);
+pm.collectionVariables.set('vencimiento', d.toISOString().slice(0, 10));</code></pre>
+
+<p>
+  Y el detalle comprueba que lleguen <strong>los kilos pedidos y los cubiertos</strong>, no
+  solo el porcentaje: «80 %» de una solicitud pequeña puede ser menos café que el 20 % de
+  una grande.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 8 — Solicitud publicada (4.1)</span>
+  La respuesta <code>201</code> con <code>status: "open"</code> y
+  <code>covered_kg: 0</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 9 — La misma solicitud vista por el vendedor (4.4)</span>
+  <code>GET /producer/demands</code> con el token del vendedor, y la solicitud del
+  comprador en la lista
+</div>
+
+<h3>5.5 Autorización: lo que la API no debe dejar hacer</h3>
+
+<p>
+  La carpeta más importante, y la que no suele aparecer en una colección de ejemplo. Un
+  endpoint que funciona para quien tiene permiso <em>y también</em> para quien no, funciona
+  mal.
+</p>
+
+<table>
+  <thead><tr><th>#</th><th>Quién</th><th>Contra qué</th><th>Esperado</th></tr></thead>
+  <tbody>
+    <tr><td>5.1</td><td>Comprador</td><td>Panel del productor</td><td><code>403</code></td></tr>
+    <tr><td>5.2</td><td>Comprador</td><td>Administración</td><td><code>403</code></td></tr>
+    <tr><td>5.3</td><td>Vendedor</td><td>Administración</td><td><code>403</code></td></tr>
+    <tr><td>5.4</td><td>Comprador</td><td>Un pedido ajeno</td><td><strong><code>404</code></strong></td></tr>
+    <tr><td>5.5</td><td>Token alterado</td><td><code>/auth/me</code></td><td><code>401</code></td></tr>
+    <tr><td>5.6</td><td>Esquema <code>Basic</code></td><td><code>/auth/me</code></td><td><code>401</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  5.1 a 5.3 exigen <strong>403 y no 401</strong>. La distinción importa: el usuario sí está
+  identificado, lo que le falta es el permiso. Confundirlos hace que el cliente mande a
+  iniciar sesión a alguien que ya tiene la sesión abierta.
+</p>
+
+<p>
+  5.4 exige lo contrario de lo que parece correcto:
+</p>
+
+<pre><code>pm.test('Responde 404', function () {
+    // Deliberadamente 404 y no 403. Un 403 confirmaría que ese pedido
+    // existe, y eso ya es información: permitiría recorrer
+    // identificadores y contar cuántos pedidos tiene la plataforma. El
+    // 404 no distingue «no existe» de «no es tuyo», que es exactamente
+    // la ambigüedad que conviene.
+    pm.response.to.have.status(404);
+});</code></pre>
+
+<p>
+  5.5 no usa un token inventado sino el token bueno <strong>con un carácter cambiado</strong>,
+  justo en la firma. Es un caso distinto: comprueba que el servidor verifica la firma y no
+  solo la forma.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 10 — El comprador contra el panel del productor (5.1)</span>
+  La respuesta <code>403</code> con <code>error.code</code>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 11 — Un pedido ajeno (5.4)</span>
+  La respuesta <code>404</code>, no <code>403</code>
+</div>
+
+<h2>6. Ejecución completa</h2>
+
+<pre class="salida">$ newman run MONK_GRAIN_API_Proyecto.postman_collection.json
+
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+│                requests │                28 │                0 │
+│            test-scripts │                28 │                0 │
+│      prerequest-scripts │                 2 │                0 │
+│              assertions │                48 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+│ total run duration: 1446ms                                     │
+│ total data received: 18.95kB (approx)                          │
+│ average response time: 29ms [min: 6ms, max: 113ms, s.d.: 24ms] │
+└────────────────────────────────────────────────────────────────┘</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 12 — El Collection Runner terminado</span>
+  El resumen con las 48 comprobaciones en verde y ningún fallo
+</div>
+
+<div class="nota">
+  <p>
+    <strong>Si se ejecuta tres o cuatro veces seguidas, 1.2 y 1.3 responden 429.</strong> No
+    hay nada que arreglar: el ingreso admite 10 intentos por minuto y por cuenta, y la
+    colección está agotando ese tope. Basta esperar un minuto. La colección lo dice con
+    palabras en lugar de dejar un «expected 200 but got 429» sin explicación:
+  </p>
+  <pre><code>if (pm.response.code === 429) {
+    pm.test('⚠ Tope de frecuencia alcanzado: espera un minuto y vuelve a ejecutar', ...);
+}</code></pre>
+</div>
+
+<h2>7. Los cuatro fallos del primer intento</h2>
+
+<p>
+  Esta es la sección que justifica la evidencia. En la primera ejecución, 4 de las 42
+  comprobaciones fallaron. Investigarlas una por una dio dos errores propios y dos defectos
+  reales.
+</p>
+
+<h3>7.1 Mi prueba estaba mal: el kilo suelto</h3>
+
+<p>
+  La prueba decía «se rechaza un kilo suelto» y recibió un <code>201</code>. Parecía un
+  agujero en la validación. No lo era: la prueba corría <em>después</em> de añadir 250 kg,
+  y sumar un kilo a un renglón que ya tiene el mínimo lo deja en 251, que sigue respetando
+  la regla. Comprobado a mano:
+</p>
+
+<pre class="salida">añadir 250  →  cantidad en el carrito: 250
+añadir   1  →  cantidad en el carrito: 251      ← suma, no reemplaza
+PATCH a  1  →  422  "Este lote se vende desde 250 kg."</pre>
+
+<p>
+  La API era correcta y la prueba estaba mal diseñada. El arreglo fue reordenar la carpeta:
+  el kilo suelto se prueba sobre el carrito <strong>vacío</strong>, y el incremento y el
+  <code>PATCH</code> por debajo del mínimo se prueban aparte. La carpeta quedó mejor que
+  antes: tres comprobaciones donde había una.
+</p>
+
+<h3>7.2 Defecto real: no había ninguna cuenta de comprador</h3>
+
+<p>
+  La prueba «el comprador entra al panel del productor → 403» recibió un
+  <code>200</code>. Parecía un agujero de autorización, que sería grave. Mirando la cuenta:
+</p>
+
+<pre class="salida">$ curl .../auth/me -H "Authorization: Bearer $TOKEN"
+roles:    [{"code": "producer", "name": "Productor"}]
+permisos: ["inventory.manage", "order.manage_sales", "product.create", ...]</pre>
+
+<p>
+  La cuenta que yo había tomado por comprador —<code>tostaduria.monje@ejemplo.co</code>—
+  era de <strong>productor</strong>. El 200 era correcto. Y al revisar los datos de
+  demostración apareció el defecto de fondo:
+</p>
+
+<pre class="salida">        email                  |  roles
+-------------------------------+----------
+ admin.verificacion@...        | admin
+ coop.narino@ejemplo.co        | producer
+ finca.elmirador@ejemplo.co    | producer
+ finca.laesperanza@ejemplo.co  | producer
+ hacienda.altavista@ejemplo.co | producer
+ tostaduria.monje@ejemplo.co   | producer</pre>
+
+<p>
+  <strong>Las cinco cuentas de la semilla eran de productor</strong>, incluida la
+  tostaduría, que en este mercado <em>compra</em> pergamino y no lo vende. Para un mercado
+  de dos lados, los datos de demostración no permitían demostrar la mitad del producto:
+  quien clonara el repositorio no podía entrar como comprador a recorrer catálogo, carrito
+  y pedido.
+</p>
+
+<p>
+  Se corrigió añadiendo la cuenta que faltaba, con su propia función en
+  <code>demo_data.py</code> —un comprador no tiene perfil de productor ni finca— y
+  validando el código DANE del municipio contra el catálogo:
+</p>
+
+<pre class="salida">$ docker compose exec backend python -m app.db.demo_data
+
+Datos de demostración cargados:
+  productores : 5
+  compradores : 1 nuevos
+  ...
+Acceso de prueba:
+  vendedor   : finca.elmirador@ejemplo.co
+  comprador  : trilladora.popayan@ejemplo.co
+  contraseña : MonkGrain2026Demo
+
+$ curl .../producer/products -H "Authorization: Bearer $TOKEN_COMPRADOR"
+403</pre>
+
+<h3>7.3 Defecto real: la documentación mentía sobre los errores</h3>
+
+<p>
+  La prueba esperaba un campo <code>detail</code>, como documentaba AA5-EV03, y recibió:
+</p>
+
+<pre class="salida">{"error": {"code": "not_found", "message": "No encontramos este café."}}</pre>
+
+<p>
+  La API no usa el formato de serie de FastAPI: un manejador propio lo envuelve con un
+  código legible. El documento de AA5-EV03 afirmaba <code>{"detail": "..."}</code> porque
+  es lo que se supone sin mirar, y nadie lo había contrastado. Se corrigieron las dos
+  cosas: el apartado 4.5 de aquel informe y la tabla de convenciones de
+  <code>ENDPOINTS.md</code>.
+</p>
+
+<p>
+  Es el hallazgo más instructivo de los cuatro. Una afirmación <strong>plausible y
+  falsa</strong> sobrevive a cualquier revisión de lectura: nadie se detiene a verificar lo
+  que ya parece correcto. Solo la rompe una prueba que vaya a preguntarle al servicio.
+</p>
+
+<h3>7.4 Mi prueba estaba mal: el nombre de un campo</h3>
+
+<p>
+  «El carrito no está vacío» fallaba porque buscaba los renglones en <code>items</code> o
+  <code>sellers</code>, y la respuesta real los trae en <code>groups[].items[]</code>.
+  Había adivinado el nombre en vez de mirarlo. El arreglo, además de corregirlo, convirtió
+  el error en una comprobación nueva: que el carrito <strong>venga agrupado por
+  vendedor</strong>, que es lo que hace posible que un pedido con lotes de tres fincas
+  genere tres sub-órdenes.
+</p>
+
+<h3>7.5 Resumen</h3>
+
+<table>
+  <thead><tr><th>Fallo</th><th>De quién</th><th>Qué dejó</th></tr></thead>
+  <tbody>
+    <tr><td>El kilo suelto</td><td>De la prueba</td><td>La carpeta del carrito, con 3 comprobaciones donde había 1</td></tr>
+    <tr><td>El comprador que era productor</td><td><strong>Del proyecto</strong></td><td>La cuenta de comprador que faltaba en la semilla</td></tr>
+    <tr><td>El formato de error</td><td><strong>Del proyecto</strong></td><td>El apartado 4.5 de AA5-EV03, corregido</td></tr>
+    <tr><td>El nombre del campo</td><td>De la prueba</td><td>Una comprobación nueva: el carrito agrupa por vendedor</td></tr>
+  </tbody>
+</table>
+
+<h2>8. Guion del video</h2>
+
+<p>
+  Entre ocho y diez minutos. El proyecto debe estar en marcha antes de grabar:
+  <code>docker compose up -d</code>.
+</p>
+
+<table>
+  <thead><tr><th>Bloque</th><th>Minutos</th><th>Qué mostrar y qué decir</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Presentación</strong></td><td>0:00 – 0:45</td>
+      <td>Nombre, programa, y qué se va a probar: la API del proyecto MONK GRAIN, 107 endpoints. Decir que la colección no los prueba uno por uno sino que recorre tres caminos completos.</td>
+    </tr>
+    <tr>
+      <td><strong>2. El proyecto y la colección</strong></td><td>0:45 – 1:45</td>
+      <td><code>docker compose ps</code> con los seis servicios. Abrir <code>http://localhost:8000/docs</code> y mostrar los 12 grupos. Luego Postman con la colección y las variables, señalando que ningún identificador está escrito a mano.</td>
+    </tr>
+    <tr>
+      <td><strong>3. Salud y autenticación</strong></td><td>1:45 – 3:00</td>
+      <td>Ejecutar 1.1 y señalar que <code>/health</code> no lleva versión, y por qué. Luego 1.2 y 1.3: los dos tokens, y por qué dos. Y 1.4: que <code>/auth/me</code> trae los permisos, no solo el rol.</td>
+    </tr>
+    <tr>
+      <td><strong>4. Catálogo</strong></td><td>3:00 – 4:00</td>
+      <td>Ejecutar 2.1 y mostrar la envoltura de página. Luego 2.2 y <strong>detenerse ahí</strong>: el filtro es <code>max_yield_factor</code>, porque en el factor de rendimiento menos es mejor. Es el dato que resume el proyecto.</td>
+    </tr>
+    <tr>
+      <td><strong>5. El carrito y la regla del mínimo</strong></td><td>4:00 – 5:45</td>
+      <td>Ejecutar 3.2 con el carrito vacío: <code>422</code>, se vende desde 250 kg. Luego 3.3 y 3.5, y señalar que 3.5 envía <em>el mismo cuerpo</em> que 3.2 y se acepta, porque 251 sigue respetando el mínimo. Cerrar con 3.6: bajar a un kilo se rechaza.</td>
+    </tr>
+    <tr>
+      <td><strong>6. Oferta y demanda</strong></td><td>5:45 – 7:00</td>
+      <td>Ejecutar 4.1, la solicitud de 4.000 kg. Luego 4.4 con el token del vendedor: la misma solicitud, vista desde el otro lado. Decir aquí para qué sirve el estado «parcialmente cubierta».</td>
+    </tr>
+    <tr>
+      <td><strong>7. Autorización</strong></td><td>7:00 – 8:30</td>
+      <td>Ejecutar 5.1 y 5.2: <code>403</code>, no <code>401</code>, y explicar la diferencia. Luego 5.4 y detenerse: <code>404</code> y no <code>403</code> a propósito, porque un 403 confirmaría que ese pedido existe.</td>
+    </tr>
+    <tr>
+      <td><strong>8. La colección completa</strong></td><td>8:30 – 9:15</td>
+      <td>Collection Runner de principio a fin: 48 comprobaciones en verde.</td>
+    </tr>
+    <tr>
+      <td><strong>9. Cierre</strong></td><td>9:15 – 10:00</td>
+      <td>Contar los dos defectos reales que encontró la colección (§7.2 y §7.3) y decir dónde está todo: la colección en <code>postman/</code> y el catálogo en <code>ENDPOINTS.md</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pendiente">
+  <span class="titulo">Lo que te falta hacer a ti</span>
+  <p>
+    <strong>Las doce capturas</strong> señaladas a lo largo del documento, cada una con lo
+    que debe verse descrito al lado.
+  </p>
+  <p>
+    <strong>El video de 8 a 10 minutos</strong>, con el guion de la sección 8.
+  </p>
+  <p>
+    Para las dos cosas basta <code>docker compose up -d</code> e importar la colección. Ya
+    está construida y verificada; las cuentas de prueba están en la sección 3.1 y la
+    contraseña es la misma para las dos. Si al ejecutarla dos veces seguidas aparece un
+    <code>429</code> en el ingreso, espera un minuto: es el tope de frecuencia, no un fallo.
+  </p>
+</div>
+
+<h2>9. Conclusión</h2>
+
+<p>
+  Las 28 peticiones pasan sus 48 comprobaciones, y el recorrido cubre los grupos
+  principales de los 107 endpoints encadenando datos reales en lugar de identificadores
+  escritos a mano.
+</p>
+
+<p>
+  Pero lo que esta evidencia demuestra de verdad es otra cosa. De los cuatro fallos del
+  primer intento, dos eran defectos del proyecto que llevaban ahí desde antes: unos datos
+  de demostración que no permitían demostrar la mitad del producto, y un documento de
+  diseño que afirmaba un formato de error que la API no usa. Ninguno de los dos lo habría
+  encontrado una revisión de lectura, porque los dos eran <strong>plausibles</strong>. Los
+  encontró una colección de Postman que fue a preguntarle al servicio.
+</p>

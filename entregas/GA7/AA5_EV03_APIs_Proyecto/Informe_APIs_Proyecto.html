@@ -1,0 +1,449 @@
+<!-- GA7-220501096-AA5-EV03 · Diseño y desarrollo de las API del proyecto -->
+<header class="portada">
+  <h1>Diseño y Desarrollo de los Servicios Web del Proyecto MONK GRAIN</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  AA5-EV01 construyó un servicio de autenticación como caso de estudio: cuatro endpoints,
+  un módulo aislado, un solo tema. Esta evidencia documenta el otro extremo: la API
+  completa del proyecto formativo, <strong>107 endpoints en 12 grupos</strong>, que es la
+  que sostiene de verdad el sitio de MONK GRAIN.
+</p>
+
+<p>
+  A esa escala, lo que decide si una API se puede mantener ya no son los endpoints sueltos
+  sino las <strong>reglas transversales</strong>: cómo se nombra, cómo se autoriza, cómo se
+  pagina, qué código de error significa qué. Si cada grupo resuelve esas cosas a su manera,
+  el cliente tiene que aprender doce API en vez de una. Este documento explica esas reglas
+  y, grupo por grupo, la decisión de diseño que no es obvia.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Diseñar y codificar las API necesarias para el software del proyecto formativo, con la
+  documentación de cada servicio y control de versiones con Git.
+</p>
+
+<h2>3. Panorama</h2>
+
+<table>
+  <thead><tr><th>Grupo</th><th>Endpoints</th><th>Qué resuelve</th></tr></thead>
+  <tbody>
+    <tr><td>sistema</td><td>1</td><td>Comprobación de vida</td></tr>
+    <tr><td>autenticación</td><td>10</td><td>Registro, ingreso, renovación, recuperación</td></tr>
+    <tr><td>usuarios</td><td>7</td><td>Perfil, direcciones, consentimientos</td></tr>
+    <tr><td>catálogo</td><td>5</td><td>Lo que se puede comprar</td></tr>
+    <tr><td>carrito</td><td>9</td><td>La selección antes de pagar</td></tr>
+    <tr><td>pedidos</td><td>6</td><td>Lo comprado, con sus sub-órdenes</td></tr>
+    <tr><td>devoluciones</td><td>10</td><td>Solicitud, aprobación y seguimiento</td></tr>
+    <tr><td>reseñas</td><td>8</td><td>Opiniones de quien compró</td></tr>
+    <tr><td>oferta y demanda</td><td>10</td><td>El comprador publica, el caficultor responde</td></tr>
+    <tr><td><strong>panel del productor</strong></td><td><strong>27</strong></td><td>Lotes, variantes, fotos, pedidos, certificaciones</td></tr>
+    <tr><td>liquidaciones</td><td>7</td><td>El dinero de vuelta al vendedor</td></tr>
+    <tr><td>administración</td><td>7</td><td>Aprobación, moderación y parámetros</td></tr>
+    <tr><td><strong>Total</strong></td><td><strong>107</strong></td><td></td></tr>
+  </tbody>
+</table>
+
+<p>
+  El reparto dice algo que ningún diagrama diría: <strong>el panel del productor tiene más
+  endpoints que el catálogo, el carrito y los pedidos juntos</strong>. Es coherente con el
+  negocio. Comprar café es un acto puntual; publicar un lote, corregir el factor de
+  rendimiento, subir las fotos, renovar la certificación y atender los pedidos es trabajo
+  diario. La API refleja dónde está el esfuerzo real.
+</p>
+
+<div class="nota">
+  <p>
+    El catálogo exhaustivo —los 107 endpoints con su método, su ruta, si exige token y qué
+    hace— está en <code>ENDPOINTS.md</code>, junto a este documento. <strong>Ese archivo no
+    se escribe a mano</strong>: lo genera <code>generar_endpoints.py</code> desde el
+    documento OpenAPI que publica el servicio en marcha. Un catálogo escrito a mano se
+    desactualiza en la primera semana, cuando alguien añade una ruta y no se acuerda de él.
+  </p>
+</div>
+
+<h2>4. Las reglas transversales</h2>
+
+<h3>4.1 Nombres</h3>
+
+<table>
+  <thead><tr><th>Regla</th><th>Sí</th><th>No</th></tr></thead>
+  <tbody>
+    <tr><td>Sustantivo en plural, no verbo</td><td><code>GET /orders/{id}</code></td><td><code>GET /getOrder</code></td></tr>
+    <tr><td>El verbo es el método HTTP</td><td><code>DELETE /cart/items/{id}</code></td><td><code>POST /deleteCartItem</code></td></tr>
+    <tr><td>Minúsculas y guion medio</td><td><code>/auth/password-reset</code></td><td><code>/auth/passwordReset</code></td></tr>
+    <tr><td>Identificadores UUID</td><td><code>/orders/{order_id}</code></td><td>Enteros correlativos</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Lo del UUID no es estética. Un identificador correlativo publica cuántos pedidos lleva la
+  plataforma y permite recorrerlos de uno en uno probando suerte; para un mercado que
+  todavía está arrancando, eso es información comercial regalada.
+</p>
+
+<h3>4.2 Versión en la ruta</h3>
+
+<p>
+  Todo cuelga de <code>/api/v1</code>, con una sola excepción: <code>/health</code>. El
+  orquestador que comprueba si el servicio está vivo no debería tener que saber en qué
+  versión va la API, porque entonces una migración a <code>/v2</code> tumbaría la
+  comprobación de salud antes que ninguna otra cosa.
+</p>
+
+<h3>4.3 Permisos, no roles</h3>
+
+<p>
+  Los endpoints no preguntan «¿eres administrador?» sino «¿tienes este permiso?»:
+</p>
+
+<pre><code>@router.post("/products",
+             dependencies=[Depends(require_permissions("product.create"))])</code></pre>
+
+<p>
+  Hay <strong>24 permisos</strong> —<code>product.create</code>, <code>order.refund</code>,
+  <code>producer.approve</code>, <code>settlement.manage</code>…— y los roles son
+  agrupaciones de ellos. La diferencia se nota el día que hace falta alguien que modere
+  reseñas sin poder tocar precios: con permisos es una fila nueva en una tabla; con roles
+  en duro, hay que tocar cada endpoint.
+</p>
+
+<p>
+  El error correspondiente es <strong>403 y no 401</strong>: el usuario sí está
+  identificado, lo que le falta es el permiso. Confundirlos hace que el cliente mande a
+  alguien a iniciar sesión cuando ya tiene la sesión abierta.
+</p>
+
+<h3>4.4 El 404 que en realidad es un 403</h3>
+
+<p>
+  Cuando alguien pide un pedido que existe pero no es suyo, la API responde
+  <strong>404</strong>, no 403. Un 403 confirmaría que ese pedido existe, y eso ya es
+  información: permitiría recorrer identificadores y contar cuántos pedidos hay. El 404 no
+  distingue «no existe» de «no es tuyo», que es exactamente la ambigüedad que conviene.
+</p>
+
+<h3>4.5 La forma de los errores</h3>
+
+<p>
+  FastAPI responde los errores como <code>{"detail": "..."}</code>. La API no usa ese
+  formato: un manejador propio los envuelve con un código legible.
+</p>
+
+<pre class="salida">{"error": {"code":    "business_rule_violation",
+           "message": "Este lote se vende desde 250 kg.",
+           "details": {"min_qty_kg": 250}}}</pre>
+
+<p>
+  El <code>code</code> existe para que el cliente pueda ramificar sin
+  <strong>analizar el texto del mensaje</strong>, que es lo que acaba haciendo quien solo
+  recibe una cadena, y lo que se rompe en cuanto alguien corrige una tilde. El
+  <code>details</code> solo aparece cuando lleva algo accionable dentro: en el ejemplo, el
+  mínimo de kilos, para que el formulario pueda ponerlo en el campo sin leer la frase.
+</p>
+
+<div class="nota">
+  <p>
+    Este apartado se escribió <strong>después</strong> de que una prueba de AA5-EV04 lo
+    contradijera. La primera versión de este documento daba por hecho el formato de serie
+    de FastAPI —el que uno supone sin mirar—, y la colección esperó un campo
+    <code>detail</code> y recibió un <code>error</code>. Es el argumento a favor de probar
+    también la documentación, no solo el código: una afirmación plausible y falsa sobrevive
+    a cualquier revisión de lectura.
+  </p>
+</div>
+
+<h3>4.6 Páginas</h3>
+
+<p>
+  Toda lista larga se pagina con <code>?page=1&amp;page_size=20</code>, y la respuesta trae
+  siempre la misma envoltura:
+</p>
+
+<pre class="salida">{
+  "items":        [ ... ],
+  "total":        347,
+  "page":         1,
+  "page_size":    20,
+  "total_pages":  18,
+  "has_next":     true,
+  "has_previous": false
+}</pre>
+
+<p>
+  <code>has_next</code> y <code>has_previous</code> parecen redundantes —se pueden calcular
+  con <code>page</code> y <code>total_pages</code>— y están a propósito: ahorran que cada
+  cliente repita la misma aritmética, y que uno de ellos la haga mal en el último página.
+</p>
+
+<h3>4.7 El dinero y el peso</h3>
+
+<table>
+  <thead><tr><th>Dato</th><th>Cómo viaja</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Dinero</td><td>Cadena decimal: <code>"1850000.00"</code></td>
+      <td>Un <code>float</code> no representa exactamente 0,1. En pesos colombianos, un redondeo mal hecho sobre una carga de 125 kg se convierte en miles de pesos de diferencia entre lo que el comprador ve y lo que el vendedor cobra</td>
+    </tr>
+    <tr>
+      <td>Peso</td><td>Kilogramos</td>
+      <td>La <strong>carga de 125 kg</strong> es una <em>lectura</em>, no una unidad de almacenamiento. Guardar cargas obligaría a representar «media carga y catorce kilos»</td>
+    </tr>
+    <tr>
+      <td>Factor de rendimiento</td><td>Decimal entre 80 y 130</td>
+      <td>Gobierna el precio. <strong>Menos es mejor</strong>: el estándar de la Federación es 94, y los filtros acotan por el factor <em>máximo</em> aceptable</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>4.8 Topes de frecuencia</h3>
+
+<p>
+  Solo donde hacen falta, y con dos ceilings distintos en el ingreso:
+</p>
+
+<table>
+  <thead><tr><th>Endpoint</th><th>Tope</th><th>Ventana</th></tr></thead>
+  <tbody>
+    <tr><td><code>/auth/register</code></td><td>5</td><td>5 min</td></tr>
+    <tr><td><code>/auth/verify-email</code></td><td>10</td><td>5 min</td></tr>
+    <tr><td><code>/auth/resend-verification</code></td><td>3</td><td>10 min</td></tr>
+    <tr><td><code>/auth/password-reset</code></td><td>3</td><td>10 min</td></tr>
+    <tr><td><code>/auth/password-reset/confirm</code></td><td>5</td><td>10 min</td></tr>
+    <tr><td>Subida de imágenes</td><td>20</td><td>1 min</td></tr>
+    <tr><td><code>/auth/login</code></td><td colspan="2"><strong>por cliente y además por cuenta</strong></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los dos topes del ingreso no son redundantes, porque cada uno deja pasar lo que el otro
+  para: el de cliente no ve mil clientes ensayando contra un mismo correo; el de cuenta no
+  ve a un cliente recorriendo el padrón de correos. Hacen falta los dos.
+</p>
+
+<h2>5. Los servicios, uno por uno</h2>
+
+<p>
+  De cada grupo se anota la decisión que no es evidente. La lista completa de rutas está en
+  <code>ENDPOINTS.md</code>.
+</p>
+
+<h3>5.1 Autenticación (10)</h3>
+
+<p>
+  El único grupo donde casi todo es público, y por eso el que más protección lleva.
+  Mantiene las mismas decisiones que el módulo Java de AA5-EV01, que se construyó
+  espejando este: mensaje neutral exista o no la cuenta, <code>202</code> en el registro
+  para no delatar si se creó algo, y Argon2id para las contraseñas.
+</p>
+
+<p>
+  <code>/auth/refresh</code> y <code>/auth/logout</code> aparecen sin cabecera
+  <code>Authorization</code> en el catálogo, y <strong>no son públicos</strong>: reciben el
+  <em>refresh token</em> en el cuerpo. Es una distinción que el OpenAPI no sabe expresar y
+  que el catálogo marca aparte, porque leer «público» ahí sería entender lo contrario de lo
+  que pasa.
+</p>
+
+<h3>5.2 Usuarios (7)</h3>
+
+<p>
+  Ningún endpoint recibe el identificador del usuario: todos trabajan sobre
+  <em>quien presenta el token</em>. No hay <code>GET /users/{id}</code>, y es deliberado —
+  un endpoint así es la vía más corta a una fuga de datos personales, porque basta
+  equivocarse una vez en la comprobación del dueño.
+</p>
+
+<h3>5.3 Catálogo (5)</h3>
+
+<p>
+  Público y de solo lectura. Los lotes se crean desde el panel del productor, no desde
+  aquí: separar la lectura pública de la escritura del dueño evita que un fallo de permisos
+  en el camino de lectura —el más visitado y el más cacheable— acabe permitiendo escribir.
+</p>
+
+<p>
+  El filtro del catálogo tiene dieciséis parámetros, y uno de ellos resume el pivote del
+  proyecto: <code>max_yield_factor</code>. No <code>min</code>, sino
+  <strong><code>max</code></strong>, porque en el factor de rendimiento menos es mejor.
+</p>
+
+<h3>5.4 Carrito (9)</h3>
+
+<p>
+  El carrito vive en el servidor, no en el navegador. Podría parecer más simple guardarlo
+  en el cliente, pero el precio y la disponibilidad del pergamino cambian, y un carrito que
+  no se entera lleva a la escena peor de todas: el comprador paga un precio que ya no
+  existe.
+</p>
+
+<h3>5.5 Pedidos (6)</h3>
+
+<p>
+  Un pedido con lotes de tres fincas genera <strong>tres sub-órdenes</strong> con estado,
+  envío, comisión y liquidación independientes, bajo un único número de pedido. Para el
+  comprador es una compra; para cada vendedor, su propia venta. Sin esa división, el estado
+  «enviado» no significaría nada cuando dos fincas ya despacharon y la tercera no.
+</p>
+
+<h3>5.6 Devoluciones (10)</h3>
+
+<p>
+  Los plazos no los inventó el diseño: salen de la revisión legal, en
+  <code>docs/10</code>. Diez endpoints para algo que podrían ser tres porque cada paso
+  —solicitar, aprobar, recibir, reembolsar— tiene un actor distinto y deja un rastro que
+  debe poder auditarse después.
+</p>
+
+<h3>5.7 Reseñas (8)</h3>
+
+<p>
+  Solo reseña quien compró, y la API lo comprueba contra el pedido, no contra una casilla.
+  Es lo que separa una reseña de un comentario.
+</p>
+
+<h3>5.8 Oferta y demanda (10)</h3>
+
+<p>
+  El mercado en su segundo sentido, y el que de verdad distingue a MONK GRAIN de una tienda:
+  el comprador publica lo que busca y los caficultores responden con su precio.
+</p>
+
+<p>
+  Existe el estado <code>PARTIALLY_COVERED</code> porque una solicitud grande se cubre con
+  varios caficultores: un comprador que pide cuatro toneladas rara vez las consigue de una
+  sola finca. Sin ese estado habría que elegir entre decir que la solicitud está abierta
+  —cuando ya está medio cubierta— o cerrada, cuando todavía falta café por conseguir.
+</p>
+
+<p>
+  El motivo de un rechazo <strong>no es obligatorio</strong>. Fue una decisión explícita,
+  documentada en <code>docs/15 §5</code>: obligar a escribir algo produce «no» a secas, que
+  es peor que un rechazo sin motivo, porque parece una explicación y no lo es.
+</p>
+
+<h3>5.9 Panel del productor (27)</h3>
+
+<p>
+  El grupo más grande. Lotes, variantes, imágenes, pedidos recibidos y certificaciones.
+</p>
+
+<p>
+  Las certificaciones tienen fecha de vencimiento y la API la expone, pero
+  <strong>nada la vigila todavía</strong>: no hay proceso en segundo plano. Está anotado en
+  los pendientes del proyecto, y se dice aquí porque un documento de diseño que solo cuenta
+  lo que funciona no sirve para planear lo que falta.
+</p>
+
+<h3>5.10 Liquidaciones (7)</h3>
+
+<p>
+  Lo más reciente de la API, y lo que cierra el circuito del dinero: el comprador paga a
+  MONK GRAIN, MONK GRAIN descuenta su comisión del <strong>2,5 %</strong> y liquida al
+  vendedor por periodos, con una retención de cinco días hábiles.
+</p>
+
+<p>
+  Hasta la auditoría del 1 de noviembre de 2026, la plataforma cobraba y no tenía forma de
+  pagar: el caso de uso más importante para el vendedor no existía en la API. El detalle
+  está en <code>docs/18</code>.
+</p>
+
+<h3>5.11 Administración (7)</h3>
+
+<p>
+  Aprobación de vendedores, moderación y parámetros. Todo exige el permiso explícito, nunca
+  «ser administrador»: es donde la decisión de §4.3 se paga sola.
+</p>
+
+<h2>6. Documentación generada, no escrita</h2>
+
+<p>
+  FastAPI publica el documento OpenAPI del servicio que de verdad está corriendo, con los
+  esquemas de entrada y salida derivados de los modelos de Pydantic. De ahí salen tres
+  cosas sin trabajo manual:
+</p>
+
+<table>
+  <thead><tr><th>Dónde</th><th>Qué es</th></tr></thead>
+  <tbody>
+    <tr><td><code>/docs</code></td><td>Swagger UI: se puede probar cada endpoint desde el navegador</td></tr>
+    <tr><td><code>/redoc</code></td><td>La misma información en formato de lectura</td></tr>
+    <tr><td><code>/openapi.json</code></td><td>El documento en bruto, del que sale <code>ENDPOINTS.md</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Y de ahí sale también la colección de Postman de AA5-EV04, importándolo directamente. Es
+  la razón de fondo para cuidar los <code>summary</code> y las descripciones en el código:
+  no adornan el código, son la documentación.
+</p>
+
+<h2>7. Lo que falta, dicho aquí</h2>
+
+<table>
+  <thead><tr><th>Falta</th><th>Por qué importa</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Hay esquema sin API detrás: <code>conversations</code>, <code>messages</code>, <code>blog_posts</code> y los cupones</td>
+      <td>El carrito consume cupones que ningún endpoint crea. Construirlo o retirarlo es una decisión de alcance, no un olvido</td>
+    </tr>
+    <tr>
+      <td>No hay proceso en segundo plano</td>
+      <td>Nada vigila el vencimiento de las certificaciones ni los plazos de las devoluciones</td>
+    </tr>
+    <tr>
+      <td>Los tokens viven en <code>sessionStorage</code>, no en cookies <code>httpOnly</code></td>
+      <td>Aceptable para el MVP, no para producción. Migrarlos exige además protección CSRF: es un cambio de arquitectura</td>
+    </tr>
+    <tr>
+      <td>El precio no está indexado al precio interno de referencia de la FNC</td>
+      <td>Fue una decisión, no un olvido: exigía una fuente del precio diario y decidir quién la mantiene</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>8. Verificación</h2>
+
+<pre class="salida">$ curl -s http://localhost:8000/openapi.json | python3 -c "
+    import json,sys,collections
+    d=json.load(sys.stdin)
+    ops=[(m,p) for p,i in d['paths'].items() for m in i
+         if m in ('get','post','put','patch','delete')]
+    print('TOTAL:', len(ops))"
+
+TOTAL: 107</pre>
+
+<p>
+  Y las pruebas del backend, que recorren esos endpoints:
+</p>
+
+<pre class="salida">$ docker compose exec backend pytest -q
+
+453 passed</pre>
+
+<h2>9. Conclusión</h2>
+
+<p>
+  Los 107 endpoints están construidos, versionados en Git y documentados en
+  <code>ENDPOINTS.md</code>, que se genera desde el servicio en marcha y por tanto no puede
+  mentir sobre lo que existe.
+</p>
+
+<p>
+  Lo que hace que esta API se pueda sostener no es ninguno de los endpoints, sino las siete
+  reglas que todos obedecen: plural sin verbos, versión en la ruta, permisos en vez de
+  roles, 404 donde un 403 delataría, el error envuelto con un código legible, la misma
+  envoltura en toda lista, y el dinero como cadena decimal. Un cliente que aprende esas
+  siete reglas sabe consumir los 107 endpoints sin leerlos uno por uno — que es, al final,
+  la única medida útil del diseño de una API.
+</p>

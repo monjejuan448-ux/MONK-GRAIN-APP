@@ -1,0 +1,50 @@
+GA7-220501096-AA5-EV02
+API — testing con Postman (sobre la API de AA5-EV01)
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+API probada:  autenticacion-pergamino  (AA5-EV01)
+Base:         http://localhost:8082/api/auth
+
+Contenido de la entrega:
+  entregas/GA7/AA5_EV02_Postman_API/
+    Pruebas_API_Postman.pdf       documento con el procedimiento y los casos
+    ENDPOINTS.md                  catálogo de los cuatro endpoints
+    postman/
+      MONK_GRAIN_Autenticacion.postman_collection.json
+
+La colección:  27 peticiones en 4 carpetas, 44 comprobaciones.
+
+Pasos para reproducirlo
+-----------------------
+1. Levantar la API:
+     export MVN="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-maven-3.9.16/bin/mvn"
+     cd entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino
+     $MVN package
+     java -jar target/autenticacion-pergamino.jar
+
+2. En Postman:  File -> Import -> el archivo .json de postman/
+   Luego el boton "Run" sobre la coleccion (Collection Runner).
+   Las carpetas se ejecutan EN ORDEN: la 3 usa el token que guardo la 2,
+   y la 4 gasta los cinco intentos sobre la cuenta que creo la 1.
+
+3. Lo mismo desde la consola, sin ventana:
+     npm install newman
+     npx newman run entregas/GA7/AA5_EV02_Postman_API/postman/MONK_GRAIN_Autenticacion.postman_collection.json
+
+Resultado verificado el 1 de noviembre de 2026:
+  requests    27   fallidos 0
+  assertions  44   fallidos 0
+
+No hace falta configurar nada a mano: el correo se genera al azar en la
+primera peticion y el token se guarda solo. Por eso la coleccion se puede
+ejecutar muchas veces seguidas sin chocar con la cuenta de la vez anterior
+ni con su freno de quince minutos.
+
+Pendiente del aprendiz:  las 12 capturas y el video (guion en la seccion 8
+del documento).

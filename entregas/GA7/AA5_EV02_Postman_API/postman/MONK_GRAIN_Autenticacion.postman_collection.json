@@ -1,0 +1,1120 @@
+{
+  "info": {
+    "_postman_id": "8f3c1a90-7d41-4e52-9b16-2a5e0c7d4411",
+    "name": "MONK GRAIN — Autenticación (AA5-EV01)",
+    "description": "Pruebas de la API de registro e inicio de sesión del módulo `autenticacion-pergamino` (GA7-220501096-AA5-EV01).\n\n**Antes de ejecutar**, levantar el servicio:\n\n```\ncd entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino\n$MVN package && java -jar target/autenticacion-pergamino.jar\n```\n\nLa colección está pensada para el **Collection Runner**: las carpetas se ejecutan en orden y cada una depende de la anterior. El correo se genera al azar en la primera petición, de modo que la colección se puede correr muchas veces sin chocar con cuentas ya creadas ni con el freno de quince minutos de una ejecución anterior.\n\n**Lo que estas pruebas vigilan** no es solo que el servicio responda, sino que *no* responda de más: que un correo inexistente y una contraseña equivocada den exactamente la misma respuesta, y que el resumen de la contraseña no aparezca nunca en el cuerpo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082/api/auth",
+      "description": "Puerto 8082: el 8080 es del catálogo (AA2-EV02) y el 8081 de la negociación (AA3-EV01)."
+    },
+    {
+      "key": "email",
+      "value": "",
+      "description": "Se genera al azar en la primera petición. No se escribe a mano."
+    },
+    {
+      "key": "password",
+      "value": "pergamino2026",
+      "description": "Cumple la política: 13 caracteres, con letras y números."
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "Lo guarda la prueba de ingreso. No se copia y pega a mano."
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Registro",
+      "description": "El registro responde siempre 202 con el mismo acuse, exista o no el correo. Es deliberado: un «ese correo ya está en uso» convertiría el formulario de registro en un buscador de cuentas.",
+      "item": [
+        {
+          "name": "1.1 Registrar una cuenta nueva → 202",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"Ana Restrepo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Crea la cuenta con un correo al azar. Es la petición que abre la colección."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Un correo distinto en cada ejecución: así la colección se puede correr",
+                  "// muchas veces sin chocar con la cuenta de la vez anterior, ni con su",
+                  "// freno de quince minutos.",
+                  "const sufijo = Math.floor(Math.random() * 1000000);",
+                  "pm.collectionVariables.set('email', `ana.restrepo.${sufijo}@finca.co`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// El correo se genera aquí, en la primera petición de la colección, para",
+                  "// que cada ejecución trabaje sobre una cuenta limpia.",
+                  "pm.test('Responde 202 y no 201', function () {",
+                  "    // 201 anunciaría «se creó un recurso», y la gracia de esta respuesta",
+                  "    // es precisamente no decir si se creó o no.",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('El acuse no confirma que la cuenta sea nueva', function () {",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.message).to.include('Si el correo no estaba registrado');",
+                  "});",
+                  "",
+                  "// Se guarda el cuerpo para compararlo con el del correo repetido (1.2).",
+                  "pm.collectionVariables.set('acuseRegistro', pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 El MISMO correo otra vez → 202 idéntico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"otra-contrasena-9\",\n  \"fullName\": \"Impostor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Repite el registro con el mismo correo, otro nombre y otra contraseña. La respuesta debe ser indistinguible de la anterior."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 202, igual que con un correo nuevo', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "pm.test('El cuerpo es idéntico al de la cuenta nueva', function () {",
+                  "    // Byte por byte. Si se diferenciaran en algo —el mensaje, un campo",
+                  "    // extra, el código de estado— el registro serviría para averiguar qué",
+                  "    // correos están registrados en MONK GRAIN.",
+                  "    pm.expect(pm.response.text()).to.eql(pm.collectionVariables.get('acuseRegistro'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Contraseña débil → 422 con la lista de lo que falta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"debil@finca.co\",\n  \"password\": \"corta\",\n  \"fullName\": \"Equis Uno\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "La política exige 12 caracteres, una letra y un número. «corta» incumple dos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 422 y no 400', function () {",
+                  "    // El cuerpo llegó bien formado y con los tipos correctos: un 400",
+                  "    // sería mentira. Lo que no cumple es una regla del negocio.",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test('Dice de una vez todo lo que falta', function () {",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.error).to.eql('weak_password');",
+                  "    // «corta» incumple dos reglas: longitud y número. Se informan las dos",
+                  "    // juntas, no la primera y que lo vuelva a intentar para la segunda.",
+                  "    pm.expect(cuerpo.details).to.have.lengthOf(2);",
+                  "});",
+                  "",
+                  "pm.test('Aquí sí se explica el motivo', function () {",
+                  "    // A diferencia del ingreso: la política de contraseñas es pública y",
+                  "    // está escrita en el formulario, así que no hay nada que ocultar.",
+                  "    pm.expect(pm.response.json().details.join(' ')).to.include('12');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Correo mal formado → 400 con el nombre del campo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-es-un-correo\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"Ana Restrepo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Validación de forma con Bean Validation, antes de que la petición llegue al servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Dice qué campo está mal', function () {",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.error).to.eql('validation_error');",
+                  "    pm.expect(cuerpo.details[0]).to.include('email');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 JSON roto → 400 y no 500",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"ana@finca.co\",,}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Una coma de más en el cuerpo. El error es del cliente, y el código debe decirlo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400 y no 500', function () {",
+                  "    // Sin el manejador correspondiente esto saldría como 500 y parecería",
+                  "    // un fallo del servidor cuando el problema está en la petición.",
+                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.json().error).to.eql('malformed_body');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 Pedir el rol de administrador → se ignora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"Ana Restrepo\",\n  \"role\": \"ADMIN\",\n  \"id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento de asignarse rol e identificador desde la petición. Es la vulnerabilidad de asignación masiva que apareció en AA3-EV01."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 202, sin protestar', function () {",
+                  "    // El objeto de entrada no tiene campo `role` ni `id`, así que Jackson",
+                  "    // los descarta en silencio. El rol lo decide el servicio.",
+                  "    pm.response.to.have.status(202);",
+                  "});",
+                  "",
+                  "// Que el rol siguió siendo BUYER se comprueba en 3.1, con GET /me."
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Ingreso",
+      "description": "Todo lo que no sea un ingreso correcto responde exactamente igual. Es la decisión central del servicio: cualquier diferencia entre «ese correo no existe» y «la contraseña no coincide» convierte el inicio de sesión en una herramienta de reconocimiento.",
+      "item": [
+        {
+          "name": "2.1 Ingreso correcto → 200, mensaje y token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "El caso feliz, y de paso la comprobación de que la respuesta no publica lo que no debe."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('El mensaje es el que pide la evidencia', function () {",
+                  "    pm.expect(pm.response.json().message).to.eql('Autenticación satisfactoria.');",
+                  "});",
+                  "",
+                  "pm.test('Entrega un token y su caducidad', function () {",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.token).to.be.a('string').and.not.empty;",
+                  "    // La caducidad viaja explícita para que el cliente pueda avisar antes",
+                  "    // de que la sesión caiga, en vez de descubrirlo con un 401 en medio",
+                  "    // de un formulario a medio llenar.",
+                  "    pm.expect(cuerpo.expiresAt).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('El rol es BUYER, aunque 1.6 pidiera ADMIN', function () {",
+                  "    pm.expect(pm.response.json().account.role).to.eql('BUYER');",
+                  "});",
+                  "",
+                  "pm.test('La respuesta NO lleva el resumen de la contraseña', function () {",
+                  "    // Se busca en el cuerpo completo y no solo en el campo esperado: así",
+                  "    // también se detecta que aparezca donde nadie lo buscaba.",
+                  "    pm.expect(pm.response.text()).to.not.include('$2a$');",
+                  "    pm.expect(pm.response.json().account.passwordHash).to.be.undefined;",
+                  "});",
+                  "",
+                  "pm.test('Tampoco lleva los intentos fallidos', function () {",
+                  "    // Dirían a un atacante cuántos le quedan antes del freno.",
+                  "    pm.expect(pm.response.json().account.failedAttempts).to.be.undefined;",
+                  "    pm.expect(pm.response.json().account.lockedUntil).to.be.undefined;",
+                  "});",
+                  "",
+                  "// El token queda en una variable: no se copia y pega a mano.",
+                  "pm.collectionVariables.set('token', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Dos ingresos dan tokens distintos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Simula el segundo dispositivo de la misma persona."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('El token no es el mismo que el de 2.1', function () {",
+                  "    // Si se repitiera, cerrar sesión en el teléfono cerraría la del",
+                  "    // computador, y un token filtrado valdría para siempre.",
+                  "    pm.expect(pm.response.json().token).to.not.eql(pm.collectionVariables.get('token'));",
+                  "});",
+                  "",
+                  "// Se guarda el segundo para comprobar en 3.5 que cerrar uno no cierra el otro.",
+                  "pm.collectionVariables.set('tokenSegundoDispositivo', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Contraseña equivocada → 401 neutral",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Cuenta que existe, contraseña que no coincide."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('El mensaje no dice qué estuvo mal', function () {",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.error).to.eql('authentication_failed');",
+                  "    pm.expect(cuerpo.message).to.eql('Correo o contraseña incorrectos.');",
+                  "});",
+                  "",
+                  "// Se guarda para comparar con el correo inexistente (2.4). La marca de",
+                  "// tiempo se quita, porque es lo único que legítimamente cambia.",
+                  "const sinFecha = pm.response.json();",
+                  "delete sinFecha.timestamp;",
+                  "pm.collectionVariables.set('fallo_contrasena', JSON.stringify(sinFecha));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Correo inexistente → el MISMO 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nadie.en.absoluto@finca.co\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Correo que no está registrado. Debe ser indistinguible de 2.3."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 y no 404', function () {",
+                  "    // Un 404 diría «ese usuario no está aquí», que es exactamente el dato",
+                  "    // que no se quiere dar.",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('La respuesta es idéntica a la de la contraseña equivocada', function () {",
+                  "    // ESTA es la prueba que da sentido a todo el bloque. Si alguien",
+                  "    // «mejora la experiencia» separando los dos mensajes, se pone roja.",
+                  "    const sinFecha = pm.response.json();",
+                  "    delete sinFecha.timestamp;",
+                  "    pm.expect(JSON.stringify(sinFecha)).to.eql(pm.collectionVariables.get('fallo_contrasena'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Sin contraseña → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Falta un campo obligatorio. Es un error de forma, no de autenticación."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.json().error).to.eql('validation_error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Sesión",
+      "description": "El token sirve para algo y se puede revocar. Esto último es lo que un JWT no permitiría: su firma seguiría siendo válida después de cerrar sesión.",
+      "item": [
+        {
+          "name": "3.1 GET /me con el token → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "El endpoint que demuestra que la sesión quedó abierta de verdad, y no solo que el mensaje decía que sí."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "    // Aquí apareció un error 500 real: el servicio devolvía la cuenta",
+                  "    // como sustituto perezoso de Hibernate y el controlador la leía",
+                  "    // cuando ya no había sesión abierta. Las 40 pruebas de JUnit estaban",
+                  "    // verdes porque corrían dentro de una transacción.",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Es la cuenta que se registró', function () {",
+                  "    pm.expect(pm.response.json().email).to.eql(pm.collectionVariables.get('email'));",
+                  "    pm.expect(pm.response.json().fullName).to.eql('Ana Restrepo');",
+                  "});",
+                  "",
+                  "pm.test('El rol sigue siendo BUYER', function () {",
+                  "    // Comprobación final de 1.6: pedir ADMIN en el registro no sirvió.",
+                  "    pm.expect(pm.response.json().role).to.eql('BUYER');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Sin cabecera Authorization → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/me",
+            "description": "Sin credenciales no hay perfil."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('invalid_session');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Token inventado → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token-que-nunca-existio"
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "Un token con la forma correcta pero sin sesión detrás."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Esquema Basic en vez de Bearer → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Basic YW5hOjEyMw=="
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "Otro esquema de autenticación. No se acepta."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    // El servicio solo acepta Bearer. No intenta adivinar.",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 «bearer» en minúsculas → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "Compatibilidad con clientes que escriben el esquema en minúsculas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200: el esquema no distingue mayúsculas', function () {",
+                  "    // La norma (RFC 7235) dice que el esquema no las distingue, y hay",
+                  "    // clientes que envían «bearer».",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Cerrar sesión → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/logout",
+            "description": "Borra la fila de la sesión."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.json().message).to.include('cerrada');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 El token cerrado ya no abre nada → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "La revocación es inmediata, no espera a la caducidad."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 con el token recién cerrado', function () {",
+                  "    // Es lo que un JWT no permitiría: su firma seguiría siendo válida",
+                  "    // hasta la caducidad, aunque el usuario hubiera cerrado sesión.",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.8 La sesión del otro dispositivo sigue abierta → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenSegundoDispositivo}}"
+              }
+            ],
+            "url": "{{baseUrl}}/me",
+            "description": "Cada sesión se cierra por su cuenta. Usa el token de 2.2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () {",
+                  "    // Cerrar sesión en el teléfono no debe cerrar la del computador.",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.9 Cerrar sesión dos veces → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/logout",
+            "description": "La operación es idempotente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 aunque el token ya no exista', function () {",
+                  "    // El usuario quería quedar fuera y queda fuera. Además, un error",
+                  "    // distinto según si el token existía serviría para adivinar tokens.",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Freno por intentos fallidos",
+      "description": "Cinco intentos fallidos seguidos frenan la cuenta quince minutos. Lo que estas pruebas vigilan es a quién se le explica el freno: a quien no sabe la contraseña, nunca, porque anunciarlo confirmaría que el correo existe.",
+      "item": [
+        {
+          "name": "4.1 Intento fallido 1 de 5 → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento 1. El contador vive en la fila de la cuenta, no en memoria: el freno sobrevive a un reinicio del servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 neutral', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Intento fallido 2 de 5 → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento 2. El contador vive en la fila de la cuenta, no en memoria: el freno sobrevive a un reinicio del servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 neutral', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Intento fallido 3 de 5 → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento 3. El contador vive en la fila de la cuenta, no en memoria: el freno sobrevive a un reinicio del servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 neutral', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Intento fallido 4 de 5 → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento 4. El contador vive en la fila de la cuenta, no en memoria: el freno sobrevive a un reinicio del servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 neutral', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Intento fallido 5 de 5 → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Intento 5. El contador vive en la fila de la cuenta, no en memoria: el freno sobrevive a un reinicio del servicio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 neutral', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});",
+                  "",
+                  "pm.test('Al quinto fallo sigue sin anunciar el freno', function () {",
+                  "    // La cuenta queda frenada EN esta petición, y la respuesta es",
+                  "    // exactamente la misma que en los cuatro intentos anteriores.",
+                  "    pm.expect(pm.response.json().message).to.eql('Correo o contraseña incorrectos.');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 Con la contraseña CORRECTA → 429 y Retry-After",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "La contraseña es buena y la cuenta está frenada. Es el único caso en que el servicio explica el motivo real."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 429 y no 403', function () {",
+                  "    // El 403 dice «no puedes, y no insistas»; el 429 dice «ahora no,",
+                  "    // vuelve después», que es la verdad.",
+                  "    pm.response.to.have.status(429);",
+                  "});",
+                  "",
+                  "pm.test('Trae Retry-After en segundos', function () {",
+                  "    // Así lo entienden los clientes que reintentan solos, sin leer el",
+                  "    // mensaje.",
+                  "    const espera = pm.response.headers.get('Retry-After');",
+                  "    pm.expect(Number(espera)).to.be.above(0).and.at.most(900);",
+                  "});",
+                  "",
+                  "pm.test('A quien acierta la contraseña sí se le explica', function () {",
+                  "    // Es el único caso en que se dice la verdad completa: quien llega",
+                  "    // aquí ya demostró ser el dueño de la cuenta.",
+                  "    const cuerpo = pm.response.json();",
+                  "    pm.expect(cuerpo.error).to.eql('account_locked');",
+                  "    pm.expect(cuerpo.message).to.include('minutos');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.7 Con la contraseña MALA, ya frenada → 401 neutral",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"equivocada-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "La misma cuenta frenada, pero sin saber la contraseña. No se delata el freno."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401 y NO 429', function () {",
+                  "    // El punto más fino del diseño. Si el freno se anunciara a",
+                  "    // cualquiera, provocarlo bastaría para confirmar que el correo",
+                  "    // existe, y toda la neutralidad del bloque 2 se caería por aquí.",
+                  "    pm.response.to.have.status(401);",
+                  "    pm.expect(pm.response.json().error).to.eql('authentication_failed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MONK GRAIN — Servicio web de registro e inicio de sesión
+  GA7-220501096-AA5-EV01
+
+  Servicio aparte y no un endpoint más del módulo de negociación: la
+  autenticación es lo único que todos los demás módulos necesitan, y
+  mezclarla con el dominio del café obligaría a arrancar el catálogo
+  entero para probar un inicio de sesión.
+
+  Se añade `spring-security-crypto` y NO `spring-boot-starter-security`:
+  lo único que hace falta de Spring Security es el algoritmo BCrypt. El
+  starter completo, además, instala su propio formulario de ingreso y su
+  cadena de filtros, que taparían los endpoints de este servicio.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>co.monkgrain</groupId>
+  <artifactId>autenticacion-pergamino</artifactId>
+  <version>1.0.0</version>
+  <name>MONK GRAIN - Servicio de autenticacion</name>
+  <description>
+    Registro e inicio de sesion para los usuarios de MONK GRAIN.
+  </description>
+
+  <properties>
+    <java.version>17</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!--
+      Solo el modulo de criptografia. Trae BCrypt, que es lo que se usa
+      para guardar las contrasenas, sin arrastrar la cadena de filtros.
+    -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- H2 en memoria: las pruebas no deben necesitar un PostgreSQL vivo -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>autenticacion-pergamino</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

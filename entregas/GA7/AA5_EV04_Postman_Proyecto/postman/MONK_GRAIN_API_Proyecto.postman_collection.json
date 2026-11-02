@@ -1,0 +1,1132 @@
+{
+  "info": {
+    "_postman_id": "c41d7b02-5e93-4a18-8f6c-91b2e4d05a77",
+    "name": "MONK GRAIN — API del proyecto (AA5-EV03)",
+    "description": "Pruebas de la API del proyecto MONK GRAIN: 107 endpoints en 12 grupos (GA7-220501096-AA5-EV03).\n\n**Antes de ejecutar:**\n\n```\ndocker compose up -d\n```\n\nProbar los 107 endpoints uno por uno daría una colección enorme y poco útil. Esta recorre en cambio **tres caminos completos** —el del comprador, el del vendedor y el de la autorización— tocando los grupos principales y encadenando los datos: el identificador de la variante sale del catálogo, el del pedido sale del carrito, y nada se escribe a mano.\n\nLa carpeta 5 es la más importante y la que no suele aparecer en una colección de ejemplo: comprueba lo que la API **no** debe dejar hacer.\n\n**Un aviso sobre el tope de frecuencia.** El ingreso admite 10 intentos por minuto y por cuenta. Ejecutar la colección tres o cuatro veces seguidas agota ese tope y las peticiones 1.2 y 1.3 responden 429 en lugar de 200. No hay nada que arreglar: es la protección funcionando. Basta esperar un minuto.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "apiUrl",
+      "value": "http://localhost:8000/api/v1"
+    },
+    {
+      "key": "correoComprador",
+      "value": "trilladora.popayan@ejemplo.co",
+      "description": "Cuenta de COMPRADOR de los datos de demostración. No existía hasta que esta colección la echó de menos: las cinco cuentas de la semilla eran de productor."
+    },
+    {
+      "key": "correoVendedor",
+      "value": "finca.elmirador@ejemplo.co",
+      "description": "Cuenta de PRODUCTOR de los datos de demostración."
+    },
+    {
+      "key": "claveDemo",
+      "value": "MonkGrain2026Demo",
+      "description": "Contraseña de los datos de demostración. No es una credencial real."
+    },
+    {
+      "key": "tokenComprador",
+      "value": ""
+    },
+    {
+      "key": "tokenVendedor",
+      "value": ""
+    },
+    {
+      "key": "slugProducto",
+      "value": ""
+    },
+    {
+      "key": "idVariante",
+      "value": ""
+    },
+    {
+      "key": "idItemCarrito",
+      "value": ""
+    },
+    {
+      "key": "idSolicitud",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Salud y autenticación",
+      "description": "Lo primero que hay que poder comprobar: que el servicio está vivo y que las dos cuentas de demostración entran.",
+      "item": [
+        {
+          "name": "1.1 GET /health → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "Comprobación de vida. Es el único endpoint sin versión en la ruta."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('El servicio está vivo', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('No lleva prefijo de versión', function () {",
+                  "    // Es el único endpoint fuera de /api/v1, a propósito: el orquestador",
+                  "    // que lo consulta no debe tener que saber en qué versión va la API,",
+                  "    // porque entonces migrar a /v2 tumbaría la comprobación de salud",
+                  "    // antes que ninguna otra cosa.",
+                  "    pm.expect(pm.request.url.toString()).to.not.include('/api/v1');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Ingreso del comprador → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/auth/login",
+            "description": "Ingreso con la cuenta de comprador de los datos de demostración.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{correoComprador}}\",\n  \"password\": \"{{claveDemo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Entrega los dos tokens', function () {",
+                  "    const c = pm.response.json();",
+                  "    // Dos y no uno: el de acceso dura 30 minutos y viaja en cada",
+                  "    // petición; el de renovación dura mucho más y solo viaja al renovar,",
+                  "    // así que se expone muchas menos veces.",
+                  "    pm.expect(c.access_token).to.be.a('string').and.not.empty;",
+                  "    pm.expect(c.refresh_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No se filtra el hash de la contraseña', function () {",
+                  "    pm.expect(pm.response.text()).to.not.include('$argon2');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('tokenComprador', pm.response.json().access_token);",
+                  "",
+                  "// El ingreso tiene DOS topes de frecuencia: uno por cliente y otro por",
+                  "// cuenta, de 10 por minuto. Ejecutar la colección muchas veces seguidas",
+                  "// agota el segundo, y entonces este 200 se convierte en un 429. No es un",
+                  "// fallo de la colección ni de la API: es la protección haciendo su",
+                  "// trabajo. Esta prueba existe para decirlo con palabras en vez de dejar",
+                  "// un «expected 200 but got 429» sin explicación.",
+                  "if (pm.response.code === 429) {",
+                  "    pm.test('⚠ Tope de frecuencia alcanzado: espera un minuto y vuelve a ejecutar', function () {",
+                  "        pm.expect.fail('El ingreso admite 10 intentos por minuto y por cuenta. '",
+                  "            + 'Espera un minuto; no hay nada que arreglar.');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Ingreso del vendedor → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/auth/login",
+            "description": "Ingreso con la cuenta de vendedor. Hacen falta las dos para la carpeta 5.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{correoVendedor}}\",\n  \"password\": \"{{claveDemo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.collectionVariables.set('tokenVendedor', pm.response.json().access_token);",
+                  "",
+                  "// El ingreso tiene DOS topes de frecuencia: uno por cliente y otro por",
+                  "// cuenta, de 10 por minuto. Ejecutar la colección muchas veces seguidas",
+                  "// agota el segundo, y entonces este 200 se convierte en un 429. No es un",
+                  "// fallo de la colección ni de la API: es la protección haciendo su",
+                  "// trabajo. Esta prueba existe para decirlo con palabras en vez de dejar",
+                  "// un «expected 200 but got 429» sin explicación.",
+                  "if (pm.response.code === 429) {",
+                  "    pm.test('⚠ Tope de frecuencia alcanzado: espera un minuto y vuelve a ejecutar', function () {",
+                  "        pm.expect.fail('El ingreso admite 10 intentos por minuto y por cuenta. '",
+                  "            + 'Espera un minuto; no hay nada que arreglar.');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 GET /auth/me → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/auth/me",
+            "description": "El perfil de quien presenta el token, con sus permisos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Trae los permisos, no solo el rol', function () {",
+                  "    // La API autoriza por permiso y no por rol: hay 24 permisos y los",
+                  "    // roles son agrupaciones de ellos. El cliente necesita la lista para",
+                  "    // decidir qué botones mostrar.",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.permissions).to.be.an('array').that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/auth/me",
+            "description": "El mismo endpoint sin credenciales."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Catálogo",
+      "description": "Público y de solo lectura. Los lotes se crean desde el panel del productor, no desde aquí: separar la lectura pública de la escritura del dueño evita que un fallo de permisos en el camino más visitado permita escribir.",
+      "item": [
+        {
+          "name": "2.1 GET /products → 200 paginado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/products?page=1&page_size=5",
+            "description": "Lista paginada de lotes. Guarda el slug del primero para 2.3."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 sin token: el catálogo es público', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('La envoltura de página es la de siempre', function () {",
+                  "    // La misma forma en TODAS las listas de la API. Un cliente que la",
+                  "    // aprende una vez sabe recorrer las once listas que existen.",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c).to.have.all.keys('items', 'total', 'page', 'page_size',",
+                  "        'total_pages', 'has_next', 'has_previous');",
+                  "});",
+                  "",
+                  "pm.test('Respeta page_size', function () {",
+                  "    pm.expect(pm.response.json().items.length).to.be.at.most(5);",
+                  "});",
+                  "",
+                  "pm.test('El precio viaja como cadena, no como número', function () {",
+                  "    // Un float no representa exactamente 0,1. Sobre una carga de 125 kg,",
+                  "    // un redondeo mal hecho son miles de pesos de diferencia entre lo",
+                  "    // que el comprador ve y lo que el vendedor cobra.",
+                  "    pm.expect(pm.response.json().items[0].base_price).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('slugProducto', pm.response.json().items[0].slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Filtro por factor de rendimiento → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/products?max_yield_factor=92&page_size=20",
+            "description": "El filtro que resume el pivote del proyecto: acota por el factor MÁXIMO."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Ningún lote pasa del factor pedido', function () {",
+                  "    // El filtro es max_ y no min_, y eso resume el dominio: en el factor",
+                  "    // de rendimiento MENOS ES MEJOR. El estándar de la Federación es 94,",
+                  "    // así que pedir «92 o mejor» es pedir café por encima del estándar.",
+                  "    pm.response.json().items.forEach(function (lote) {",
+                  "        pm.expect(Number(lote.yield_factor)).to.be.at.most(92);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 GET /products/{slug} → 200 con variantes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/products/{{slugProducto}}",
+            "description": "Detalle del lote. Guarda el identificador de la variante para el carrito."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Trae las variantes con su mínimo de compra', function () {",
+                  "    // El pergamino se vende a partir de un mínimo: no se despacha un kilo",
+                  "    // suelto. El mínimo vive en la variante, no en el lote.",
+                  "    const v = pm.response.json().variants;",
+                  "    pm.expect(v).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(v[0].min_qty_kg).to.be.a('number').and.above(0);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('idVariante', pm.response.json().variants[0].id);",
+                  "pm.collectionVariables.set('minimoKg', pm.response.json().variants[0].min_qty_kg);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Slug inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/products/lote-que-no-existe-jamas",
+            "description": "Un lote que no existe."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () { pm.response.to.have.status(404); });",
+                  "",
+                  "pm.test('El error viene envuelto en `error`, no en `detail`', function () {",
+                  "    // La API no usa el `detail` de serie de FastAPI: lo envuelve en",
+                  "    // {\"error\": {\"code\", \"message\"}}, para que el cliente pueda",
+                  "    // ramificar por `code` sin analizar el texto del mensaje.",
+                  "    pm.expect(pm.response.json().error).to.have.keys('code', 'message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Carrito",
+      "description": "El carrito vive en el servidor y no en el navegador. Parecería más simple guardarlo en el cliente, pero el precio y la disponibilidad del pergamino cambian, y un carrito que no se entera lleva a la escena peor de todas: el comprador paga un precio que ya no existe.\n\nEl orden de esta carpeta importa más que en las demás: la regla del mínimo de kilos se comprueba **sobre el carrito vacío**, porque sumar un kilo a un renglón que ya tiene 250 es legítimo y no debe rechazarse.",
+      "item": [
+        {
+          "name": "3.1 Vaciar el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/cart",
+            "description": "Punto de partida limpio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200 o 204', function () {",
+                  "    // Se vacía al empezar para que la colección se pueda ejecutar muchas",
+                  "    // veces seguidas sin arrastrar lo de la vez anterior.",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Un kilo suelto en el carrito vacío → 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/cart/items",
+            "description": "Un kilo suelto, con el carrito vacío. Es el caso donde la regla del mínimo tiene que actuar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{idVariante}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Se rechaza: el lote se vende desde su mínimo', function () {",
+                  "    // El pergamino no se despacha de a un kilo. La regla vive en el",
+                  "    // servidor: si solo estuviera en el formulario, bastaría con hablarle",
+                  "    // a la API directamente para saltársela.",
+                  "    pm.response.to.have.status(422);",
+                  "});",
+                  "",
+                  "pm.test('Dice desde cuántos kilos se vende', function () {",
+                  "    // El mensaje trae el número, y `details` lo trae aparte para que el",
+                  "    // formulario pueda poner ese mínimo en el campo sin leer el texto.",
+                  "    const e = pm.response.json().error;",
+                  "    pm.expect(e.code).to.eql('business_rule_violation');",
+                  "    pm.expect(Number(e.details.min_qty_kg)).to.eql(",
+                  "        Number(pm.collectionVariables.get('minimoKg')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Añadir el mínimo → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/cart/items",
+            "description": "Añade la variante que guardó 2.3, con el mínimo de kilos que ella misma declara.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{idVariante}}\",\n  \"quantity\": \"{{minimoKg}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// La respuesta del carrito agrupa por vendedor —un pedido con lotes de",
+                  "// tres fincas genera tres sub-órdenes— así que los renglones están en",
+                  "// `groups[].items[]` y no en un `items` plano.",
+                  "function renglones(cuerpo) {",
+                  "    return (cuerpo.groups || []).reduce((a, g) => a.concat(g.items || []), []);",
+                  "}",
+                  "",
+                  "pm.test('Se añadió', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test('El carrito agrupa por vendedor', function () {",
+                  "    // Un pedido con lotes de tres fincas genera tres sub-órdenes. El",
+                  "    // carrito ya viene agrupado así, para que el comprador vea desde el",
+                  "    // principio de cuántas fincas está comprando.",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.groups).to.be.an('array').that.is.not.empty;",
+                  "    pm.expect(c.groups[0]).to.have.property('producer_name');",
+                  "});",
+                  "",
+                  "pm.test('La cantidad es el mínimo de la variante', function () {",
+                  "    pm.expect(Number(renglones(pm.response.json())[0].quantity))",
+                  "        .to.eql(Number(pm.collectionVariables.get('minimoKg')));",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('idItemCarrito', renglones(pm.response.json())[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 GET /cart → 200, con el renglón dentro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/cart",
+            "description": "El carrito recién llenado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// La respuesta del carrito agrupa por vendedor —un pedido con lotes de",
+                  "// tres fincas genera tres sub-órdenes— así que los renglones están en",
+                  "// `groups[].items[]` y no en un `items` plano.",
+                  "function renglones(cuerpo) {",
+                  "    return (cuerpo.groups || []).reduce((a, g) => a.concat(g.items || []), []);",
+                  "}",
+                  "",
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('El carrito tiene un renglón', function () {",
+                  "    pm.expect(renglones(pm.response.json())).to.have.lengthOf(1);",
+                  "});",
+                  "",
+                  "pm.test('El precio del renglón viaja como cadena', function () {",
+                  "    const r = renglones(pm.response.json())[0];",
+                  "    pm.expect(r.unit_price || r.price || r.line_total).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Un kilo más sobre el mínimo → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/cart/items",
+            "description": "El mismo kilo suelto de 3.2, pero sobre un renglón que ya existe. Aquí es un incremento legítimo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{idVariante}}\",\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// La respuesta del carrito agrupa por vendedor —un pedido con lotes de",
+                  "// tres fincas genera tres sub-órdenes— así que los renglones están en",
+                  "// `groups[].items[]` y no en un `items` plano.",
+                  "function renglones(cuerpo) {",
+                  "    return (cuerpo.groups || []).reduce((a, g) => a.concat(g.items || []), []);",
+                  "}",
+                  "",
+                  "pm.test('Se acepta: suma, no reemplaza', function () {",
+                  "    // Aquí el mismo kilo suelto que 3.2 rechazó SÍ se acepta, y está bien:",
+                  "    // sumar un kilo a un renglón que ya tiene el mínimo lo deja en",
+                  "    // mínimo+1, que sigue respetando la regla. La primera versión de esta",
+                  "    // colección probaba el kilo suelto DESPUÉS de llenar el carrito y",
+                  "    // daba por defectuoso un comportamiento correcto.",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test('La cantidad quedó en el mínimo más uno', function () {",
+                  "    pm.expect(Number(renglones(pm.response.json())[0].quantity))",
+                  "        .to.eql(Number(pm.collectionVariables.get('minimoKg')) + 1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Bajar por debajo del mínimo → 422",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/cart/items/{{idItemCarrito}}",
+            "description": "Modificar el renglón para dejarlo en un kilo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Se rechaza', function () {",
+                  "    // La otra mitad de la regla: no basta validar al añadir, porque",
+                  "    // modificar la cantidad después sería la vía más corta para",
+                  "    // saltársela.",
+                  "    pm.response.to.have.status(422);",
+                  "    pm.expect(pm.response.json().error.code).to.eql('business_rule_violation');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Variante inventada → 404 o 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/cart/items",
+            "description": "Un identificador con forma de UUID pero sin variante detrás.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"quantity\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('No se puede añadir lo que no existe', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([404, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.8 Carrito sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{apiUrl}}/cart",
+            "description": "El carrito es de quien presenta el token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Oferta y demanda",
+      "description": "El mercado en su segundo sentido, y el que distingue a MONK GRAIN de una tienda: el comprador publica lo que busca y los caficultores responden con su precio.",
+      "item": [
+        {
+          "name": "4.1 Publicar una solicitud de compra → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{apiUrl}}/demands",
+            "description": "Una solicitud de 4.000 kg con factor 92 o mejor. El vencimiento se calcula a 30 días en el guion previo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Pergamino para trilla de excelso — prueba de Postman\",\n  \"description\": \"Solicitud creada por la colección de pruebas AA5-EV04.\",\n  \"wanted_kg\": 4000,\n  \"max_yield_factor\": 92,\n  \"expires_on\": \"{{vencimiento}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// El vencimiento se calcula, no se escribe: una fecha fija en el cuerpo",
+                  "// haría que la colección dejara de funcionar el día que pasara.",
+                  "const d = new Date();",
+                  "d.setDate(d.getDate() + 30);",
+                  "pm.collectionVariables.set('vencimiento', d.toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Se creó', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test('Nace abierta y sin cubrir', function () {",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(c.status).to.be.oneOf(['open', 'OPEN']);",
+                  "    pm.expect(Number(c.covered_kg || 0)).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('idSolicitud', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 GET /demands → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/demands?page_size=10",
+            "description": "La lista de solicitudes abiertas."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Entre las solicitudes está la que se acaba de crear', function () {",
+                  "    const ids = pm.response.json().items.map(s => s.id);",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('idSolicitud'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 GET /demands/{id} → 200 con cobertura",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/demands/{{idSolicitud}}",
+            "description": "El detalle, con la cobertura que varias fincas van completando."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('Informa los kilos pedidos y los cubiertos', function () {",
+                  "    // Las dos cifras, no solo el porcentaje: «80 %» de una solicitud",
+                  "    // pequeña puede ser menos café que el 20 % de una grande.",
+                  "    const c = pm.response.json();",
+                  "    pm.expect(Number(c.wanted_kg)).to.eql(4000);",
+                  "    pm.expect(c).to.have.property('covered_kg');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 El vendedor ve la solicitud → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVendedor}}"
+              }
+            ],
+            "url": "{{apiUrl}}/producer/demands?page_size=10",
+            "description": "El mismo mercado desde el otro lado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 200', function () { pm.response.to.have.status(200); });",
+                  "",
+                  "pm.test('La solicitud del comprador le aparece al vendedor', function () {",
+                  "    // Las dos caras del mismo mercado, con rutas distintas: el comprador",
+                  "    // ve «mis solicitudes», el vendedor ve «quién está comprando».",
+                  "    const ids = pm.response.json().items.map(s => s.id);",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get('idSolicitud'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Cerrar la solicitud → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/demands/{{idSolicitud}}/close",
+            "description": "Limpieza: cierra la solicitud que creó 4.1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Se cerró', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});",
+                  "",
+                  "// Se cierra al final para no dejar solicitudes de prueba abiertas en los",
+                  "// datos de demostración cada vez que se ejecuta la colección."
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Autorización",
+      "description": "La carpeta más importante, y la que no suele aparecer en una colección de ejemplo: comprueba lo que la API NO debe dejar hacer. Un endpoint que funciona para quien tiene permiso y también para quien no, funciona mal.",
+      "item": [
+        {
+          "name": "5.1 El comprador entra al panel del productor → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/producer/products?page_size=5",
+            "description": "Una cuenta de comprador contra un endpoint de vendedor."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403 y no 401', function () {",
+                  "    // 403 y no 401: el comprador SÍ está identificado, lo que le falta es",
+                  "    // el permiso. Confundirlos hace que el cliente mande a iniciar sesión",
+                  "    // a alguien que ya tiene la sesión abierta.",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 El comprador entra a administración → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/admin/users?page_size=5",
+            "description": "Una cuenta de comprador contra un endpoint de administración."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', function () {",
+                  "    // La API autoriza por permiso explícito (user.manage), no por rol.",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 El vendedor entra a administración → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVendedor}}"
+              }
+            ],
+            "url": "{{apiUrl}}/admin/producers/pending?page_size=5",
+            "description": "Una cuenta de vendedor contra un endpoint de administración."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 403', function () {",
+                  "    // Ser vendedor no es ser administrador. Aprobar vendedores exige el",
+                  "    // permiso producer.approve, que un vendedor no tiene.",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Un pedido ajeno → 404, no 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenComprador}}"
+              }
+            ],
+            "url": "{{apiUrl}}/orders/00000000-0000-0000-0000-000000000000",
+            "description": "Un identificador de pedido que no le pertenece al comprador."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 404', function () {",
+                  "    // Deliberadamente 404 y no 403. Un 403 confirmaría que ese pedido",
+                  "    // existe, y eso ya es información: permitiría recorrer",
+                  "    // identificadores y contar cuántos pedidos tiene la plataforma. El",
+                  "    // 404 no distingue «no existe» de «no es tuyo», que es exactamente",
+                  "    // la ambigüedad que conviene.",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Token manipulado → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAlterado}}"
+              }
+            ],
+            "url": "{{apiUrl}}/auth/me",
+            "description": "El token del comprador con un carácter alterado."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const bueno = pm.collectionVariables.get('tokenComprador');",
+                  "// Se altera el último carácter, que es parte de la firma.",
+                  "const ultimo = bueno.slice(-1) === 'A' ? 'B' : 'A';",
+                  "pm.collectionVariables.set('tokenAlterado', bueno.slice(0, -1) + ultimo);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () {",
+                  "    // Se cambia un carácter del token. La firma deja de cuadrar y el",
+                  "    // servidor lo rechaza sin mirar nada más.",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 Esquema que no es Bearer → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Basic dG9zdGFkdXJpYToxMjM="
+              }
+            ],
+            "url": "{{apiUrl}}/auth/me",
+            "description": "Autenticación básica contra una API que solo acepta Bearer."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,436 @@
+<!-- GA7-220501096-AA5-EV02 · Testing de la API con Postman -->
+<header class="portada">
+  <h1>Testing de la API de Autenticación con Postman</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia prueba con Postman la API construida en AA5-EV01: el servicio de registro
+  e inicio de sesión <code>autenticacion-pergamino</code>.
+</p>
+
+<p>
+  La colección tiene <strong>27 peticiones con 44 comprobaciones</strong>, y lo que vigila
+  no es principalmente que el servicio responda. Es que <strong>no responda de más</strong>:
+  que un correo inexistente y una contraseña equivocada den exactamente la misma respuesta,
+  que el resumen de la contraseña no aparezca nunca en el cuerpo, y que el freno por
+  intentos fallidos no se le anuncie a quien no sabe la contraseña. Esas son las
+  propiedades que un cambio bienintencionado rompe sin darse cuenta.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Probar la API de AA5-EV01 con Postman: instalar la herramienta, construir la colección
+  de pruebas, documentar el resultado con pantallazos, grabar el video del testing y
+  entregar el archivo de endpoints.
+</p>
+
+<h2>3. Instalación de Postman</h2>
+
+<p>
+  Postman se instala desde <a href="https://www.postman.com/downloads/">postman.com/downloads</a>.
+  En Linux, la vía más corta es el paquete <em>snap</em>:
+</p>
+
+<pre class="salida">$ sudo snap install postman
+postman 11.x from Postman, Inc. installed
+
+$ postman</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 1 — Postman instalado</span>
+  La ventana de Postman recién abierta, con el área de trabajo vacía
+</div>
+
+<h2>4. La colección</h2>
+
+<p>
+  El archivo está en el repositorio y se importa con <strong>File → Import</strong>:
+</p>
+
+<pre class="salida">entregas/GA7/AA5_EV02_Postman_API/postman/
+    MONK_GRAIN_Autenticacion.postman_collection.json</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 2 — Colección importada</span>
+  El panel izquierdo mostrando «MONK GRAIN — Autenticación (AA5-EV01)» con sus
+  cuatro carpetas desplegadas
+</div>
+
+<h3>4.1 Las variables, y por qué no hay nada escrito a mano</h3>
+
+<table>
+  <thead><tr><th>Variable</th><th>Valor</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>baseUrl</code></td><td><code>http://localhost:8082/api/auth</code></td><td>El puerto 8080 es del catálogo (AA2-EV02) y el 8081 de la negociación (AA3-EV01)</td></tr>
+    <tr><td><code>email</code></td><td>(se genera)</td><td>Un correo al azar en cada ejecución</td></tr>
+    <tr><td><code>password</code></td><td><code>pergamino2026</code></td><td>13 caracteres, con letras y números: cumple la política</td></tr>
+    <tr><td><code>token</code></td><td>(se guarda)</td><td>Lo escribe la prueba de ingreso, no la persona</td></tr>
+  </tbody>
+</table>
+
+<p>
+  <strong>El correo se genera al azar</strong> en el guion previo de la primera petición.
+  Sin eso, la segunda ejecución de la colección chocaría con la cuenta de la primera y, lo
+  que es peor, con su freno de quince minutos:
+</p>
+
+<pre><code>// Un correo distinto en cada ejecución: así la colección se puede correr
+// muchas veces sin chocar con la cuenta de la vez anterior, ni con su
+// freno de quince minutos.
+const sufijo = Math.floor(Math.random() * 1000000);
+pm.collectionVariables.set('email', `ana.restrepo.${sufijo}@finca.co`);</code></pre>
+
+<p>
+  <strong>El token tampoco se copia y pega.</strong> La petición 2.1 lo guarda y las ocho
+  peticiones de la carpeta 3 lo usan desde la variable. Copiarlo a mano haría la colección
+  imposible de ejecutar de corrido.
+</p>
+
+<h3>4.2 Las cuatro carpetas</h3>
+
+<table>
+  <thead><tr><th>Carpeta</th><th>Peticiones</th><th>Qué verifica</th></tr></thead>
+  <tbody>
+    <tr><td>1. Registro</td><td>6</td><td>Que el acuse sea el mismo exista o no el correo</td></tr>
+    <tr><td>2. Ingreso</td><td>5</td><td>Que los dos modos de fallar respondan idéntico</td></tr>
+    <tr><td>3. Sesión</td><td>9</td><td>Que el token sirva, y que se pueda revocar</td></tr>
+    <tr><td>4. Freno</td><td>7</td><td>A quién se le explica el freno y a quién no</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Se ejecutan <strong>en orden</strong> y cada carpeta depende de la anterior: la 3 usa el
+  token que guardó la 2, y la 4 gasta los cinco intentos sobre la cuenta que creó la 1. No
+  es una colección de peticiones sueltas, es un recorrido.
+</p>
+
+<h2>5. Las pruebas, una por una</h2>
+
+<h3>5.1 Registro</h3>
+
+<table>
+  <thead><tr><th>#</th><th>Petición</th><th>Esperado</th><th>Qué protege</th></tr></thead>
+  <tbody>
+    <tr><td>1.1</td><td>Cuenta nueva</td><td><code>202</code></td><td>Que no sea <code>201</code>: anunciaría que se creó algo</td></tr>
+    <tr><td>1.2</td><td>El <strong>mismo</strong> correo</td><td><code>202</code> idéntico</td><td>Compara los cuerpos byte por byte</td></tr>
+    <tr><td>1.3</td><td>Contraseña «corta»</td><td><code>422</code>, 2 motivos</td><td>Que diga de una vez todo lo que falta</td></tr>
+    <tr><td>1.4</td><td>Correo mal formado</td><td><code>400</code></td><td>Que diga qué campo está mal</td></tr>
+    <tr><td>1.5</td><td>JSON con una coma de más</td><td><code>400</code></td><td>Que no salga como <code>500</code></td></tr>
+    <tr><td>1.6</td><td>Pidiendo <code>"role":"ADMIN"</code></td><td><code>202</code>, ignorado</td><td>Asignación masiva</td></tr>
+  </tbody>
+</table>
+
+<p>La comprobación que da sentido a toda la carpeta es la de 1.2:</p>
+
+<pre><code>pm.test('El cuerpo es idéntico al de la cuenta nueva', function () {
+    // Byte por byte. Si se diferenciaran en algo —el mensaje, un campo
+    // extra, el código de estado— el registro serviría para averiguar qué
+    // correos están registrados en MONK GRAIN.
+    pm.expect(pm.response.text()).to.eql(pm.collectionVariables.get('acuseRegistro'));
+});</code></pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 3 — Registro con correo nuevo (1.1)</span>
+  La respuesta <code>202 Accepted</code> y la pestaña <strong>Test Results</strong>
+  con las dos comprobaciones en verde
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 4 — El mismo correo repetido (1.2)</span>
+  La respuesta, idéntica a la de la captura anterior, y la comprobación
+  «El cuerpo es idéntico al de la cuenta nueva» en verde
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 5 — Contraseña débil (1.3)</span>
+  La respuesta <code>422</code> con los dos motivos en <code>details</code>
+</div>
+
+<h3>5.2 Ingreso</h3>
+
+<table>
+  <thead><tr><th>#</th><th>Petición</th><th>Esperado</th><th>Qué protege</th></tr></thead>
+  <tbody>
+    <tr><td>2.1</td><td>Credenciales correctas</td><td><code>200</code> + token</td><td>Que no se filtre <code>$2a$</code> en el cuerpo</td></tr>
+    <tr><td>2.2</td><td>Segundo ingreso</td><td>token distinto</td><td>Que cada dispositivo tenga su sesión</td></tr>
+    <tr><td>2.3</td><td>Contraseña equivocada</td><td><code>401</code> neutral</td><td>—</td></tr>
+    <tr><td>2.4</td><td>Correo inexistente</td><td><strong>el mismo <code>401</code></strong></td><td>Enumeración de cuentas</td></tr>
+    <tr><td>2.5</td><td>Sin contraseña</td><td><code>400</code></td><td>Error de forma, no de autenticación</td></tr>
+  </tbody>
+</table>
+
+<p>
+  La comprobación de 2.4 es la que da sentido a todo el servicio, y está escrita para
+  ponerse roja si alguien «mejora la experiencia»:
+</p>
+
+<pre><code>pm.test('La respuesta es idéntica a la de la contraseña equivocada', function () {
+    // ESTA es la prueba que da sentido a todo el bloque. Si alguien
+    // «mejora la experiencia» separando los dos mensajes, se pone roja.
+    const sinFecha = pm.response.json();
+    delete sinFecha.timestamp;
+    pm.expect(JSON.stringify(sinFecha)).to.eql(pm.collectionVariables.get('fallo_contrasena'));
+});</code></pre>
+
+<p>
+  La marca de tiempo se quita porque es lo único que cambia legítimamente entre dos
+  respuestas. Todo lo demás debe coincidir.
+</p>
+
+<p>Y en 2.1, dos comprobaciones sobre lo que <em>no</em> debe salir:</p>
+
+<pre><code>pm.test('La respuesta NO lleva el resumen de la contraseña', function () {
+    // Se busca en el cuerpo completo y no solo en el campo esperado: así
+    // también se detecta que aparezca donde nadie lo buscaba.
+    pm.expect(pm.response.text()).to.not.include('$2a$');
+    pm.expect(pm.response.json().account.passwordHash).to.be.undefined;
+});</code></pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 6 — Ingreso correcto (2.1)</span>
+  La respuesta <code>200</code> con <code>"message": "Autenticación satisfactoria."</code>
+  y el token, con las cinco comprobaciones en verde
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 7 — Los dos fallos, lado a lado (2.3 y 2.4)</span>
+  Las respuestas de la contraseña equivocada y del correo inexistente, para que
+  se vea que son el mismo <code>401</code> con el mismo cuerpo
+</div>
+
+<h3>5.3 Sesión</h3>
+
+<table>
+  <thead><tr><th>#</th><th>Petición</th><th>Esperado</th></tr></thead>
+  <tbody>
+    <tr><td>3.1</td><td><code>GET /me</code> con el token</td><td><code>200</code>, y <code>role: BUYER</code></td></tr>
+    <tr><td>3.2</td><td>Sin cabecera</td><td><code>401</code></td></tr>
+    <tr><td>3.3</td><td>Token inventado</td><td><code>401</code></td></tr>
+    <tr><td>3.4</td><td>Esquema <code>Basic</code></td><td><code>401</code></td></tr>
+    <tr><td>3.5</td><td><code>bearer</code> en minúsculas</td><td><code>200</code></td></tr>
+    <tr><td>3.6</td><td>Cerrar sesión</td><td><code>200</code></td></tr>
+    <tr><td>3.7</td><td><code>GET /me</code> con el token cerrado</td><td><code>401</code></td></tr>
+    <tr><td>3.8</td><td><code>GET /me</code> con el token del otro dispositivo</td><td><code>200</code></td></tr>
+    <tr><td>3.9</td><td>Cerrar sesión otra vez</td><td><code>200</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  La pareja 3.7 / 3.8 es la que justifica haber elegido sesiones revocables en lugar de
+  JWT: el token cerrado deja de valer <em>al instante</em>, y el del otro dispositivo sigue
+  abierto. Con un JWT, la firma del primero seguiría siendo válida hasta la caducidad.
+</p>
+
+<p>
+  Y 3.1 merece una nota aparte. Es la petición que encontró un error <code>500</code> real
+  en el servicio, con las cuarenta pruebas de JUnit en verde. El detalle está en el informe
+  de AA5-EV01, §6; en resumen, las pruebas corrían dentro de una transacción que mantenía
+  abierta la sesión de Hibernate, y en producción no hay tal transacción.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 8 — El perfil con el token (3.1)</span>
+  La respuesta <code>200</code> con los datos de la cuenta, y la cabecera
+  <code>Authorization</code> visible en la pestaña <strong>Headers</strong>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 9 — El token cerrado ya no abre nada (3.7)</span>
+  La respuesta <code>401</code> usando el mismo token que acababa de funcionar
+</div>
+
+<h3>5.4 Freno por intentos fallidos</h3>
+
+<table>
+  <thead><tr><th>#</th><th>Petición</th><th>Esperado</th></tr></thead>
+  <tbody>
+    <tr><td>4.1 – 4.5</td><td>Cinco contraseñas equivocadas</td><td><code>401</code> neutral las cinco</td></tr>
+    <tr><td>4.6</td><td>La contraseña <strong>correcta</strong></td><td><code>429</code> + <code>Retry-After</code></td></tr>
+    <tr><td>4.7</td><td>La contraseña <strong>equivocada</strong>, ya frenada</td><td><code>401</code> neutral</td></tr>
+  </tbody>
+</table>
+
+<p>
+  4.6 y 4.7 son la misma cuenta en el mismo estado, y responden distinto según quién
+  pregunta. Es el punto más fino del diseño:
+</p>
+
+<pre class="salida">cuenta frenada + contraseña CORRECTA  → 429  «vuelve en 15 minutos»
+cuenta frenada + contraseña EQUIVOCADA → 401  «correo o contraseña incorrectos»</pre>
+
+<p>
+  Si el freno se anunciara a cualquiera, provocarlo bastaría para confirmar que el correo
+  existe, y toda la neutralidad de la carpeta 2 se caería por aquí. Quien acierta la
+  contraseña, en cambio, ya demostró ser el dueño: a él sí se le dice la verdad completa.
+</p>
+
+<div class="captura">
+  <span class="rotulo">Captura 10 — La cuenta frenada, con la contraseña correcta (4.6)</span>
+  La respuesta <code>429</code>, el mensaje con los minutos que faltan, y la cabecera
+  <code>Retry-After</code> en la pestaña <strong>Headers</strong>
+</div>
+
+<div class="captura">
+  <span class="rotulo">Captura 11 — La misma cuenta frenada, con la contraseña mala (4.7)</span>
+  La respuesta <code>401</code> neutral, que no delata el freno
+</div>
+
+<h2>6. Ejecución completa</h2>
+
+<p>
+  La colección se ejecuta de corrido con el <strong>Collection Runner</strong>
+  (botón <em>Run</em> sobre la colección), que corre las 27 peticiones en orden y muestra
+  el resultado de las 44 comprobaciones.
+</p>
+
+<p>
+  El mismo recorrido desde la consola, con <code>newman</code>, que es Postman sin ventana:
+</p>
+
+<pre class="salida">$ newman run MONK_GRAIN_Autenticacion.postman_collection.json
+
+┌─────────────────────────┬───────────────────┬──────────────────┐
+│                         │          executed │           failed │
+├─────────────────────────┼───────────────────┼──────────────────┤
+│              iterations │                 1 │                0 │
+│                requests │                27 │                0 │
+│            test-scripts │                27 │                0 │
+│      prerequest-scripts │                 1 │                0 │
+│              assertions │                44 │                0 │
+├─────────────────────────┴───────────────────┴──────────────────┤
+│ total run duration: 2.3s                                       │
+│ total data received: 3.98kB (approx)                           │
+│ average response time: 64ms [min: 6ms, max: 161ms, s.d.: 59ms] │
+└────────────────────────────────────────────────────────────────┘</pre>
+
+<div class="captura">
+  <span class="rotulo">Captura 12 — El Collection Runner terminado</span>
+  El resumen de la ejecución con las 44 comprobaciones en verde y ningún fallo
+</div>
+
+<h3>6.1 Un dato escondido en el resumen</h3>
+
+<p>
+  <code>min: 6ms, max: 161ms</code>. Esa diferencia no es ruido: las respuestas de 6 ms son
+  las que fallan la validación de forma y nunca llegan a comparar contraseñas; las de 120
+  ms o más son las que sí pasan por BCrypt.
+</p>
+
+<p>
+  Y ahí está la razón de una línea del servicio que de otro modo parecería inútil. Cuando
+  el correo no existe, el servicio compara igualmente contra un resumen inventado:
+</p>
+
+<pre class="salida">correo REGISTRADO, contraseña mala:   124,5 ms
+correo INEXISTENTE:                   119,6 ms   ← 4 % de diferencia
+
+campo faltante (no llega a BCrypt):     4,9 ms   ← esto es lo que se vería
+                                                   sin el resumen inventado</pre>
+
+<p>
+  Sin esa comparación de relleno, un correo desconocido respondería en 5 ms y uno
+  registrado en 120, y bastaría <strong>cronometrar</strong> para separar los correos que
+  existen de los que no, aunque el mensaje fuera idéntico. Las medidas son de doce
+  peticiones de cada clase sobre el servicio en marcha.
+</p>
+
+<h2>7. Resultado</h2>
+
+<table>
+  <thead><tr><th>Carpeta</th><th>Peticiones</th><th>Comprobaciones</th><th>Fallos</th></tr></thead>
+  <tbody>
+    <tr><td>1. Registro</td><td>6</td><td>11</td><td>0</td></tr>
+    <tr><td>2. Ingreso</td><td>5</td><td>12</td><td>0</td></tr>
+    <tr><td>3. Sesión</td><td>9</td><td>11</td><td>0</td></tr>
+    <tr><td>4. Freno</td><td>7</td><td>10</td><td>0</td></tr>
+    <tr><td><strong>Total</strong></td><td><strong>27</strong></td><td><strong>44</strong></td><td><strong>0</strong></td></tr>
+  </tbody>
+</table>
+
+<h2>8. Guion del video</h2>
+
+<p>
+  Entre ocho y diez minutos. El servicio debe estar corriendo antes de empezar a grabar:
+  <code>java -jar target/autenticacion-pergamino.jar</code>.
+</p>
+
+<table>
+  <thead><tr><th>Bloque</th><th>Minutos</th><th>Qué mostrar y qué decir</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Presentación</strong></td><td>0:00 – 0:45</td>
+      <td>Nombre, programa, y qué se va a probar: la API de registro e inicio de sesión de MONK GRAIN, cuatro endpoints en el puerto 8082.</td>
+    </tr>
+    <tr>
+      <td><strong>2. Postman y la colección</strong></td><td>0:45 – 1:45</td>
+      <td>Postman abierto. Mostrar la colección importada, las cuatro carpetas, y las variables. Decir por qué el correo se genera al azar: para poder correrla muchas veces sin chocar con el freno de la vez anterior.</td>
+    </tr>
+    <tr>
+      <td><strong>3. Registro</strong></td><td>1:45 – 3:15</td>
+      <td>Ejecutar 1.1 y señalar el <code>202</code>. Ejecutar 1.2 con el mismo correo y <strong>detenerse ahí</strong>: la respuesta es idéntica. Explicar por qué —un «ese correo ya existe» convertiría el registro en un buscador de cuentas—. Luego 1.3, la contraseña débil, y señalar que aquí sí se explica el motivo porque la política es pública.</td>
+    </tr>
+    <tr>
+      <td><strong>4. Ingreso</strong></td><td>3:15 – 4:45</td>
+      <td>Ejecutar 2.1 y mostrar el token y el mensaje «Autenticación satisfactoria.». Señalar que la respuesta <em>no</em> trae el resumen de la contraseña. Luego 2.3 y 2.4 seguidas, comparando las dos respuestas en pantalla: mismo código, mismo cuerpo.</td>
+    </tr>
+    <tr>
+      <td><strong>5. Sesión</strong></td><td>4:45 – 6:15</td>
+      <td>Ejecutar 3.1 y mostrar que el token abre el perfil. Luego 3.6, cerrar sesión, y 3.7 con el mismo token: ya no vale. Y 3.8, que el otro dispositivo sigue dentro. Decir aquí por qué no se usó JWT: su firma seguiría valiendo después de cerrar sesión.</td>
+    </tr>
+    <tr>
+      <td><strong>6. El freno</strong></td><td>6:15 – 8:00</td>
+      <td>Ejecutar las cinco peticiones fallidas seguidas. Luego 4.6, con la contraseña buena: <code>429</code> y <code>Retry-After</code>. Y por último 4.7, con la mala: <code>401</code> neutral. Explicar la diferencia: a quien no sabe la contraseña nunca se le dice que la cuenta está frenada, porque eso confirmaría que el correo existe.</td>
+    </tr>
+    <tr>
+      <td><strong>7. La colección completa</strong></td><td>8:00 – 9:00</td>
+      <td>Ejecutar el Collection Runner de principio a fin y mostrar las 44 comprobaciones en verde.</td>
+    </tr>
+    <tr>
+      <td><strong>8. Cierre</strong></td><td>9:00 – 9:30</td>
+      <td>Decir dónde está todo en el repositorio: la colección en <code>entregas/GA7/AA5_EV02_Postman_API/postman/</code> y el catálogo de endpoints en <code>ENDPOINTS.md</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="pendiente">
+  <span class="titulo">Lo que te falta hacer a ti</span>
+  <p>
+    <strong>Las doce capturas</strong> señaladas a lo largo del documento, cada una con lo
+    que debe verse descrito al lado.
+  </p>
+  <p>
+    <strong>El video de 8 a 10 minutos</strong>, con el guion de la sección 8.
+  </p>
+  <p>
+    Para las dos cosas, el servicio se levanta con
+    <code>java -jar target/autenticacion-pergamino.jar</code> desde
+    <code>entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino/</code>, y
+    responde en <strong>http://localhost:8082/api/auth</strong>. La colección ya está
+    construida y verificada: solo hay que importarla y ejecutarla.
+  </p>
+</div>
+
+<h2>9. Conclusión</h2>
+
+<p>
+  Las 27 peticiones pasan sus 44 comprobaciones. Lo que importa de esta colección no es el
+  número, sino qué se eligió comprobar: <strong>22 de las 44</strong> —la mitad justa—
+  verifican que el servicio <em>no</em> haga algo: que no distinga los dos modos de fallar,
+  que no publique el resumen de la contraseña, que no conceda el rol que la petición pidió,
+  que no anuncie el freno a quien no sabe la contraseña.
+</p>
+
+<p>
+  Son propiedades que se rompen con un cambio razonable y bienintencionado: separar dos
+  mensajes de error para «ayudar al usuario» es exactamente lo que convierte un inicio de
+  sesión en una herramienta de reconocimiento. Por eso están escritas como pruebas, y no
+  como una nota en un documento.
+</p>

@@ -1,0 +1,527 @@
+<!-- GA7-220501096-AA5-EV01 · Servicio web de registro e inicio de sesión -->
+<header class="portada">
+  <h1>Diseño y Desarrollo de Servicios Web: Registro e Inicio de Sesión</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  La evidencia pide un servicio web que reciba usuario y contraseña y devuelva
+  «autenticación satisfactoria» o un error de autenticación. Dicho así parece una
+  tarde de trabajo. Lo que convierte el ejercicio en algo serio es que
+  <strong>la lectura literal del enunciado produce un servicio inseguro</strong>: si el
+  error distingue «ese correo no existe» de «la contraseña no coincide», el endpoint deja
+  de ser un inicio de sesión y pasa a ser un buscador de cuentas registradas.
+</p>
+
+<p>
+  Este documento explica el servicio construido —<code>autenticacion-pergamino</code>,
+  un módulo Spring Boot aparte— y, sobre todo, las decisiones que no se ven en el código
+  terminado: qué se cuenta, qué se calla, y por qué dos fallos reales no aparecieron hasta
+  que el servicio se probó por HTTP de verdad.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Diseñar y codificar un servicio web de registro e inicio de sesión que autentique a los
+  usuarios de MONK GRAIN, con el código comentado, los estándares de AA1-EV02 y control de
+  versiones en Git.
+</p>
+
+<h2>3. Por qué un módulo aparte</h2>
+
+<p>
+  La autenticación es lo único que todos los demás módulos necesitan. Mezclarla con el
+  dominio del café obligaría a arrancar el catálogo entero para probar un inicio de sesión,
+  y a desplegar el catálogo cada vez que cambie una regla de contraseñas.
+</p>
+
+<table>
+  <thead><tr><th>Módulo</th><th>Evidencia</th><th>Puerto</th><th>Qué resuelve</th></tr></thead>
+  <tbody>
+    <tr><td><code>catalogo-pergamino</code></td><td>AA2-EV01</td><td>—</td><td>Acceso a datos con JDBC</td></tr>
+    <tr><td><code>catalogo-web</code></td><td>AA2-EV02</td><td>8080</td><td>Pantallas con servlets y JSP</td></tr>
+    <tr><td><code>negociacion-pergamino</code></td><td>AA3-EV01</td><td>8081</td><td>Solicitudes de compra y posturas</td></tr>
+    <tr><td><strong><code>autenticacion-pergamino</code></strong></td><td><strong>AA5-EV01</strong></td><td><strong>8082</strong></td><td><strong>Registro e inicio de sesión</strong></td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los cuatro usan la base <code>monkgrain_java</code> del mismo PostgreSQL del proyecto,
+  <strong>no</strong> la de la aplicación: un módulo de aprendizaje que crea y borra cuentas
+  no debe acercarse a los datos del producto.
+</p>
+
+<h2>4. Los cuatro endpoints</h2>
+
+<table>
+  <thead><tr><th>Método y ruta</th><th>Qué hace</th><th>Éxito</th></tr></thead>
+  <tbody>
+    <tr><td><code>POST /api/auth/register</code></td><td>Crea la cuenta</td><td>202</td></tr>
+    <tr><td><code>POST /api/auth/login</code></td><td>Autentica y abre sesión</td><td>200</td></tr>
+    <tr><td><code>GET /api/auth/me</code></td><td>Devuelve la cuenta del token</td><td>200</td></tr>
+    <tr><td><code>POST /api/auth/logout</code></td><td>Cierra la sesión</td><td>200</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los dos últimos no los pide la evidencia. Están porque sin ellos el token sería un
+  adorno: <code>/me</code> es lo que demuestra que la sesión quedó abierta de verdad, y no
+  solo que el mensaje decía que sí.
+</p>
+
+<h2>5. Las decisiones de seguridad</h2>
+
+<h3>5.1 La contraseña no se guarda</h3>
+
+<p>
+  Lo que se guarda es su resumen BCrypt. <strong>BCrypt y no SHA-256 ni MD5</strong>, y el
+  motivo es contraintuitivo: aquí la rapidez es un defecto. Una tarjeta gráfica calcula
+  miles de millones de SHA-256 por segundo, así que quien robe la tabla prueba el
+  diccionario entero en minutos. BCrypt está hecho para ser lento a propósito, con un
+  factor de coste configurable.
+</p>
+
+<pre class="salida">$2a$10$7qRk0.X8vJ2mN4pQ...
+ │   │  └── sal, 22 caracteres, distinta en cada cuenta
+ │   └───── factor de coste: 2^10 vueltas ≈ 100 ms
+ └───────── algoritmo</pre>
+
+<p>
+  La sal va <em>dentro</em> del resultado, así que dos personas con la misma contraseña no
+  comparten resumen. Sin ella, quien robara la tabla sabría de un vistazo qué cuentas
+  comparten contraseña, y rompería todas a la vez.
+</p>
+
+<div class="nota">
+  <p>
+    El producto usa <strong>Argon2id</strong>, que es la recomendación actual. Este módulo
+    usa BCrypt porque es lo que trae <code>spring-security-crypto</code> sin añadir
+    dependencias; Argon2 en Java exige BouncyCastle. La diferencia se declara en lugar de
+    callarla: BCrypt con factor 10 es sólido y sigue siendo aceptable, pero no es lo que
+    se elegiría hoy partiendo de cero.
+  </p>
+</div>
+
+<h3>5.2 El error no dice por qué</h3>
+
+<p>
+  Esta es la decisión central, y es la que contradice la lectura literal del enunciado.
+  Hay una sola excepción —<code>InvalidCredentialsException</code>— para los dos casos:
+</p>
+
+<pre class="salida">POST /api/auth/login   {"email":"ana@finca.co",  "password":"equivocada-123"}
+→ 401  {"error":"authentication_failed","message":"Correo o contraseña incorrectos."}
+
+POST /api/auth/login   {"email":"nadie@finca.co","password":"pergamino2026"}
+→ 401  {"error":"authentication_failed","message":"Correo o contraseña incorrectos."}</pre>
+
+<p>
+  Idénticos. Si se diferenciaran, probar un correo con cualquier contraseña diría si esa
+  persona tiene cuenta en MONK GRAIN —un dato que en un mercado de café tiene valor
+  comercial, porque revela quién está vendiendo—. Por lo mismo responde <strong>401 y no
+  404</strong>: un 404 diría «ese usuario no está aquí», que es exactamente lo que se
+  calla.
+</p>
+
+<h3>5.3 El reloj también habla</h3>
+
+<p>
+  Con los mensajes igualados queda una filtración menos obvia. Si el correo no existe, el
+  servicio responde en un milisegundo; si existe, gasta los cien milisegundos de BCrypt
+  comparando. Esa diferencia se mide desde fuera: basta cronometrar las respuestas para
+  separar los correos registrados de los que no, <em>aunque el mensaje sea idéntico</em>.
+</p>
+
+<pre><code>if (found.isEmpty()) {
+    // Se compara contra un resumen inventado para gastar el mismo
+    // tiempo que si la cuenta existiera. El resultado se descarta.
+    passwordEncoder.matches(password, dummyHash);
+    throw new InvalidCredentialsException();
+}</code></pre>
+
+<p>Medido sobre el servicio en marcha, doce peticiones de cada clase:</p>
+
+<pre class="salida">correo REGISTRADO, contraseña mala:   124,5 ms
+correo INEXISTENTE:                   119,6 ms   ← 4 % de diferencia
+
+campo faltante (no llega a BCrypt):     4,9 ms   ← esto es lo que se vería
+                                                   sin el resumen inventado</pre>
+
+<p>
+  La última línea es la que da la medida del problema: una respuesta que no pasa por BCrypt
+  tarda <strong>veinticinco veces menos</strong>. Sin igualar el tiempo, separar los correos
+  registrados de los que no sería tan fácil como cronometrar.
+</p>
+
+<h3>5.4 El registro tampoco delata</h3>
+
+<p>
+  Un registro que respondiera «ese correo ya está en uso» reabriría por la puerta de atrás
+  lo que se cerró en el ingreso. Así que responde lo mismo exista o no la cuenta:
+</p>
+
+<pre class="salida">POST /api/auth/register   correo nuevo
+→ 202  {"message":"Si el correo no estaba registrado, tu cuenta quedó creada. Ya puedes iniciar sesión."}
+
+POST /api/auth/register   el MISMO correo, con otro nombre y otra contraseña
+→ 202  {"message":"Si el correo no estaba registrado, tu cuenta quedó creada. Ya puedes iniciar sesión."}</pre>
+
+<p>
+  Y por eso responde <strong>202 y no 201</strong>: un 201 anuncia «se creó un recurso», y
+  la gracia de esta respuesta es no decir si se creó. Con 201 para uno nuevo y otra cosa
+  para uno repetido, el código de estado delataría lo que el mensaje calla. Una prueba
+  compara los dos cuerpos byte por byte.
+</p>
+
+<p>
+  <strong>No es gratis.</strong> Un usuario despistado se queda sin saber por qué «no se
+  creó» su cuenta. El precio se paga en el correo de confirmación, que es donde se le
+  explica. Es la misma decisión que tomó el producto en <code>auth/router.py</code>.
+</p>
+
+<h3>5.5 El freno, y a quién se le explica</h3>
+
+<p>
+  Cinco intentos fallidos seguidos frenan la cuenta quince minutos. El contador vive en la
+  fila de la cuenta y no en memoria, para que el freno sobreviva a un reinicio del
+  servicio: si no, bastaría esperar un despliegue para volver a empezar.
+</p>
+
+<p>
+  El punto fino es <strong>el orden de las comprobaciones</strong>. Primero se verifica la
+  contraseña; después se mira si la cuenta está frenada:
+</p>
+
+<table>
+  <thead><tr><th>Contraseña</th><th>Cuenta</th><th>Respuesta</th><th>Por qué</th></tr></thead>
+  <tbody>
+    <tr><td>Equivocada</td><td>Libre</td><td>401 neutral</td><td>No se sabe si el correo existe</td></tr>
+    <tr><td>Equivocada</td><td>Frenada</td><td><strong>401 neutral</strong></td><td>Anunciar el freno confirmaría que el correo existe</td></tr>
+    <tr><td>Correcta</td><td>Frenada</td><td><strong>429 + <code>Retry-After</code></strong></td><td>Quien acierta ya demostró ser el dueño</td></tr>
+    <tr><td>Correcta</td><td>Libre</td><td>200 + token</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Al revés —mirando el freno antes de la contraseña— un atacante sabría que el correo
+  existe con solo provocar el freno, sin acertar nunca la contraseña.
+</p>
+
+<p>
+  El código es <strong>429 y no 403</strong>: el 403 dice «no puedes, y no insistas»,
+  mientras que el 429 dice «ahora no, vuelve después», que es la verdad. La cabecera
+  <code>Retry-After</code> va en segundos porque así la entienden los clientes que
+  reintentan solos, sin leer el mensaje.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>El freno tiene un costo que conviene nombrar.</strong> Permite molestar a
+    alguien concreto durante quince minutos, con solo fallar cinco veces contra su correo.
+    Por eso insistir no alarga el freno —si cada intento lo extendiera, se podría dejar a
+    un vendedor fuera indefinidamente— y por eso el producto no usa este mecanismo sino
+    dos topes en Redis, uno por cliente y otro por cuenta, que retrasan sin cerrar. Aquí
+    se implementa el freno porque es lo que se sostiene sin añadir Redis, y el compromiso
+    queda escrito en el código en lugar de callarse.
+  </p>
+</div>
+
+<h3>5.6 Sesión revocable en vez de JWT</h3>
+
+<p>
+  La elección más discutible del módulo, y la que más vale explicar. Un JWT no se puede
+  revocar: lleva la firma dentro, así que cualquier servicio lo da por bueno hasta que
+  caduque, aunque el usuario haya cerrado sesión o le hayan robado el teléfono. Para
+  invalidarlo haría falta igualmente una lista de rechazados en la base —que es
+  exactamente lo que el JWT prometía evitar—.
+</p>
+
+<p>
+  Con un identificador opaco contra una tabla, cerrar sesión es borrar una fila. El precio
+  es una consulta por petición; a la escala de MONK GRAIN no se nota, y poder cerrar una
+  sesión robada sí.
+</p>
+
+<p>
+  En la tabla se guarda el <strong>resumen SHA-256 del token, no el token</strong>: quien
+  se lleve una copia de la base no debe quedarse con sesiones vivas en la mano. Aquí sí
+  sirve SHA-256 y no hace falta BCrypt, porque el token lo genera el servidor con 256 bits
+  de azar y no hay diccionario que probar contra él.
+</p>
+
+<pre><code>byte[] bytes = new byte[32];
+random.nextBytes(bytes);   // SecureRandom, no Random:
+                           // el segundo es predecible a partir de unas
+                           // pocas salidas, así que quien viera un token
+                           // podría calcular los siguientes.
+return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);</code></pre>
+
+<h3>5.7 Lo que no sale en las respuestas</h3>
+
+<p>
+  Las respuestas usan objetos propios y nunca la entidad. <code>AccountResponse</code> no
+  lleva <code>passwordHash</code> —devolver la entidad publicaría el resumen en cada
+  respuesta— ni <code>failedAttempts</code>, que le diría a un atacante cuántos intentos le
+  quedan antes de que la cuenta se frene.
+</p>
+
+<p>
+  En la entrada, el mismo principio al revés: <strong>lo que no está en el objeto de
+  petición, no entra</strong>. Una petición que pida ser administrador se ignora:
+</p>
+
+<pre class="salida">POST /api/auth/register
+{"email":"ana@finca.co","password":"pergamino2026","fullName":"Ana Restrepo",
+ "role":"ADMIN","id":1}
+
+→ 202, y GET /api/auth/me devuelve  "role": "BUYER"</pre>
+
+<p>
+  Es la lección de AA3-EV01, donde recibir la entidad como cuerpo permitía sobrescribir
+  la postura ajena número 5 enviando <code>{"id": 5}</code>.
+</p>
+
+<h2>6. Los dos fallos que solo encontró el HTTP real</h2>
+
+<p>
+  Esta sección es la más útil del documento. Las cuarenta pruebas estaban verdes y el
+  servicio tenía dos defectos graves. Los dos se escondían por el mismo motivo:
+  <strong><code>@Transactional</code> en la clase de prueba</strong>.
+</p>
+
+<h3>6.1 <code>GET /me</code> devolvía 500</h3>
+
+<pre class="salida">$ curl -s localhost:8082/api/auth/me -H "Authorization: Bearer $TOKEN"
+{"error":"internal_error","message":"Ocurrió un error inesperado. Inténtalo de nuevo."}
+HTTP 500
+
+# en la bitácora del servidor:
+org.hibernate.LazyInitializationException: could not initialize proxy
+    [co.monkgrain.authentication.model.Account#1] - no Session</pre>
+
+<p>
+  El servicio devolvía la cuenta como sustituto perezoso; su transacción terminaba ahí, y
+  cuando el controlador leía el correo ya no había sesión de Hibernate abierta. En las
+  pruebas, el <code>@Transactional</code> de la clase mantenía la sesión abierta durante
+  todo el método y el sustituto se resolvía sin problema. Dieciséis pruebas verdes sobre un
+  endpoint que no funcionaba.
+</p>
+
+<p>
+  Se arregló pidiendo la cuenta en la misma consulta:
+</p>
+
+<pre><code>@Query("select s from AuthSession s join fetch s.account where s.tokenHash = :tokenHash")
+Optional&lt;AuthSession&gt; findByTokenHash(@Param("tokenHash") String tokenHash);</code></pre>
+
+<p>
+  <strong>No</strong> con <code>FetchType.EAGER</code> en la entidad, que obligaría a traer
+  la cuenta también al cerrar sesión, donde solo hace falta borrar la fila. Y
+  <strong>no</strong> con <code>open-in-view=true</code>, el atajo habitual: mantener la
+  sesión abierta durante toda la petición esconde este problema y, de paso, cualquier
+  consulta accidental que haga una plantilla.
+</p>
+
+<h3>6.2 El freno no frenaba nada</h3>
+
+<p>
+  Peor que el anterior, porque no se veía: el servicio respondía 401 correctamente, sumaba
+  el intento… y lo perdía. Spring deshace la transacción cuando el método lanza una
+  excepción no comprobada, y eso incluye el <code>InvalidCredentialsException</code> de un
+  intento fallido. El contador subía en memoria y se borraba al salir, así que
+  <strong>la cuenta no se frenaba nunca</strong> y toda la sección 5.5 era decorativa.
+</p>
+
+<p>
+  Las pruebas transaccionales tampoco lo veían: leían el contador desde la misma sesión de
+  Hibernate donde seguía sumado.
+</p>
+
+<pre><code>@Transactional(noRollbackFor = InvalidCredentialsException.class)
+public LoginResult login(String email, String password, Instant now) {</code></pre>
+
+<h3>6.3 La prueba que sí los ve</h3>
+
+<p>
+  Los dos fallos aparecieron con <code>curl</code>, no con <code>mvn test</code>. Para que
+  no vuelva a pasar se añadió <code>AuthenticationHttpTest</code>, que reproduce las
+  condiciones de producción: servidor real, puerto real y <strong>sin transacción
+  alrededor</strong>. La limpieza se hace a mano antes de cada prueba, porque no hay nada
+  que la deshaga.
+</p>
+
+<p>
+  Es la lección más transferible de esta evidencia: <em>una prueba que pasa dentro de una
+  transacción no demuestra que el endpoint funcione fuera de ella.</em>
+</p>
+
+<div class="nota">
+  <p>
+    Montar esa clase costó un tropiezo más. El cliente HTTP de serie de Java,
+    <code>HttpURLConnection</code>, al recibir un 401 intenta por su cuenta repetir la
+    petición con credenciales, y como el cuerpo ya salió por el socket falla con
+    <code>cannot retry due to server authentication</code> en lugar de entregar la
+    respuesta. Como en este servicio casi todo lo interesante responde 401, no se podía
+    probar nada con él: hubo que cambiarlo por el cliente de Java 11
+    (<code>JdkClientHttpRequestFactory</code>), que no hace ese reintento.
+  </p>
+</div>
+
+<h2>7. Pruebas</h2>
+
+<p><strong>44 pruebas</strong> en tres clases, con tres propósitos distintos.</p>
+
+<table>
+  <thead><tr><th>Clase</th><th>N.º</th><th>Qué fija</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>AuthenticationServiceTest</code></td><td>24</td>
+      <td>Las reglas: qué se cuenta y qué se calla, cuándo se frena una cuenta, qué pasa con una sesión vencida. No dependen de la ruta HTTP</td>
+    </tr>
+    <tr>
+      <td><code>AuthenticationControllerTest</code></td><td>16</td>
+      <td>La traducción a HTTP: códigos de estado, cuerpos de error, cabeceras. Un 401 donde debía ir un 429 no se ve probando solo el servicio</td>
+    </tr>
+    <tr>
+      <td><code>AuthenticationHttpTest</code></td><td>4</td>
+      <td>Las condiciones de producción, sin transacción. Es la que encontró los dos fallos de §6</td>
+    </tr>
+  </tbody>
+</table>
+
+<pre class="salida">$ mvn test
+
+Tests run: 24, Failures: 0, Errors: 0 — AuthenticationServiceTest
+Tests run: 16, Failures: 0, Errors: 0 — AuthenticationControllerTest
+Tests run:  4, Failures: 0, Errors: 0 — AuthenticationHttpTest
+
+Tests run: 44, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS</pre>
+
+<h3>7.1 Las pruebas que valen por lo que impiden</h3>
+
+<ul>
+  <li>
+    <strong>«Da el mismo error si el correo no existe que si la contraseña no coincide».</strong>
+    Compara los dos mensajes. Si alguien «mejora la experiencia» separándolos, esta prueba
+    se pone roja.
+  </li>
+  <li>
+    <strong>«Un correo repetido responde exactamente lo mismo que uno nuevo».</strong>
+    Compara los cuerpos byte por byte, no solo el código de estado.
+  </li>
+  <li>
+    <strong>«Con la cuenta frenada y la contraseña equivocada, no dice que está frenada».</strong>
+    Es el punto fino de §5.5, y es fácil de romper reordenando dos líneas.
+  </li>
+  <li>
+    <strong>«La respuesta no lleva el resumen de la contraseña».</strong> Busca
+    <code>$2a$</code> en el cuerpo completo, no solo en el campo esperado: así también
+    detecta que aparezca donde nadie lo buscaba.
+  </li>
+  <li>
+    <strong>«Pasados los quince minutos, la cuenta vuelve a dejar entrar».</strong> El
+    tiempo entra como parámetro y no se lee del reloj dentro del servicio, así que la
+    prueba tarda milisegundos en lugar de un cuarto de hora.
+  </li>
+</ul>
+
+<h2>8. Verificación por HTTP real</h2>
+
+<pre class="salida">$ curl -X POST localhost:8082/api/auth/register -H 'Content-Type: application/json' \
+       -d '{"email":"caficultor@finca.co","password":"pergamino2026","fullName":"Luis Cardona"}'
+202  {"message":"Si el correo no estaba registrado, tu cuenta quedó creada. ..."}
+
+$ curl -X POST localhost:8082/api/auth/login ...
+200  {"message":"Autenticación satisfactoria.",
+      "token":"QnqQHzHkblc1hdCmxVZ87FLbd-MQh_CZehXmmVgDKNU",
+      "expiresAt":"2026-11-02T11:17:46Z",
+      "account":{"id":2,"email":"caficultor@finca.co","role":"BUYER", ...}}
+
+$ curl localhost:8082/api/auth/me -H "Authorization: Bearer $TOKEN"
+200  {"id":2,"email":"caficultor@finca.co","fullName":"Luis Cardona","role":"BUYER", ...}
+
+$ for i in 1 2 3 4 5; do curl -X POST .../login -d '{...,"password":"equivocada-123"}'; done
+401  401  401  401  401
+
+$ curl -X POST .../login -d '{...,"password":"pergamino2026"}'      # la BUENA
+429  Retry-After: 899
+     {"error":"account_locked","message":"Demasiados intentos fallidos.
+      Vuelve a intentarlo en 15 minutos."}
+
+$ curl -X POST .../login -d '{...,"password":"equivocada-123"}'     # la mala, ya frenada
+401  {"error":"authentication_failed","message":"Correo o contraseña incorrectos."}</pre>
+
+<p>Y lo que quedó escrito en la base:</p>
+
+<pre class="salida">monkgrain_java=# SELECT email, left(password_hash,7), role, failed_attempts,
+                        locked_until IS NOT NULL AS frenada
+                 FROM auth_accounts;
+
+           email            |  left   | role  | failed_attempts | frenada
+----------------------------+---------+-------+-----------------+---------
+ caficultor@finca.co        | $2a$10$ | BUYER |               5 | t
+ ana.restrepo@finca.co      | $2a$10$ | BUYER |               0 | f</pre>
+
+<p>
+  Dos cosas se comprueban de un vistazo: la contraseña no está —solo su resumen, con el
+  algoritmo y el factor visibles— y el contador de intentos <em>sí</em> quedó guardado,
+  que es lo que el defecto de §6.2 impedía.
+</p>
+
+<h2>9. Estándares aplicados</h2>
+
+<table>
+  <thead><tr><th>Estándar (AA1-EV02)</th><th>Cómo se cumple</th></tr></thead>
+  <tbody>
+    <tr><td>Paquete <code>co.monkgrain.*</code></td><td><code>co.monkgrain.authentication</code></td></tr>
+    <tr><td>Clases en <code>PascalCase</code>, métodos en <code>camelCase</code></td><td><code>AuthenticationService.requireAccount</code></td></tr>
+    <tr><td>Constantes en <code>SCREAMING_SNAKE_CASE</code></td><td><code>MAX_FAILED_ATTEMPTS</code>, <code>LOCK_DURATION</code></td></tr>
+    <tr><td>Código en inglés, comentarios en español</td><td><code>failedAttempts</code>, con su porqué en español encima</td></tr>
+    <tr><td>Separación por capas</td><td><code>controller → service → repository → model</code>, en una sola dirección</td></tr>
+    <tr><td>Rutas de API en plural y minúsculas</td><td><code>/api/auth/...</code></td></tr>
+    <tr><td>El comentario explica el porqué</td><td><em>«BCrypt y no SHA-256: un resumen rápido es un defecto aquí, no una virtud»</em></td></tr>
+    <tr><td>Nada de credenciales en el código</td><td>Variables de entorno con valor de respaldo para desarrollo</td></tr>
+  </tbody>
+</table>
+
+<h2>10. Cómo ejecutarlo</h2>
+
+<pre class="salida"># 1. la base, si no existe
+docker compose exec -T postgres psql -U monkgrain -d postgres \
+  -c "CREATE DATABASE monkgrain_java;"
+docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
+  &lt; src/main/resources/esquema.sql
+
+# 2. pruebas
+export MVN="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-maven-3.9.16/bin/mvn"
+$MVN test
+
+# 3. arrancar
+$MVN package
+java -jar target/autenticacion-pergamino.jar     # puerto 8082</pre>
+
+<h2>11. Conclusión</h2>
+
+<p>
+  El servicio hace lo que pide la evidencia: recibe usuario y contraseña, y responde
+  «Autenticación satisfactoria.» o un error de autenticación. Lo que no es obvio en el
+  enunciado es que <strong>el error correcto es el que no explica nada</strong>: cualquier
+  detalle que distinga un correo registrado de uno que no lo está convierte el inicio de
+  sesión en una herramienta de reconocimiento.
+</p>
+
+<p>
+  Y la lección de método, que vale más que el módulo: cuarenta pruebas verdes convivían con
+  dos defectos graves —un endpoint que devolvía 500 y un freno que no frenaba— porque
+  todas corrían dentro de una transacción que no existe en producción. Los encontró
+  <code>curl</code>. La prueba que los habría encontrado existe ahora, y es la que corre
+  sin transacción.
+</p>

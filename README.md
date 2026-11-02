@@ -375,11 +375,11 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/a-word.sh GA7/AA3_EV02_Pruebas_Modulo
 ```
 
-**Estado: 12 de 23 construidas.** GA7-AA1, AA2, AA3 y AA4, completas.
+**Estado: 16 de 23 construidas.** GA7 completa: AA1, AA2, AA3, AA4 y AA5.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
-Estas seis cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
+Estas ocho cosas no las puede dejar hechas nadie más. Están sueltas en la columna «Te falta» de las tablas de abajo, y se repiten aquí para que no se pierdan entre veintitrés filas:
 
 | Qué | Dónde | Detalle |
 |---|---|---|
@@ -388,9 +388,11 @@ Estas seis cosas no las puede dejar hechas nadie más. Están sueltas en la colu
 | **Android Studio** | GA8 AA2-EV01 | Instalarlo, crear la primera app y capturar el proceso |
 | **11 capturas de pantalla** | AA3-EV02 | Listadas una a una en §8 del documento, con qué debe verse en cada una |
 | **Grabar el video** (8–10 min) | AA3-EV02 | Guion por bloques en §9 del documento |
+| **12 capturas + video** (8–10 min) | AA5-EV02 | Sobre Postman contra el servicio de autenticación. Guion por bloques en §8 |
+| **12 capturas + video** (8–10 min) | AA5-EV04 | Sobre Postman contra la API del proyecto. Guion por bloques en §8 |
 | **Grabar el video** (10 min) | GA8 AA2-EV04 | Sobre *machine learning*. El guion se escribirá al llegar a esa evidencia |
 
-Las demás evidencias con video o captura —AA5-EV02 y AA5-EV04— se irán añadiendo aquí a medida que se construyan.
+Con AA5 cerrada, esta lista ya está completa para GA7. Lo que falte vendrá de GA8.
 
 ### GA7 — AP7 Codificar los módulos del software
 
@@ -408,10 +410,10 @@ Las demás evidencias con video o captura —AA5-EV02 y AA5-EV04— se irán añ
 | AA4-EV01 Taller React | — (teórico) | [`entregas/GA7/AA4_EV01_Taller_React/`](entregas/GA7/AA4_EV01_Taller_React/) | ✅ PDF 7 pág. · mapa conceptual en SVG vectorial | — |
 | AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | [`entregas/GA7/AA4_EV02_Componentes_Front/`](entregas/GA7/AA4_EV02_Componentes_Front/) | ✅ PDF 7 pág. · inventario de 24 componentes · duplicación medida (22/14/28) | — |
 | AA4-EV03 Componente del proyecto | módulo **`trading`** (oferta y demanda) | [`entregas/GA7/AA4_EV03_Componente_Proyecto/`](entregas/GA7/AA4_EV03_Componente_Proyecto/) | ✅ PDF 7 pág. · 1 hook + 4 componentes · 12 pruebas nuevas (53 en total) | — |
-| AA5-EV01 Servicio registro/login | módulo **`auth`** (10 endpoints) | `entregas/GA7/AA5_EV01_API_Registro_Login/` | ⬜ pendiente | — |
-| AA5-EV02 Postman sobre EV01 | colección de `auth` | `entregas/GA7/AA5_EV02_Postman_API/` | ⬜ pendiente | Video del testing |
-| AA5-EV03 API del proyecto | los 107 endpoints + `docs/06` | `entregas/GA7/AA5_EV03_APIs_Proyecto/` | ⬜ pendiente | — |
-| AA5-EV04 Postman del proyecto | colección completa | `entregas/GA7/AA5_EV04_Postman_Proyecto/` | ⬜ pendiente | Video del testing |
+| AA5-EV01 Servicio registro/login | **`autenticacion-pergamino`** (Spring Boot 3.3 + BCrypt, módulo nuevo) | [`entregas/GA7/AA5_EV01_API_Registro_Login/`](entregas/GA7/AA5_EV01_API_Registro_Login/) | ✅ PDF 11 pág. · 44 pruebas · 4 endpoints probados por HTTP | — |
+| AA5-EV02 Postman sobre EV01 | colección sobre `autenticacion-pergamino` | [`entregas/GA7/AA5_EV02_Postman_API/`](entregas/GA7/AA5_EV02_Postman_API/) | ✅ PDF 11 pág. · 27 peticiones, 44 comprobaciones, 0 fallos · `ENDPOINTS.md` | **12 capturas** (§5) y **el video** (guion en §8) |
+| AA5-EV03 API del proyecto | los **107 endpoints** de `backend/app/modules/` | [`entregas/GA7/AA5_EV03_APIs_Proyecto/`](entregas/GA7/AA5_EV03_APIs_Proyecto/) | ✅ PDF 9 pág. · `ENDPOINTS.md` generado desde el OpenAPI vivo | — |
+| AA5-EV04 Postman del proyecto | colección sobre la API del proyecto | [`entregas/GA7/AA5_EV04_Postman_Proyecto/`](entregas/GA7/AA5_EV04_Postman_Proyecto/) | ✅ PDF 13 pág. · 28 peticiones, 48 comprobaciones, 0 fallos · **encontró 2 defectos reales** | **12 capturas** (§5) y **el video** (guion en §8) |
 
 ### GA8 — Integración y tecnologías emergentes
 
@@ -436,10 +438,21 @@ export CATALINA_HOME="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramient
 
 Los módulos Java usan la base `monkgrain_java` del mismo PostgreSQL del proyecto, **no** la de la aplicación: un módulo de aprendizaje que inserta y borra no debe tocar los datos de demostración.
 
+| Módulo | Evidencia | Puerto |
+|---|---|---|
+| `catalogo-pergamino` | AA2-EV01 | — (consola) |
+| `catalogo-web` | AA2-EV02 | 8080 (Tomcat) |
+| `negociacion-pergamino` | AA3-EV01 | 8081 |
+| `autenticacion-pergamino` | AA5-EV01 | 8082 |
+
+Los tres servicios con puerto pueden convivir.
+
 ```bash
 docker compose exec -T postgres psql -U monkgrain -d postgres -c "CREATE DATABASE monkgrain_java;"
 docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
   < entregas/GA7/AA2_EV01_Modulo_JDBC/catalogo-pergamino/src/main/resources/esquema.sql
+docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
+  < entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino/src/main/resources/esquema.sql
 ```
 
 ### Repositorios
@@ -464,6 +477,14 @@ A diferencia de AA2 y AA3, que son módulos Java aparte, **AA4 se codificó dent
 - `web/src/hooks/useProtectedResource.ts` — el primer hook propio del proyecto. Encapsula las veinticinco líneas de token, 401, 403 y `finally` que se repetían en veintiocho pantallas.
 - `web/src/features/trading/components/` — `CoverageBar`, `YieldFactorReading`, `OfferResponse` y `DemandCard`. El módulo de oferta y demanda no tenía ningún componente propio: sus 1.359 líneas vivían en tres páginas.
 - `web/tests/TradingComponents.test.tsx` — 12 pruebas que fijan las reglas, no la maquetación: que la cobertura muestre kilos *y* porcentaje, que el factor de rendimiento nunca aparezca como número suelto, y que el motivo de un rechazo se vea completo.
+
+### Lo que AA5 dejó en el producto
+
+- `backend/app/db/demo_data.py` — **la cuenta de comprador que faltaba**. Las cinco cuentas de la semilla eran de productor, incluida la tostaduría, que en este mercado compra pergamino y no lo vende: quien clonara el repositorio no podía recorrer catálogo, carrito ni pedido como comprador. Lo encontró la colección de Postman de AA5-EV04, al esperar un 403 del panel del productor y recibir un 200.
+- `entregas/GA7/AA5_EV03_APIs_Proyecto/generar_endpoints.py` — genera el catálogo de los 107 endpoints desde el OpenAPI del servicio en marcha, para que no se pueda desactualizar.
+- Dos correcciones de documentación: el formato de error de la API es `{"error": {"code", "message"}}` y no el `detail` de serie de FastAPI, y el catálogo decía `pages` donde el campo real es `total_pages`. Las dos afirmaciones eran plausibles y falsas, y las rompió una prueba.
+
+Y un módulo Java nuevo, `autenticacion-pergamino` (puerto 8082), cuyo interés está menos en el código que en los dos fallos que encontró: un `GET /me` que devolvía 500 y un freno por intentos fallidos que no frenaba nada, con las 40 pruebas de JUnit en verde. Las dos corrían dentro de una transacción que en producción no existe. Está contado en el §6 de su informe.
 
 ### Nota sobre Java en GA7
 

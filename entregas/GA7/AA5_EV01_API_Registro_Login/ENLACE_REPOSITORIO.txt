@@ -1,0 +1,49 @@
+GA7-220501096-AA5-EV01
+Diseño y desarrollo de servicios web — caso: registro e inicio de sesión
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Módulo entregado:  autenticacion-pergamino  (Spring Boot 3.3.5, Java 17)
+Ruta en el repositorio:
+  entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino/
+
+Endpoints:
+  POST /api/auth/register    crea la cuenta            202
+  POST /api/auth/login       autentica y abre sesion   200
+  GET  /api/auth/me          devuelve la cuenta        200
+  POST /api/auth/logout      cierra la sesion          200
+
+Herramientas (no estan instaladas en el sistema; se usan las de la
+carpeta de herramientas):
+  export MVN="$HOME/Desktop/PROYECTO MONK GRAIN/entregas_GA7/_herramientas/apache-maven-3.9.16/bin/mvn"
+
+Preparar la base de datos:
+  docker compose exec -T postgres psql -U monkgrain -d postgres \
+    -c "CREATE DATABASE monkgrain_java;"
+  docker compose exec -T postgres psql -U monkgrain -d monkgrain_java \
+    < entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino/src/main/resources/esquema.sql
+
+Ejecutar las pruebas:
+  cd entregas/GA7/AA5_EV01_API_Registro_Login/autenticacion-pergamino
+  $MVN test          # 44 pruebas
+
+Arrancar el servicio:
+  $MVN package
+  java -jar target/autenticacion-pergamino.jar
+
+Direccion:
+  http://localhost:8082/api/auth
+
+Probarlo a mano:
+  curl -X POST http://localhost:8082/api/auth/register \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"ana@finca.co","password":"pergamino2026","fullName":"Ana Restrepo"}'
+
+  curl -X POST http://localhost:8082/api/auth/login \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"ana@finca.co","password":"pergamino2026"}'

@@ -1,0 +1,67 @@
+GA7-220501096-AA5-EV04
+API del proyecto — testing con Postman (sobre las API de AA5-EV03)
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+API probada:  la del proyecto MONK GRAIN (107 endpoints)
+Base:         http://localhost:8000/api/v1
+
+Contenido de la entrega:
+  entregas/GA7/AA5_EV04_Postman_Proyecto/
+    Pruebas_API_Proyecto_Postman.pdf   procedimiento, casos y hallazgos
+    ENDPOINTS.md                       los 20 endpoints que toca la coleccion
+    postman/
+      MONK_GRAIN_API_Proyecto.postman_collection.json
+
+Catalogo completo de los 107 endpoints:
+  entregas/GA7/AA5_EV03_APIs_Proyecto/ENDPOINTS.md
+
+La coleccion:  28 peticiones en 5 carpetas, 48 comprobaciones.
+
+Cuentas de prueba (datos de demostracion):
+  comprador : trilladora.popayan@ejemplo.co
+  vendedor  : finca.elmirador@ejemplo.co
+  contraseña: MonkGrain2026Demo
+
+Pasos para reproducirlo
+-----------------------
+1. Levantar el proyecto:
+     docker compose up -d
+     curl -s http://localhost:8000/health        # {"status":"ok"}
+
+2. Si la base esta vacia, cargar los datos de demostracion:
+     docker compose exec backend python -m app.db.seed
+     docker compose exec backend python -m app.db.demo_data
+
+3. En Postman:  File -> Import -> el archivo .json de postman/
+   Luego "Run" sobre la coleccion. Las carpetas se ejecutan EN ORDEN.
+
+4. Lo mismo desde la consola:
+     npm install newman
+     npx newman run entregas/GA7/AA5_EV04_Postman_Proyecto/postman/MONK_GRAIN_API_Proyecto.postman_collection.json
+
+Resultado verificado el 1 de noviembre de 2026:
+  requests    28   fallidos 0
+  assertions  48   fallidos 0
+
+AVISO: si se ejecuta tres o cuatro veces seguidas, las peticiones 1.2 y 1.3
+responden 429 en lugar de 200. No hay nada que arreglar: el ingreso admite
+10 intentos por minuto y por cuenta, y la coleccion esta agotando ese tope.
+Basta esperar un minuto.
+
+Cambio en el producto que salio de esta evidencia
+-------------------------------------------------
+  backend/app/db/demo_data.py   se añadio la cuenta de COMPRADOR que
+                                faltaba: las cinco cuentas de la semilla
+                                eran de productor, asi que los datos de
+                                demostracion no permitian demostrar la
+                                mitad del producto. Detalle en la seccion
+                                7.2 del documento.
+
+Pendiente del aprendiz:  las 12 capturas y el video (guion en la seccion 8
+del documento).

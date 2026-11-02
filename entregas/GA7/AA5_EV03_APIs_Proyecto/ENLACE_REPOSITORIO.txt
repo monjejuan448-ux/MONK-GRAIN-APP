@@ -1,0 +1,58 @@
+GA7-220501096-AA5-EV03
+Diseño y desarrollo de servicios web — proyecto
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+API entregada:  la del proyecto MONK GRAIN
+                107 endpoints en 12 grupos
+Base:           http://localhost:8000/api/v1
+
+Codigo en el repositorio:
+  backend/app/main.py                   montaje de los routers
+  backend/app/modules/auth/             autenticacion (10)
+  backend/app/modules/users/            usuarios (7)
+  backend/app/modules/catalog/          catalogo (5)
+  backend/app/modules/cart/             carrito (9)
+  backend/app/modules/orders/           pedidos (6)
+  backend/app/modules/returns/          devoluciones (10)
+  backend/app/modules/reviews/          reseñas (8)
+  backend/app/modules/trading/          oferta y demanda (10)
+  backend/app/modules/producers/        panel del productor (27)
+  backend/app/modules/payments/         liquidaciones (7)
+  backend/app/modules/admin/            administracion (7)
+  backend/app/schemas/                  esquemas de entrada y salida
+  backend/app/core/permissions.py       los 24 permisos
+
+Documentacion de cada servicio:
+  entregas/GA7/AA5_EV03_APIs_Proyecto/Informe_APIs_Proyecto.pdf
+  entregas/GA7/AA5_EV03_APIs_Proyecto/ENDPOINTS.md      <- catalogo completo
+  entregas/GA7/AA5_EV03_APIs_Proyecto/generar_endpoints.py
+
+ENDPOINTS.md no se escribe a mano: se genera desde el documento OpenAPI
+del servicio en marcha. Para regenerarlo:
+  docker compose up -d
+  curl -s http://localhost:8000/openapi.json > openapi.json
+  python3 entregas/GA7/AA5_EV03_APIs_Proyecto/generar_endpoints.py \
+          openapi.json entregas/GA7/AA5_EV03_APIs_Proyecto/ENDPOINTS.md
+
+Levantar la API:
+  docker compose up -d
+  http://localhost:8000/docs        Swagger UI, se puede probar desde ahi
+  http://localhost:8000/redoc       la misma informacion, para leer
+  http://localhost:8000/openapi.json
+
+Pruebas:
+  docker compose exec backend pytest -q        # 453 pruebas
+
+IMPORTANTE: ejecutar pytest UNA sola vez a la vez. Dos sesiones
+simultaneas comparten la base de pruebas y producen cientos de errores
+que no existen.
+
+Verificado el 1 de noviembre de 2026:
+  107 endpoints en /openapi.json
+  453 pruebas, 0 fallos
