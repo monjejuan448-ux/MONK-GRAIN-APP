@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MONK GRAIN — Módulo de negociación con Spring Boot
+  GA7-220501096-AA3-EV01
+
+  El mercado en su segundo sentido: el comprador publica lo que busca y los
+  caficultores responden con su precio. Espeja el módulo `trading` de la
+  aplicación, que en el producto está en Python.
+
+  Spring Boot y no Jakarta EE a secas porque la evidencia pide «uno de los
+  frameworks vistos», y es el que resuelve de una vez inyección de
+  dependencias, acceso a datos con JPA, validación declarativa y servidor
+  embebido, sin tener que configurar cada pieza por separado.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.5</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>co.monkgrain</groupId>
+  <artifactId>negociacion-pergamino</artifactId>
+  <version>1.0.0</version>
+  <name>MONK GRAIN - Negociacion de pergamino</name>
+  <description>
+    Solicitudes de compra y posturas de los vendedores sobre cafe pergamino seco.
+  </description>
+
+  <properties>
+    <java.version>17</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Validacion declarativa con anotaciones sobre el modelo -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Plantillas del lado del servidor para las pantallas -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- H2 en memoria: las pruebas no deben necesitar un PostgreSQL vivo -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>negociacion-pergamino</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

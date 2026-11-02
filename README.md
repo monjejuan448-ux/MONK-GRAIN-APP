@@ -372,7 +372,7 @@ Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`�
 ./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
 ```
 
-**Estado: 7 de 23 construidas.** GA7-AA1 y GA7-AA2, completas.
+**Estado: 8 de 23 construidas.** GA7-AA1 y GA7-AA2 completas; AA3 a medias.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
@@ -398,7 +398,7 @@ Las demás evidencias con video o captura —AA3-EV02, AA5-EV02, AA5-EV04— se 
 | AA1-EV05 Git configurado | repo `Programa-Git` | [`entregas/GA7/AA1_EV05_Programa_Git/`](entregas/GA7/AA1_EV05_Programa_Git/) | ✅ ejercicio hecho y publicado · guion listo | **Grabar el video** (5-7 min), guion en el PDF |
 | AA2-EV01 Módulo JDBC | **`catalogo-pergamino`** (Java 17 + JDBC + PostgreSQL) | [`entregas/GA7/AA2_EV01_Modulo_JDBC/`](entregas/GA7/AA2_EV01_Modulo_JDBC/) | ✅ PDF 10 pág. · 13 pruebas · CRUD verificado contra PostgreSQL | — |
 | AA2-EV02 Servlets y JSP | **`catalogo-web`** (Jakarta Servlet 6 + JSP + JSTL, sobre `catalogo-pergamino`) | [`entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/`](entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/) | ✅ PDF 8 pág. · WAR desplegado y probado por HTTP en Tomcat 10 | — |
-| AA3-EV01 Framework Java | `negociacion-pergamino` (Spring) | `entregas/GA7/AA3_EV01_Modulo_Framework/` | ⬜ pendiente | — |
+| AA3-EV01 Framework Java | **`negociacion-pergamino`** (Spring Boot 3.3 + JPA + Bean Validation) | [`entregas/GA7/AA3_EV01_Modulo_Framework/`](entregas/GA7/AA3_EV01_Modulo_Framework/) | ✅ PDF 8 pág. · 21 pruebas · 11 endpoints probados por HTTP | — |
 | AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |
 | AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
 | AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | `entregas/GA7/AA4_EV02_Componentes_Front/` | ⬜ pendiente | — |

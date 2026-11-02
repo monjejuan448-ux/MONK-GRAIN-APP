@@ -1,0 +1,375 @@
+<!-- GA7-220501096-AA3-EV01 · Módulo con framework Java -->
+<header class="portada">
+  <h1>Informe Técnico: Módulo de Negociación con Spring Boot</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Esta evidencia codifica un módulo del proyecto <strong>MONK GRAIN</strong> aplicando un
+  framework Java. El módulo elegido es el <strong>mercado en su segundo sentido</strong>:
+  el comprador publica lo que busca y los caficultores responden con su precio.
+</p>
+
+<p>
+  Es la diferencia entre esperar a que aparezca el café que uno quiere y pedirlo. En el
+  catálogo —evidencias AA2-EV01 y AA2-EV02— el vendedor publica lo que tiene; aquí ocurre
+  al revés, y por eso completa el producto en lugar de repetirlo.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Codificar un módulo del proyecto aplicando uno de los frameworks vistos, usando los
+  artefactos previos —historias de usuario, modelo de datos y diagrama de clases—,
+  incluyendo comentarios, cumpliendo los estándares de codificación y trabajando con Git.
+</p>
+
+<h2>3. Por qué Spring Boot</h2>
+
+<p>
+  La guía pide «uno de los frameworks vistos». Se escogió Spring Boot porque resuelve de
+  una vez cuatro cosas que en el módulo anterior hubo que escribir a mano:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Qué aporta</th><th>Cómo se hacía en AA2-EV01</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Inyección de dependencias</strong></td>
+      <td>Cada clase construía sus colaboradores con <code>new</code></td>
+    </tr>
+    <tr>
+      <td><strong>Acceso a datos con JPA</strong></td>
+      <td>Cada consulta era una cadena SQL y un <code>PreparedStatement</code></td>
+    </tr>
+    <tr>
+      <td><strong>Validación declarativa</strong></td>
+      <td>Un método <code>validate()</code> con una cadena de condicionales</td>
+    </tr>
+    <tr>
+      <td><strong>Transacciones</strong></td>
+      <td>Manejo explícito de <code>commit</code> y <code>rollback</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="nota">
+  <p>
+    <strong>Lo que el framework también esconde.</strong> Spring Data genera las consultas
+    a partir del nombre de los métodos, lo que es cómodo hasta que falla. Por eso las
+    consultas con reglas de negocio se escriben explícitas con <code>@Query</code>, en
+    lugar de confiarlas a un nombre de método de cuarenta caracteres que nadie sabe leer.
+  </p>
+</div>
+
+<h2>4. El dominio: el mercado de dos sentidos</h2>
+
+<p>
+  Una solicitud de compra pasa por cinco estados, y uno de ellos existe por una razón del
+  negocio que conviene entender:
+</p>
+
+<table>
+  <thead>
+    <tr><th>Estado</th><th>Qué significa</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>OPEN</code></td><td>Admite posturas y no se ha cubierto nada</td></tr>
+    <tr><td><code>PARTIALLY_COVERED</code></td><td>Se aceptó parte de lo pedido y falta el resto</td></tr>
+    <tr><td><code>FULFILLED</code></td><td>Se cubrieron todos los kilos</td></tr>
+    <tr><td><code>CLOSED</code></td><td>El comprador cerró con algo cubierto</td></tr>
+    <tr><td><code>CANCELLED</code></td><td>El comprador la retiró sin aceptar nada</td></tr>
+  </tbody>
+</table>
+
+<p>
+  <strong><code>PARTIALLY_COVERED</code> no es simetría, es el negocio.</strong> En
+  pergamino lo normal es que una solicitud grande no la cubra un solo caficultor: quien
+  busca diez cargas suele armarlas con tres vendedores. Marcarla como cumplida al aceptar
+  la primera postura cerraría la solicitud cuando todavía falta café.
+</p>
+
+<p>
+  Y cerrar sin haber cubierto nada <strong>es cancelar</strong>, no cerrar. La distinción
+  importa en el historial del comprador: una cosa es que consiguiera su café en varias
+  partes y otra que se arrepintiera.
+</p>
+
+<h2>5. Arquitectura</h2>
+
+<pre class="salida">controller  →  service  →  repository  →  JPA  →  PostgreSQL
+    │             │
+  valida       reglas del
+ la entrada     negocio</pre>
+
+<table>
+  <thead>
+    <tr><th>Paquete</th><th>Responsabilidad</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>model</code></td><td>Entidades JPA con sus lecturas derivadas</td></tr>
+    <tr><td><code>dto</code></td><td>Lo que el cliente puede enviar — ver §7</td></tr>
+    <tr><td><code>repository</code></td><td>Interfaces de Spring Data; sin implementación propia</td></tr>
+    <tr><td><code>service</code></td><td>Las reglas del mercado y las transacciones</td></tr>
+    <tr><td><code>controller</code></td><td>La API y la traducción de errores a HTTP</td></tr>
+  </tbody>
+</table>
+
+<h3>5.1 Las dependencias llegan por el constructor</h3>
+
+<pre><code>public NegotiationService(PurchaseDemandRepository demandRepository,
+                          SellerOfferRepository offerRepository) {
+    this.demandRepository = demandRepository;
+    this.offerRepository = offerRepository;
+}</code></pre>
+
+<p>
+  Y no por campo con <code>@Autowired</code>. Así el objeto no puede existir a medio
+  construir, y en las pruebas los colaboradores se sustituyen sin necesidad del contenedor
+  de Spring.
+</p>
+
+<h2>6. Validación declarativa</h2>
+
+<p>
+  La regla vive junto al dato que restringe, no en otro archivo que hay que recordar
+  actualizar:
+</p>
+
+<pre><code>@Min(value = 1, message = "Los kilos que buscas deben ser al menos 1.")
+@Column(name = "wanted_kg", nullable = false)
+private int wantedKg;
+
+@DecimalMin(value = "80.0", message = "El factor de rendimiento debe estar entre 80 y 130.")
+@Column(name = "max_yield_factor", precision = 5, scale = 2)
+private BigDecimal maxYieldFactor;</code></pre>
+
+<p>
+  Los mensajes están en español porque los lee una persona en Colombia, y nombran el campo
+  y el rango: un «must not be blank» no le dice a nadie qué corregir.
+</p>
+
+<h2>7. Dos defectos encontrados al ejercer la API</h2>
+
+<p>
+  Ninguno aparece al leer el código ni al pasar las pruebas: los dos salieron al enviar
+  peticiones reales.
+</p>
+
+<h3>7.1 La entidad como cuerpo de la petición permitía sobrescribir otra postura</h3>
+
+<p>
+  El controlador recibía directamente <code>SellerOffer</code>. Eso deja que el cliente
+  escriba <em>cualquier</em> campo, incluidos <code>id</code> y <code>status</code>. Un
+  <code>{"id": 5}</code> convertía el alta en una <strong>sobrescritura de la postura
+  5</strong>, porque <code>save()</code> actualiza cuando el identificador ya existe.
+</p>
+
+<p>
+  La corrección son los objetos de entrada <code>DemandRequest</code> y
+  <code>OfferRequest</code>: lo que no está declarado ahí no se puede enviar.
+</p>
+
+<div class="verified">
+<b>Comprobado</b> — se envía id y status ajenos:
+  POST {"id":5,"status":"ACCEPTED","sellerName":"Atacante", …}
+  → se creó id=6 con status=PENDING
+  → la postura 5 siguió intacta y en PENDING
+</div>
+
+<h3>7.2 Un <code>@NotNull</code> sobre un campo que pone el servidor</h3>
+
+<p>
+  <code>SellerOffer.demand</code> llevaba <code>@NotNull</code>. Ese campo no lo envía el
+  vendedor —lo establece el servicio a partir de la ruta—, de modo que la validación
+  corría antes de la asignación y <strong>rechazaba toda postura válida</strong> con un
+  «must not be null» que no decía nada:
+</p>
+
+<pre class="salida">422 → {"codigo":"validacion","campos":{"demand":"must not be null"}}</pre>
+
+<p>
+  Se retiró la anotación. La integridad la garantiza <code>nullable = false</code> en la
+  columna, que es donde corresponde.
+</p>
+
+<h2>8. Tres trampas del framework, con su motivo</h2>
+
+<p>
+  Las tres costaron tiempo y las tres son del tipo que vuelve si no queda escrito por qué
+  está así.
+</p>
+
+<h3>8.1 Un getter derivado rompió una consulta de Spring Data</h3>
+
+<p>
+  Al añadir <code>getDemandId()</code> a la entidad, el repositorio dejó de arrancar:
+</p>
+
+<pre class="salida">Could not resolve attribute 'demandId' of 'SellerOffer'</pre>
+
+<p>
+  Spring Data resolvía <code>existsByDemandIdAndSellerName…</code> como el recorrido
+  <code>demand.id</code>. Con el getter presente pasó a buscar un atributo llamado
+  «demandId», que existe como método pero no como columna. La corrección es el guion bajo
+  explícito —<code>existsByDemand_IdAndSellerName…</code>—, que le dice que recorra la
+  relación, más <code>@Transient</code> sobre el getter.
+</p>
+
+<h3>8.2 La colección perezosa y el ciclo de serialización</h3>
+
+<p>
+  <code>PurchaseDemand.offers</code> es perezosa y <code>open-in-view</code> está
+  desactivado —que es lo correcto—, así que cargarla al escribir la respuesta fallaba con
+  «could not initialize proxy». Y aunque cargara, cada postura apunta de vuelta a su
+  solicitud: Jackson entraría en un ciclo infinito.
+</p>
+
+<p>
+  Se marca con <code>@JsonIgnore</code> en ambos sentidos, y la postura expone
+  <code>demandId</code> en lugar de la solicitud entera.
+</p>
+
+<h3>8.3 <code>@Validated</code> hacía que la validación fallara por el camino equivocado</h3>
+
+<p>
+  Rechazar una postura sin motivo devolvía un 400 con este cuerpo:
+</p>
+
+<pre class="salida">"Validation failed for method='public …rechazar(java.lang.Long,java.lang.String)'.
+ Error count: 0"</pre>
+
+<p>
+  Delata la firma del método y no dice qué corregir. Al añadir un manejador para
+  <code>HandlerMethodValidationException</code> y <code>@Validated</code> a la vez, el
+  resultado empeoró a <strong>500</strong>: <code>@Validated</code> activa el interceptor
+  AOP heredado, que lanza <code>ConstraintViolationException</code>, mientras que desde
+  Spring Framework 6.1 el controlador <strong>ya valida por sí solo</strong> y lanza la
+  otra. Con los dos activos, la validación ocurre dos veces y el error llega por el camino
+  que el manejador no espera.
+</p>
+
+<p>
+  La corrección: quitar <code>@Validated</code> y quedarse con el mecanismo nativo. Hay
+  además un detalle de versión que conviene anotar: el método del resultado es
+  <code>getAllValidationResults()</code> en Spring 6.1 y
+  <code>getParameterValidationResults()</code> desde 6.2.
+</p>
+
+<h2>9. Verificación en ejecución</h2>
+
+<p>Desplegado sobre PostgreSQL y ejercido por HTTP real.</p>
+
+<pre class="salida">=== 1. El comprador publica lo que busca ===
+  solicitud 4: Pergamino factor 92 o mejor, 10 cargas
+  busca 1250 kg (10 cargas) · OPEN · faltan 1250 kg
+
+=== 2. Tres caficultores posturan ===
+  postura 7: Finca El Mirador          750 kg a 24500.0 · Excepcional
+  postura 8: Cooperativa de Narino     500 kg a 25200.0 · De exportación
+  postura 9: Hacienda Alta Vista       250 kg a 23800.0 · De exportación
+
+=== 3. El comprador las ve, la más barata arriba ===
+  [PENDING ] Hacienda Alta Vista       250 kg a 23800.0
+  [PENDING ] Finca El Mirador          750 kg a 24500.0
+  [PENDING ] Cooperativa de Narino     500 kg a 25200.0
+
+=== 4. Acepta dos: cubre 1000 de 1250 ===
+  PARTIALLY_COVERED · cubierto 1000/1250 kg (80 %) · faltan 250
+
+=== 5. La de 500 ya no cabe ===
+  422 → Ya solo faltan 250 kg: se aceptaron otras posturas mientras tanto.
+
+=== 6. Una cuarta cubre los 250 que faltan ===
+  FULFILLED · cubierto 1250/1250 kg (100 %)
+
+=== 7. La pendiente se rechaza sola, con motivo ===
+  [ACCEPTED] Hacienda Alta Vista
+  [ACCEPTED] Finca El Mirador
+  [ACCEPTED] Finca La Esperanza
+  [REJECTED] Cooperativa de Narino  La solicitud se cubrió con otras posturas.</pre>
+
+<p>
+  El paso 7 es el que más importa: cuando la solicitud se cubre, las posturas que seguían
+  esperando <strong>se rechazan con su motivo</strong>. Dejarlas pendientes para siempre es
+  peor que un «no», porque el vendedor sigue contando con esos kilos.
+</p>
+
+<h3>9.1 Validaciones por HTTP</h3>
+
+<table>
+  <thead>
+    <tr><th>Entrada</th><th>Código</th><th>Respuesta</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Posturar sobre solicitud cumplida</td><td><code>422</code></td><td>Esta solicitud ya no admite posturas.</td></tr>
+    <tr><td>Factor 145</td><td><code>422</code></td><td><code>yieldFactor</code>: El factor de rendimiento debe estar entre 80 y 130.</td></tr>
+    <tr><td>Precio en cero</td><td><code>422</code></td><td><code>pricePerKg</code>: El precio por kilogramo debe ser mayor que cero.</td></tr>
+    <tr><td>Sin vendedor ni lote</td><td><code>422</code></td><td>Los <strong>dos</strong> campos a la vez, no el primero</td></tr>
+    <tr><td>Solicitud inexistente</td><td><code>404</code></td><td>No existe la solicitud 999.</td></tr>
+    <tr><td>Rechazar con motivo vacío</td><td><code>400</code></td><td><code>motivo</code>: Indica por qué rechazas la postura.</td></tr>
+    <tr><td>Rechazar sin el parámetro</td><td><code>400</code></td><td>Falta el parámetro «motivo».</td></tr>
+    <tr><td>Responder una ya respondida</td><td><code>422</code></td><td>Esta postura ya fue respondida: está en estado ACCEPTED.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Los códigos no son intercambiables: <code>404</code> cuando no existe,
+  <code>400</code> cuando el parámetro está mal escrito, <code>422</code> cuando el dato
+  está bien escrito pero la situación no lo permite.
+</p>
+
+<h2>10. Pruebas</h2>
+
+<p>
+  <strong>21 pruebas</strong> con JUnit 5 y Spring Boot Test, contra una base H2 en
+  memoria: comprobar una regla de negocio no debe exigir un PostgreSQL vivo.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Grupo</th><th>Qué fija</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Publicar (3)</td><td>Que nace abierta, que <strong>no se pueda declarar cubierta</strong> desde fuera, y la lectura en cargas</td></tr>
+    <tr><td>Posturar (5)</td><td>Ofrecer más de lo que falta, pasarse del precio máximo, repetir lote, y solicitud vencida</td></tr>
+    <tr><td>Responder (5)</td><td>Cubrir en partes, que al cubrirse se rechacen las pendientes, rechazo sin motivo, y responder dos veces</td></tr>
+    <tr><td>Retirar y cerrar (5)</td><td>Que nadie retire la postura de otro, y que cerrar sin cubrir sea cancelar</td></tr>
+    <tr><td>Compatibilidad (3)</td><td>Que un factor mejor entre, uno peor no, y uno sin declarar lo decida el comprador</td></tr>
+  </tbody>
+</table>
+
+<div class="pendiente">
+  <span class="titulo">Lo que puedes hacer tú</span>
+  <p>
+    <strong>Las capturas y el video de la evidencia AA3-EV02</strong>, que pide un
+    pantallazo por cada requisito. El módulo queda corriendo en
+    <strong>http://localhost:8081/api/negociacion/solicitudes</strong>; se levanta de nuevo
+    con <code>java -jar target/negociacion-pergamino.jar</code>. Las peticiones de la
+    sección 9 sirven de guion.
+  </p>
+</div>
+
+<h2>11. Conclusión</h2>
+
+<p>
+  El módulo implementa el mercado en su segundo sentido aplicando Spring Boot: inyección
+  por constructor, acceso a datos con Spring Data JPA, validación declarativa sobre el
+  modelo, transacciones por anotación y traducción de errores a HTTP en un solo sitio.
+</p>
+
+<p>
+  Lo que más enseñó no fue lo que el framework resuelve, sino lo que esconde: un getter
+  derivado que rompe una consulta generada por el nombre del método, una colección perezosa
+  que falla al serializar, y dos mecanismos de validación que al activarse a la vez
+  convierten un 400 en un 500. Las tres quedan escritas en el código, porque son
+  exactamente el tipo de decisión que alguien deshace si no sabe por qué está ahí.
+</p>

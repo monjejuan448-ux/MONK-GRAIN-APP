@@ -1,0 +1,20 @@
+GA7-220501096-AA3-EV01
+Codificación de módulos stand-alone, web y móvil — framework Java
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Módulo entregado:  negociacion-pergamino  (Spring Boot 3.3)
+Ruta en el repositorio:
+  entregas/GA7/AA3_EV01_Modulo_Framework/negociacion-pergamino/
+
+Compilar y ejecutar:
+  mvn clean package
+  java -jar target/negociacion-pergamino.jar
+
+Dirección:
+  http://localhost:8081/api/negociacion/solicitudes
