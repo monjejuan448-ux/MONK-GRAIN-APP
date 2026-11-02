@@ -78,6 +78,22 @@ CATEGORIES = [
     ),
 ]
 
+# (correo, nombre, municipio DANE)
+#
+# Los datos de demostración no tenían ninguna cuenta de comprador: las cinco
+# eran de productor, incluida la tostaduría, que en este mercado compra
+# pergamino y no lo vende. Sin un comprador no se puede demostrar la mitad del
+# producto —catálogo, carrito, pedido, solicitud de compra— ni probarla desde
+# Postman. Lo encontró una colección de pruebas de la API, al esperar un 403
+# del panel del productor y recibir un 200.
+BUYERS: list[tuple[str, str, str]] = [
+    (
+        "trilladora.popayan@ejemplo.co",
+        "Mariana Lozano",
+        "19001",
+    ),
+]
+
 # (correo, nombre, tipo, razón social, documento, marca, historia, municipio DANE, región)
 # Tuplas heterogéneas de datos de prueba; el tipo exacto no aporta aquí.
 PRODUCERS: list[tuple[Any, ...]] = [
@@ -494,6 +510,46 @@ def _create_producers(session: Session) -> list[ProducerProfile]:
     return profiles
 
 
+def _create_buyers(session: Session) -> int:
+    """Crea las cuentas de comprador de los datos de demostración.
+
+    Separada de `_create_producers` porque un comprador no tiene perfil de
+    productor ni finca: solo cuenta, rol y municipio para calcular el envío.
+    """
+    consumer_role = session.scalar(select(Role).where(Role.code == RoleCode.CONSUMER.value))
+    if consumer_role is None:
+        raise RuntimeError("Falta el rol 'consumer'. Ejecuta primero `python -m app.db.seed`.")
+
+    municipalities = {m.dane_code: m for m in session.scalars(select(Municipality)).all()}
+    creados = 0
+
+    for email, full_name, mun_code in BUYERS:
+        if session.scalar(select(User).where(User.email == email)) is not None:
+            continue
+
+        # El municipio se valida contra el catálogo DANE y no se escribe suelto:
+        # un código inventado dejaría la cuenta sin poder calcular un envío.
+        if mun_code not in municipalities:
+            raise RuntimeError(f"El código DANE {mun_code} no está en el catálogo.")
+
+        user = User(
+            email=email,
+            password_hash=hash_password(DEMO_PASSWORD),
+            full_name=full_name,
+            # ACTIVE y no PENDING: una cuenta de demostración que exigiera
+            # abrir el correo de verificación no serviría para demostrar nada.
+            status=UserStatus.ACTIVE,
+            data_consent=True,
+            data_consent_at=datetime.now(UTC),
+        )
+        session.add(user)
+        session.flush()
+        session.add(UserRole(user_id=user.id, role_id=consumer_role.id))
+        creados += 1
+
+    return creados
+
+
 def _create_products(
     session: Session, producers: list[ProducerProfile], categories: dict[str, Category]
 ) -> int:
@@ -635,21 +691,25 @@ def run_demo_data() -> None:
     try:
         categories = _get_or_create_categories(session)
         producers = _create_producers(session)
+        buyers = _create_buyers(session)
         created = _create_products(session, producers, categories)
         session.commit()
         logger.info(
             "demo_data_loaded",
             producers=len(producers),
+            buyers=buyers,
             products_created=created,
             categories=len(categories),
         )
         print(  # noqa: T201 — salida esperada de un script de línea de comandos
             f"\nDatos de demostración cargados:\n"
             f"  productores : {len(producers)}\n"
+            f"  compradores : {buyers} nuevos\n"
             f"  productos   : {created} nuevos\n"
             f"  categorías  : {len(categories)}\n\n"
-            f"Acceso de prueba a los perfiles de productor:\n"
-            f"  correo     : {PRODUCERS[0][0]}\n"
+            f"Acceso de prueba:\n"
+            f"  vendedor   : {PRODUCERS[0][0]}\n"
+            f"  comprador  : {BUYERS[0][0]}\n"
             f"  contraseña : {DEMO_PASSWORD}\n"
         )
     except Exception:
