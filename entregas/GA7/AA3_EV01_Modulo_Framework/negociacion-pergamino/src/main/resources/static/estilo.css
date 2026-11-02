@@ -1,0 +1,106 @@
+/* ============================================================
+   MONK GRAIN — Pantallas del módulo de negociación
+   ============================================================
+   Sin marcos de terceros: la evidencia es sobre el framework de
+   Java, y una librería de CSS escondería qué genera Thymeleaf.
+   ============================================================ */
+
+:root {
+  --cafe: #6F4E37;
+  --cafe-oscuro: #3B2417;
+  --crema: #F4EBDD;
+  --bosque: #1F4D3A;
+  --borde: #DDD3C7;
+  --rojo: #96272B;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #241A14;
+  background: #FFFDF8;
+  line-height: 1.6;
+}
+
+.barra {
+  display: flex; align-items: center; gap: 2rem; flex-wrap: wrap;
+  padding: 0.9rem 1.5rem; background: var(--cafe-oscuro); color: var(--crema);
+}
+.marca { font-weight: 700; letter-spacing: 0.08em; color: var(--crema); text-decoration: none; }
+.barra nav { display: flex; gap: 1.2rem; }
+.barra a { color: var(--crema); text-decoration: none; font-size: 0.95rem; }
+.barra a:hover { text-decoration: underline; }
+
+.contenido { max-width: 66rem; margin: 0 auto; padding: 1.5rem; }
+
+h1 { font-size: 1.7rem; margin: 0.4rem 0 0.6rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; border-bottom: 1px solid var(--borde);
+     padding-bottom: 0.3rem; }
+
+.guia { color: #6B5A4D; font-size: 0.93rem; max-width: 48rem; }
+.vacio { background: var(--crema); padding: 1rem; border-left: 3px solid var(--cafe); }
+.aviso { background: #E6F2EA; border-left: 3px solid var(--bosque);
+         padding: 0.7rem 1rem; color: var(--bosque); }
+.error { background: #F7E4E4; border-left: 3px solid var(--rojo);
+         padding: 0.7rem 1rem; color: var(--rojo); }
+.aviso-pequeno { color: var(--rojo); font-size: 0.82rem; }
+
+/* --- Tabla --- */
+.tabla { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+.tabla th { text-align: left; background: var(--crema); padding: 0.55rem 0.7rem;
+            border-bottom: 2px solid var(--cafe); }
+.tabla td { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--borde); vertical-align: top; }
+.tabla .num, .tabla th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla code { background: #F0EBE4; padding: 0.1rem 0.3rem; font-size: 0.9em; }
+
+.etiqueta { display: inline-block; background: #EFE8DF; padding: 0.1rem 0.5rem;
+            font-size: 0.82rem; }
+.etiqueta.ok { background: #DEEDE5; color: var(--bosque); }
+.etiqueta.aviso { background: #FDF0D5; color: #6B4E14; }
+.etiqueta.gris { background: #ECE8E3; color: #6B5A4D; }
+
+.barra-avance { height: 5px; background: var(--borde); margin-top: 0.2rem; }
+.barra-avance .relleno { height: 100%; background: var(--bosque); }
+
+.nota-respuesta { margin: 0.25rem 0 0; font-size: 0.84rem; color: #5A463A; }
+.nota-respuesta.gris { font-style: italic; color: #8A7A6D; }
+
+/* --- Formularios --- */
+.formulario { max-width: 34rem; margin: 1rem 0 2rem; }
+.formulario label { display: block; font-weight: 600; font-size: 0.92rem; margin-top: 0.9rem; }
+.formulario input, .formulario textarea, .formulario select {
+  width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--borde);
+  font-family: inherit; font-size: 0.95rem;
+}
+.formulario small { display: block; color: #6B5A4D; font-size: 0.84rem; margin-top: 0.2rem; }
+
+/* El error va pegado a su campo, no todos juntos arriba: así se ve qué
+   corregir sin tener que buscarlo. */
+.error-campo { color: var(--rojo); font-size: 0.86rem; margin: 0.25rem 0 0; font-weight: 600; }
+
+.filtro { display: flex; align-items: end; gap: 0.7rem; flex-wrap: wrap;
+          background: var(--crema); padding: 0.9rem 1rem; margin: 1rem 0; }
+.filtro label { font-weight: 600; font-size: 0.88rem; display: block; }
+.filtro input { padding: 0.4rem 0.6rem; border: 1px solid var(--borde); }
+
+.en-linea { display: flex; gap: 0.5rem; align-items: center; margin: 1rem 0; flex-wrap: wrap; }
+.en-linea input { padding: 0.4rem 0.6rem; border: 1px solid var(--borde); }
+
+.acciones { display: flex; flex-direction: column; gap: 0.4rem; }
+.acciones form { display: flex; gap: 0.3rem; }
+.acciones input { padding: 0.25rem 0.4rem; border: 1px solid var(--borde); font-size: 0.85rem; }
+
+button { background: var(--cafe); color: #fff; border: none; padding: 0.5rem 1.1rem;
+         font-size: 0.93rem; cursor: pointer; margin-top: 1rem; }
+.acciones button, .en-linea button { margin-top: 0; padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+button:hover { background: var(--cafe-oscuro); }
+button.peligro { background: var(--rojo); }
+
+.ficha { display: grid; grid-template-columns: 12rem 1fr; gap: 0.35rem 1rem; margin: 1.2rem 0; }
+.ficha dt { font-weight: 600; color: #5A463A; }
+.ficha dd { margin: 0; }
+
+.pie { border-top: 1px solid var(--borde); margin-top: 3rem; padding: 1.2rem 1.5rem;
+       color: #6B5A4D; font-size: 0.88rem; text-align: center; }

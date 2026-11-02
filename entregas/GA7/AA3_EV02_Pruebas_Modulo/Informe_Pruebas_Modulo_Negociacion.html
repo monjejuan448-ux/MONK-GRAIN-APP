@@ -1,0 +1,480 @@
+<!-- GA7-220501096-AA3-EV02 · Módulos codificados y probados -->
+<header class="portada">
+  <h1>Informe Técnico: Pruebas del Módulo de Negociación</h1>
+  <hr class="filete">
+  <p>Análisis y Desarrollo de Software</p>
+  <p>Servicio Nacional de Aprendizaje (SENA)</p>
+  <p>Eliana Chacon</p>
+  <p class="fecha">1 de noviembre de 2026</p>
+</header>
+
+<h2>1. Introducción</h2>
+
+<p>
+  Este documento recoge la ejecución de las pruebas del módulo
+  <code>negociacion-pergamino</code>, codificado en la evidencia AA3-EV01, contrastándolas
+  con los requisitos del proyecto <strong>MONK GRAIN</strong>.
+</p>
+
+<p>
+  Los requisitos no se inventaron para esta prueba: están escritos en
+  <code>docs/15-oferta-demanda.md §5</code> del repositorio, bajo el título «Las reglas
+  que hace cumplir el servidor», y se redactaron antes de codificar el módulo. Cada uno
+  tiene aquí su verificación.
+</p>
+
+<h2>2. Objetivo</h2>
+
+<p>
+  Ejecutar las pruebas del módulo según los requisitos del proyecto, documentando cada uno
+  con su pantalla correspondiente, y verificar el comportamiento de las validaciones de
+  fechas, números, textos, caracteres especiales y longitudes.
+</p>
+
+<h2>3. Entorno de prueba</h2>
+
+<table>
+  <thead>
+    <tr><th>Componente</th><th>Versión</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Java</td><td>OpenJDK 17.0.20</td></tr>
+    <tr><td>Spring Boot</td><td>3.3.5 (Spring Framework 6.1.14)</td></tr>
+    <tr><td>Servidor</td><td>Tomcat embebido 10.1.31, puerto 8081</td></tr>
+    <tr><td>Base de datos</td><td>PostgreSQL 16, base <code>monkgrain_java</code></td></tr>
+    <tr><td>Pruebas automáticas</td><td>JUnit 5 sobre H2 en memoria</td></tr>
+    <tr><td>Dirección</td><td><code>http://localhost:8081/solicitudes</code></td></tr>
+  </tbody>
+</table>
+
+<h3>3.1 Datos de la demostración</h3>
+
+<p>Preparados para que las pantallas muestren algo real y no una tabla vacía:</p>
+
+<pre class="salida">Solicitud 1 — Trilladora del Huila S.A.S.
+  «Pergamino factor 92 o mejor, 10 cargas»
+  1250 kg · factor máx. 92 · paga hasta 26.000/kg · vigente al 2026-12-15
+  Estado: PARTIALLY_COVERED (20 % cubierto)
+
+  Postura 1  Finca El Mirador        750 kg a 24.500  factor 88,50  PENDING
+  Postura 2  Cooperativa de Nariño   500 kg a 25.200  factor 91,00  PENDING
+  Postura 3  Hacienda Alta Vista     250 kg a 23.800  factor 90,00  ACCEPTED
+
+Solicitud 2 — Exportadora Andina
+  «Microlote de variedad especial, 3 cargas»
+  375 kg · factor máx. 88 · paga hasta 45.000/kg
+  Estado: OPEN</pre>
+
+<h2>4. Pruebas automáticas</h2>
+
+<pre class="salida">$ mvn test
+
+Tests run:  3, Failures: 0, Errors: 0  — Publicar
+Tests run:  5, Failures: 0, Errors: 0  — Posturar
+Tests run:  7, Failures: 0, Errors: 0  — Responder
+Tests run:  5, Failures: 0, Errors: 0  — RetirarYCerrar
+Tests run:  3, Failures: 0, Errors: 0  — Compatibilidad
+
+Tests run: 23, Failures: 0, Errors: 0
+BUILD SUCCESS</pre>
+
+<p>
+  Corren contra H2 en memoria: comprobar una regla de negocio no debe exigir un PostgreSQL
+  vivo. Las pruebas de pantalla de las secciones siguientes sí usan PostgreSQL real.
+</p>
+
+<h2>5. Verificación por requisito</h2>
+
+<p>
+  Un requisito por fila, con la pantalla donde se demuestra. Los requisitos citan
+  <code>docs/15 §5</code>.
+</p>
+
+<h3>5.1 Sobre la solicitud</h3>
+
+<table>
+  <thead>
+    <tr><th>Requisito</th><th>Resultado</th><th>Captura</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>R-01.</strong> La vigencia no puede estar en el pasado</td>
+      <td><code>200</code> con el error junto al campo: <em>«La fecha de vigencia debe ser futura.»</em></td>
+      <td>C-04</td>
+    </tr>
+    <tr>
+      <td><strong>R-02.</strong> Cerrar sin compras la <em>cancela</em>; con compras hechas la <em>cierra</em></td>
+      <td>Sin posturas aceptadas → <code>CANCELLED</code>. Con una aceptada → <code>CLOSED</code></td>
+      <td>C-09</td>
+    </tr>
+    <tr>
+      <td><strong>R-03.</strong> Al cerrar, las posturas pendientes se rechazan en bloque con su motivo</td>
+      <td>Las pendientes pasan a <code>REJECTED</code> con el motivo del cierre</td>
+      <td>C-09</td>
+    </tr>
+    <tr>
+      <td><strong>R-04.</strong> El vencimiento se juzga al consultar, no con un estado guardado</td>
+      <td>Una solicitud <code>OPEN</code> y vencida se marca «vencida» en el listado y no admite posturas</td>
+      <td>C-02</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.2 Sobre la postura</h3>
+
+<table>
+  <thead>
+    <tr><th>Requisito</th><th>Resultado</th><th>Captura</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>R-05.</strong> No se puede ofrecer más kilos de los que faltan</td>
+      <td><em>«Solo faltan 1000 kg por cubrir.»</em></td>
+      <td>C-06</td>
+    </tr>
+    <tr>
+      <td><strong>R-06.</strong> Una postura por vendedor y lote sobre la misma solicitud</td>
+      <td><em>«Ya posturaste sobre esta solicitud con el lote MIR-2026-001.»</em> Garantizado además por un <code>UNIQUE</code> en la base</td>
+      <td>C-06</td>
+    </tr>
+    <tr>
+      <td><strong>R-07.</strong> No se postura por encima del precio máximo del comprador</td>
+      <td><em>«El comprador paga como máximo 26000.00 por kilo.»</em></td>
+      <td>C-06</td>
+    </tr>
+    <tr>
+      <td><strong>R-08.</strong> Una solicitud que no admite posturas las rechaza</td>
+      <td><em>«Esta solicitud ya no admite posturas.»</em> / <em>«Esta solicitud venció el …»</em></td>
+      <td>C-06</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.3 Sobre la respuesta</h3>
+
+<table>
+  <thead>
+    <tr><th>Requisito</th><th>Resultado</th><th>Captura</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>R-09.</strong> Cubrir parte deja la solicitud en <code>partially_covered</code> y sigue recibiendo posturas</td>
+      <td>Tras aceptar 250 de 1250 kg: <code>PARTIALLY_COVERED</code>, 20 %, faltan 1000</td>
+      <td>C-07</td>
+    </tr>
+    <tr>
+      <td><strong>R-10.</strong> Cubrirlo todo la marca <code>fulfilled</code> y rechaza lo pendiente</td>
+      <td><code>FULFILLED</code> al 100 %; la pendiente queda <code>REJECTED</code> con <em>«La solicitud se cubrió con otras posturas.»</em></td>
+      <td>C-08</td>
+    </tr>
+    <tr>
+      <td><strong>R-11.</strong> Al aceptar se vuelve a comprobar lo que falta</td>
+      <td><em>«Ya solo faltan 250 kg: se aceptaron otras posturas mientras tanto.»</em></td>
+      <td>C-07</td>
+    </tr>
+    <tr>
+      <td><strong>R-12.</strong> Una nota de rechazo en blanco no se guarda como explicación</td>
+      <td>Se admite rechazar sin motivo; con espacios, se guarda vacío y la pantalla dice <em>«Rechazada sin explicación»</em></td>
+      <td>C-08</td>
+    </tr>
+    <tr>
+      <td><strong>R-13.</strong> Una postura ya respondida no se vuelve a responder</td>
+      <td><em>«Esta postura ya fue respondida: está en estado ACCEPTED.»</em></td>
+      <td>C-10</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.4 Sobre quién ve qué</h3>
+
+<table>
+  <thead>
+    <tr><th>Requisito</th><th>Resultado</th><th>Captura</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>R-14.</strong> El filtro acota el listado a lo que los lotes del vendedor pueden satisfacer</td>
+      <td>Con factor 88 aparecen las dos solicitudes; con 91, solo la que acepta hasta 92</td>
+      <td>C-11</td>
+    </tr>
+    <tr>
+      <td><strong>R-15.</strong> Un requisito que el comprador no puso no excluye a nadie</td>
+      <td>Sin factor declarado, el vendedor ve todas las vigentes</td>
+      <td>C-11</td>
+    </tr>
+    <tr>
+      <td><strong>R-16.</strong> Las posturas se ordenan por lo que le sirve al comprador</td>
+      <td>Primero las pendientes; dentro de ellas, la más barata arriba</td>
+      <td>C-05</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Validaciones</h2>
+
+<p>
+  Las cinco categorías que pide la guía, verificadas <strong>enviando el formulario</strong>
+  y no inspeccionando el código.
+</p>
+
+<h3>6.1 Fechas</h3>
+
+<table>
+  <thead><tr><th>Entrada</th><th>Código</th><th>Mensaje</th></tr></thead>
+  <tbody>
+    <tr><td><code>2020-01-01</code> (pasado)</td><td>200</td><td>La fecha de vigencia debe ser futura.</td></tr>
+    <tr><td><code>15/09/2026</code> (otro formato)</td><td>200</td><td>La fecha debe tener el formato AAAA-MM-DD.</td></tr>
+    <tr><td><code>2026-02-31</code> (no existe)</td><td>200</td><td>La fecha debe tener el formato AAAA-MM-DD.</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 Números</h3>
+
+<table>
+  <thead><tr><th>Entrada</th><th>Código</th><th>Mensaje</th></tr></thead>
+  <tbody>
+    <tr><td>Kilos <code>0</code></td><td>200</td><td>Los kilos que buscas deben ser al menos 1.</td></tr>
+    <tr><td>Kilos <code>-50</code></td><td>200</td><td>Los kilos que buscas deben ser al menos 1.</td></tr>
+    <tr><td>Kilos <code>abc</code></td><td>200</td><td>Debe ser un número entero.</td></tr>
+    <tr><td>Factor <code>145</code></td><td>200</td><td>El factor de rendimiento debe estar entre 80 y 130.</td></tr>
+    <tr><td>Factor <code>50</code></td><td>200</td><td>El factor de rendimiento debe estar entre 80 y 130.</td></tr>
+    <tr><td>Precio <code>24,500</code></td><td>200</td><td>Debe ser un número. Usa el punto para los decimales.</td></tr>
+  </tbody>
+</table>
+
+<h3>6.3 Textos</h3>
+
+<table>
+  <thead><tr><th>Entrada</th><th>Código</th><th>Mensaje</th></tr></thead>
+  <tbody>
+    <tr><td>Comprador vacío</td><td>200</td><td>El comprador es obligatorio.</td></tr>
+    <tr><td>Comprador con solo espacios</td><td>200</td><td>El comprador es obligatorio.</td></tr>
+    <tr><td>Título vacío</td><td>200</td><td>Indica qué buscas.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  El caso de «solo espacios» importa: <code>@NotNull</code> lo habría dado por bueno.
+  <code>@NotBlank</code> es el que impide pasar un campo lleno de nada.
+</p>
+
+<h3>6.4 Longitudes</h3>
+
+<table>
+  <thead><tr><th>Entrada</th><th>Código</th><th>Mensaje</th></tr></thead>
+  <tbody>
+    <tr><td>Título de 200 caracteres (el límite)</td><td>302</td><td><strong>Aceptado</strong></td></tr>
+    <tr><td>Título de 201 caracteres</td><td>200</td><td>El título no puede pasar de 200 caracteres.</td></tr>
+    <tr><td>Comprador de 151 caracteres</td><td>200</td><td>El comprador no puede pasar de 150 caracteres.</td></tr>
+    <tr><td>Detalles de 2001 caracteres</td><td>200</td><td>Los detalles no pueden pasar de 2000 caracteres.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Se probó el límite exacto y el límite más uno. Probar solo un valor muy largo no
+  distingue entre «rechaza lo que pasa de 200» y «rechaza lo que pasa de 150».
+</p>
+
+<h3>6.5 Caracteres especiales</h3>
+
+<h4>Acentos, eñe y comillas angulares</h4>
+
+<pre class="salida">Enviado : «Cooperativa de Caficultores de Nariño»
+          «Pergamino de Sandoná, añejo, categoría «A»»
+Mostrado: Cooperativa de Caficultores de Nariño
+          Pergamino de Sandoná, añejo, categoría «A»</pre>
+
+<p>
+  Idénticos de ida y vuelta. Es el resultado de declarar UTF-8 en los tres sitios donde
+  puede perderse: la plantilla, la petición y la base de datos.
+</p>
+
+<h4>Intento de guion entre marcas</h4>
+
+<pre class="salida">Enviado : &lt;script&gt;alert("xss")&lt;/script&gt;
+          Prueba &lt;img src=x onerror=alert(1)&gt;
+
+Guardado tal cual en la base       : sí
+Ejecutado en la página             : <b>no</b>
+Sale escapado como &amp;lt;script&amp;gt;  : sí</pre>
+
+<p>
+  El dato se guarda <strong>tal como lo escribieron</strong> —modificarlo al guardar
+  destruiría un texto legítimo que contenga <code>&lt;</code>— y se escapa al mostrarlo.
+  Es lo que hace <code>th:text</code> de Thymeleaf por omisión; <code>th:utext</code>, que
+  no escapa, es justo lo que no se debe usar con entrada de usuario.
+</p>
+
+<h4>Intento de inyección SQL</h4>
+
+<pre class="salida">Enviado : Robert'); DROP TABLE purchase_demands;--
+          1' OR '1'='1
+
+Solicitudes antes : 5
+Solicitudes después: 6   ← se creó una, la tabla sigue en pie
+Guardado literal  : Robert'); DROP TABLE purchase_demands;--</pre>
+
+<p>
+  JPA genera consultas con parámetros, de modo que la cadena nunca se interpreta como SQL.
+  Es la misma protección que en el módulo JDBC de AA2-EV01, donde la daba
+  <code>PreparedStatement</code>.
+</p>
+
+<h2>7. Dos defectos corregidos durante estas pruebas</h2>
+
+<p>
+  Ninguno se ve leyendo el código ni ejecutando las pruebas automáticas: los dos
+  aparecieron al enviar el formulario.
+</p>
+
+<h3>7.1 Un número mal escrito devolvía 500</h3>
+
+<p>
+  Escribir <code>abc</code> en los kilos, o <code>15/09/2026</code> en la fecha, producía
+  un <strong>error 500</strong> en lugar de un mensaje junto al campo:
+</p>
+
+<pre class="salida">EL1007E: Property or field 'buyerName' cannot be found on null</pre>
+
+<p>
+  La causa es instructiva. Los objetos de entrada eran <code>record</code>, que funciona
+  bien con JSON. Pero <strong>un <code>record</code> se construye entero o no se
+  construye</strong>: al fallar una conversión, Spring no puede entregar un objeto a
+  medias, pasa <code>null</code> a la plantilla, y esta falla al intentar reponer lo que el
+  usuario había escrito.
+</p>
+
+<p>
+  Un formulario que debe devolver lo tecleado necesita un objeto que admita quedar
+  incompleto. Se convirtieron a clases mutables, y se añadieron los mensajes de conversión
+  en <code>messages.properties</code> —sin ellos el texto menciona clases de Java en lugar
+  de decir qué formato se espera—.
+</p>
+
+<h3>7.2 El motivo del rechazo era obligatorio, contra la decisión del producto</h3>
+
+<p>
+  El módulo exigía un motivo al rechazar una postura. <code>docs/15 §5</code> dice lo
+  contrario, y con una razón pensada: <em>«No se exige el motivo —obligar a escribir algo
+  produce "no" a secas—, pero sí se impide simular una explicación con espacios.»</em>
+</p>
+
+<p>
+  Se alineó el módulo con el producto: el motivo es opcional, una nota de solo espacios no
+  se guarda como explicación, y la pantalla distingue «rechazada sin explicación» de
+  «rechazada explicando» en lugar de mostrar un recuadro vacío con aspecto de fallo.
+</p>
+
+<div class="nota">
+  <p>
+    <strong>Por qué importa.</strong> Una evidencia que contradice la documentación del
+    proyecto al que dice pertenecer es peor que una evidencia incompleta: quien lea las dos
+    no sabrá cuál manda.
+  </p>
+</div>
+
+<h2>8. Las capturas que hacen falta</h2>
+
+<div class="pendiente">
+  <span class="titulo">Lo que debes hacer tú</span>
+  <p>
+    <strong>Tomar estas once capturas</strong> y pegarlas en este documento, cada una
+    debajo del requisito que demuestra. El módulo queda corriendo en
+    <strong>http://localhost:8081/solicitudes</strong> con los datos de la sección 3.1; si
+    lo apagaste, se levanta con
+    <code>java -jar target/negociacion-pergamino.jar</code>.
+  </p>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Captura</th><th>Pantalla</th><th>Qué debe verse</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>C-01</strong></td><td><code>/solicitudes</code></td><td>El listado con las dos solicitudes y la barra de avance</td></tr>
+    <tr><td><strong>C-02</strong></td><td><code>/solicitudes</code></td><td>Una solicitud marcada «vencida» (crea una con fecha de ayer por la API)</td></tr>
+    <tr><td><strong>C-03</strong></td><td><code>/solicitudes/nueva</code></td><td>El formulario vacío, con sus ayudas bajo cada campo</td></tr>
+    <tr><td><strong>C-04</strong></td><td><code>/solicitudes/nueva</code></td><td>El formulario enviado vacío: cada error junto a su campo</td></tr>
+    <tr><td><strong>C-05</strong></td><td><code>/solicitudes/1</code></td><td>La ficha con las tres posturas, la más barata arriba</td></tr>
+    <tr><td><strong>C-06</strong></td><td><code>/solicitudes/1</code></td><td>Una postura rechazada por regla: más kilos de los que faltan</td></tr>
+    <tr><td><strong>C-07</strong></td><td><code>/solicitudes/1</code></td><td>Tras aceptar una: <code>PARTIALLY_COVERED</code> y el avance</td></tr>
+    <tr><td><strong>C-08</strong></td><td><code>/solicitudes/1</code></td><td>Al cubrirse: <code>FULFILLED</code> y la pendiente rechazada sola</td></tr>
+    <tr><td><strong>C-09</strong></td><td><code>/solicitudes/2</code></td><td>Cerrar una solicitud sin posturas: queda <code>CANCELLED</code></td></tr>
+    <tr><td><strong>C-10</strong></td><td>Página de error</td><td>Intentar responder una postura ya respondida</td></tr>
+    <tr><td><strong>C-11</strong></td><td><code>/vendedor</code></td><td>El filtro con factor 88 y con 91: cambia qué solicitudes aparecen</td></tr>
+  </tbody>
+</table>
+
+<h2>9. Guion del video</h2>
+
+<div class="pendiente">
+  <span class="titulo">Lo que debes hacer tú</span>
+  <p>
+    <strong>Grabar el video</strong> de toda la funcionalidad con sus validaciones.
+    Duración estimada: 8 a 10 minutos. Guárdalo como <code>AA3_EV02_Video.mp4</code> en
+    esta carpeta.
+  </p>
+</div>
+
+<table>
+  <thead><tr><th>Bloque</th><th>Qué mostrar</th><th>Qué decir</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1 · Presentación<br><em>30 s</em></td>
+      <td>Tu nombre y el módulo</td>
+      <td>Qué es el mercado de dos sentidos: el comprador publica lo que busca y los caficultores responden</td>
+    </tr>
+    <tr>
+      <td>2 · El listado<br><em>1 min</em></td>
+      <td><code>/solicitudes</code></td>
+      <td>Qué significa cada columna; que la barra de avance muestra cuánto se ha cubierto</td>
+    </tr>
+    <tr>
+      <td>3 · Publicar<br><em>2 min</em></td>
+      <td>El formulario, primero vacío y luego bien lleno</td>
+      <td>Que los techos son máximos aceptables; <strong>que en el factor menos es mejor</strong></td>
+    </tr>
+    <tr>
+      <td>4 · Validaciones<br><em>2 min</em></td>
+      <td>Fecha pasada, kilos en cero, <code>abc</code> en un número, factor 145, título de 201 caracteres</td>
+      <td>Que cada error sale junto a su campo y que la comprobación es del servidor, no del navegador</td>
+    </tr>
+    <tr>
+      <td>5 · Posturar<br><em>2 min</em></td>
+      <td>Dos posturas; luego una con más kilos de los que faltan y otra repitiendo el lote</td>
+      <td>Por qué un vendedor no postura dos veces con el mismo lote</td>
+    </tr>
+    <tr>
+      <td>6 · Responder<br><em>2 min</em></td>
+      <td>Aceptar una → <code>PARTIALLY_COVERED</code>. Cubrir el resto → <code>FULFILLED</code></td>
+      <td><strong>Lo más importante</strong>: que al cubrirse, las pendientes se rechazan solas con su motivo, porque dejar a un caficultor esperando es peor que un «no»</td>
+    </tr>
+    <tr>
+      <td>7 · Vendedor<br><em>1 min</em></td>
+      <td><code>/vendedor</code> con factor 88 y con 91</td>
+      <td>Que el filtro compara el factor del lote contra el techo del comprador</td>
+    </tr>
+    <tr>
+      <td>8 · Cierre<br><em>30 s</em></td>
+      <td>—</td>
+      <td>Resumen: los dieciséis requisitos verificados</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>10. Conclusión</h2>
+
+<p>
+  Los dieciséis requisitos de <code>docs/15 §5</code> quedan verificados, y las cinco
+  categorías de validación que pide la guía —fechas, números, textos, caracteres especiales
+  y longitudes— se ejercieron enviando el formulario, no leyendo el código.
+</p>
+
+<p>
+  Las pruebas encontraron dos defectos que las automáticas no podían ver: un error 500 ante
+  un número mal escrito, causado por usar <code>record</code> donde hacía falta un objeto
+  que admitiera quedar incompleto; y una regla del módulo que contradecía la decisión
+  documentada del producto. Los dos están corregidos y el motivo escrito en el código,
+  porque son exactamente el tipo de decisión que alguien deshace si no sabe por qué está
+  ahí.
+</p>

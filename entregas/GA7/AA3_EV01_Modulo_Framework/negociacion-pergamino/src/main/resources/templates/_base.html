@@ -1,0 +1,36 @@
+<!--
+  Esqueleto común de todas las pantallas.
+
+  Thymeleaf lo compone con `layout` por fragmentos: cada página declara su
+  contenido y hereda cabecera, pie y estilos. Repetirlo en cada archivo es
+  como una barra de navegación acaba distinta en cada pantalla.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:fragment="layout(titulo, contenido)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${titulo} + ' — MONK GRAIN'">MONK GRAIN</title>
+  <link rel="stylesheet" th:href="@{/estilo.css}">
+</head>
+<body>
+<header class="barra">
+  <a class="marca" th:href="@{/solicitudes}">MONK&nbsp;GRAIN</a>
+  <nav>
+    <a th:href="@{/solicitudes}">Solicitudes de compra</a>
+    <a th:href="@{/solicitudes/nueva}">Publicar solicitud</a>
+    <a th:href="@{/vendedor}">Soy vendedor</a>
+  </nav>
+</header>
+
+<main class="contenido">
+  <div th:replace="${contenido}">El contenido de cada página</div>
+</main>
+
+<footer class="pie">
+  MONK GRAIN — negociación de café pergamino ·
+  Evidencia GA7-220501096-AA3
+</footer>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!-- Página de error de las pantallas. La API devuelve JSON; esto es su gemelo. -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:replace="~{_base :: layout('No pudimos continuar', ~{::contenido})}">
+<body>
+<div th:fragment="contenido" th:remove="tag">
+  <h1 th:text="${titulo} ?: 'No pudimos continuar'">No pudimos continuar</h1>
+  <p class="error" th:text="${mensaje} ?: 'Ocurrió un problema al procesar tu solicitud.'">—</p>
+  <p>
+    <a th:href="@{/solicitudes}">Volver a las solicitudes</a> ·
+    <a th:href="@{/vendedor}">Ir al panel del vendedor</a>
+  </p>
+</div>
+</body>
+</html>

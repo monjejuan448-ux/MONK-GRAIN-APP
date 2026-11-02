@@ -107,9 +107,7 @@ public class NegotiationApiController {
     @PostMapping("/posturas/{id}/rechazar")
     public SellerOffer rechazar(
             @PathVariable Long id,
-            @RequestParam
-            @NotBlank(message = "Indica por qué rechazas la postura.")
-            String motivo) {
+            @RequestParam(required = false) String motivo) {
         return service.rejectOffer(id, motivo);
     }
 

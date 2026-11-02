@@ -1,0 +1,80 @@
+<!-- Panel del vendedor: qué puede atender y qué ha posturado. -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:replace="~{_base :: layout('Panel del vendedor', ~{::contenido})}">
+<body>
+<div th:fragment="contenido" th:remove="tag">
+
+  <h1>Panel del vendedor</h1>
+  <p class="guia">
+    Qué solicitudes puedes atender con tu lote, y qué has posturado.
+    El filtro compara el factor de <strong>tu</strong> lote contra el techo que
+    pide cada comprador.
+  </p>
+
+  <form class="filtro" method="get" th:action="@{/vendedor}">
+    <label for="nombre">Tu finca o cooperativa</label>
+    <input type="text" id="nombre" name="nombre" th:value="${nombre}"
+           placeholder="Finca El Mirador">
+    <label for="factor">Factor de tu lote</label>
+    <input type="number" id="factor" name="factor" step="0.01" th:value="${factor}"
+           placeholder="88.50">
+    <button type="submit">Ver</button>
+  </form>
+
+  <h2>Solicitudes que puedes atender</h2>
+  <p class="guia" th:if="${factor == null}">
+    Sin factor declarado se muestran todas las vigentes: un lote sin análisis
+    tampoco queda excluido, lo decide el comprador.
+  </p>
+
+  <p class="vacio" th:if="${#lists.isEmpty(compatibles)}">
+    Ninguna solicitud vigente acepta un lote con ese factor.
+    Prueba con un factor más bajo: estás ofreciendo un café que rinde menos del
+    que piden.
+  </p>
+
+  <table class="tabla" th:unless="${#lists.isEmpty(compatibles)}">
+    <thead>
+      <tr><th>Nº</th><th>Comprador</th><th>Qué busca</th>
+          <th class="num">Faltan</th><th class="num">Paga hasta</th><th></th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="s : ${compatibles}">
+        <td th:text="${s.id}">1</td>
+        <td th:text="${s.buyerName}">—</td>
+        <td th:text="${s.title}">—</td>
+        <td class="num" th:text="${s.remainingKg} + ' kg'">0</td>
+        <td class="num" th:text="${s.maxPricePerKg != null} ? ${s.maxPricePerKg} : 'Sin tope'">—</td>
+        <td><a th:href="@{/solicitudes/{id}(id=${s.id})}">Posturar</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Mis posturas</h2>
+  <p class="vacio" th:if="${#lists.isEmpty(misPosturas)}">
+    Escribe tu nombre arriba para ver tus posturas.
+  </p>
+
+  <table class="tabla" th:unless="${#lists.isEmpty(misPosturas)}">
+    <thead>
+      <tr><th>Nº</th><th>Solicitud</th><th>Lote</th>
+          <th class="num">Kilos</th><th class="num">Precio/kg</th>
+          <th>Estado</th><th>Respuesta del comprador</th></tr>
+    </thead>
+    <tbody>
+      <tr th:each="p : ${misPosturas}">
+        <td th:text="${p.id}">1</td>
+        <td><a th:href="@{/solicitudes/{id}(id=${p.demandId})}" th:text="${p.demandId}">1</a></td>
+        <td><code th:text="${p.lotCode}">—</code></td>
+        <td class="num" th:text="${p.offeredKg}">0</td>
+        <td class="num" th:text="${p.pricePerKg}">0</td>
+        <td><span class="etiqueta" th:text="${p.status}">PENDING</span></td>
+        <td th:text="${p.responseNote} ?: '—'">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

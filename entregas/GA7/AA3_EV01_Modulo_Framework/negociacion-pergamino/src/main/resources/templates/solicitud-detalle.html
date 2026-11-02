@@ -1,0 +1,145 @@
+<!-- Ficha de la solicitud con sus posturas y el formulario del vendedor. -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:replace="~{_base :: layout('Solicitud', ~{::contenido})}">
+<body>
+<div th:fragment="contenido" th:remove="tag">
+
+  <h1>Solicitud <span th:text="${solicitud.id}">1</span></h1>
+  <p class="guia" th:text="${solicitud.title}">Título</p>
+
+  <p class="aviso" th:if="${aviso}" th:text="${aviso}">Mensaje</p>
+
+  <dl class="ficha">
+    <dt>Comprador</dt><dd th:text="${solicitud.buyerName}">—</dd>
+    <dt>Busca</dt><dd th:text="${solicitud.wantedAsCargas}">—</dd>
+    <dt>Cubierto</dt>
+    <dd>
+      <span th:text="${solicitud.coveredKg} + ' kg de ' + ${solicitud.wantedKg} + ' kg'">—</span>
+      (<span th:text="${solicitud.coveredPercentage} + ' %'">0 %</span>) ·
+      faltan <strong th:text="${solicitud.remainingKg} + ' kg'">—</strong>
+    </dd>
+    <dt>Factor máximo</dt>
+    <dd th:text="${solicitud.maxYieldFactor != null} ? ${solicitud.maxYieldFactor} : 'Cualquiera'">—</dd>
+    <dt>Precio máximo</dt>
+    <dd th:text="${solicitud.maxPricePerKg != null} ? ${solicitud.maxPricePerKg} : 'Sin tope'">—</dd>
+    <dt>Vigente hasta</dt>
+    <dd th:text="${solicitud.validUntil != null} ? ${solicitud.validUntil} : 'Sin vigencia'">—</dd>
+    <dt>Estado</dt>
+    <dd>
+      <span class="etiqueta" th:text="${solicitud.status}">OPEN</span>
+      <span th:if="${solicitud.receivingOffers}"> · admite posturas</span>
+      <span th:unless="${solicitud.receivingOffers}"> · ya no admite posturas</span>
+    </dd>
+  </dl>
+
+  <form th:if="${solicitud.status.name() == 'OPEN' or solicitud.status.name() == 'PARTIALLY_COVERED'}"
+        method="post" th:action="@{/solicitudes/{id}/cerrar(id=${solicitud.id})}"
+        class="en-linea">
+    <input type="text" name="motivo" placeholder="Motivo del cierre (opcional)" size="36">
+    <button type="submit" class="peligro">Cerrar la solicitud</button>
+  </form>
+
+  <!-- ---------------- Posturas ---------------- -->
+  <h2>Posturas recibidas</h2>
+  <p class="guia">
+    Primero las pendientes, y dentro de ellas la más barata arriba: es el orden
+    que le sirve al comprador, no el de llegada.
+  </p>
+
+  <p class="vacio" th:if="${#lists.isEmpty(posturas)}">
+    Todavía ningún caficultor ha respondido.
+  </p>
+
+  <table class="tabla" th:unless="${#lists.isEmpty(posturas)}">
+    <thead>
+      <tr>
+        <th>Nº</th><th>Vendedor</th><th>Lote</th>
+        <th class="num">Kilos</th><th class="num">Precio/kg</th>
+        <th class="num">Total</th><th>Factor</th><th>Estado</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="p : ${posturas}">
+        <td th:text="${p.id}">1</td>
+        <td th:text="${p.sellerName}">—</td>
+        <td><code th:text="${p.lotCode}">—</code></td>
+        <td class="num" th:text="${p.offeredKg}">0</td>
+        <td class="num" th:text="${p.pricePerKg}">0</td>
+        <td class="num" th:text="${p.totalValue}">0</td>
+        <td>
+          <span th:text="${p.yieldFactor != null} ? ${p.yieldFactor} : '—'">—</span>
+          <span class="etiqueta" th:text="${p.yieldFactorLabel}">—</span>
+        </td>
+        <td>
+          <span class="etiqueta"
+                th:classappend="${p.status.name() == 'ACCEPTED'} ? ' ok'
+                              : (${p.status.name() == 'PENDING'} ? ' aviso' : ' gris')"
+                th:text="${p.status}">PENDING</span>
+          <p class="nota-respuesta" th:if="${p.responseNote}" th:text="${p.responseNote}">—</p>
+          <p class="nota-respuesta gris" th:if="${p.status.name() == 'REJECTED' and p.responseNote == null}">
+            Rechazada sin explicación
+          </p>
+        </td>
+        <td>
+          <div th:if="${p.status.name() == 'PENDING'}" class="acciones">
+            <form method="post" th:action="@{/posturas/{id}/aceptar(id=${p.id})}">
+              <button type="submit">Aceptar</button>
+            </form>
+            <form method="post" th:action="@{/posturas/{id}/rechazar(id=${p.id})}">
+              <input type="text" name="motivo" placeholder="Motivo (opcional)" size="18">
+              <button type="submit" class="peligro">Rechazar</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ---------------- Posturar ---------------- -->
+  <h2 th:if="${solicitud.receivingOffers}">Responder como vendedor</h2>
+  <form th:if="${solicitud.receivingOffers}" class="formulario" method="post"
+        th:action="@{/solicitudes/{id}/posturas(id=${solicitud.id})}"
+        th:object="${postura}">
+
+    <label for="sellerName">Tu finca o cooperativa</label>
+    <input type="text" id="sellerName" name="sellerName" th:value="*{sellerName}" maxlength="150">
+    <p class="error-campo" th:if="${#fields.hasErrors('sellerName')}"
+       th:errors="*{sellerName}">Error</p>
+
+    <label for="lotCode">Código del lote</label>
+    <input type="text" id="lotCode" name="lotCode" th:value="*{lotCode}" maxlength="60"
+           placeholder="MIR-2026-001">
+    <p class="error-campo" th:if="${#fields.hasErrors('lotCode')}"
+       th:errors="*{lotCode}">Error</p>
+
+    <label for="offeredKg">Kilos que ofreces</label>
+    <input type="number" id="offeredKg" name="offeredKg" th:value="*{offeredKg}" min="1">
+    <small>Faltan <span th:text="${solicitud.remainingKg}">0</span> kg por cubrir.</small>
+    <p class="error-campo" th:if="${#fields.hasErrors('offeredKg')}"
+       th:errors="*{offeredKg}">Error</p>
+
+    <label for="pricePerKg">Precio por kilogramo</label>
+    <input type="number" id="pricePerKg" name="pricePerKg" step="0.01" th:value="*{pricePerKg}">
+    <p class="error-campo" th:if="${#fields.hasErrors('pricePerKg')}"
+       th:errors="*{pricePerKg}">Error</p>
+
+    <label for="yieldFactor">Factor de rendimiento de tu lote</label>
+    <input type="number" id="yieldFactor" name="yieldFactor" step="0.01"
+           th:value="*{yieldFactor}" placeholder="88.50">
+    <small>Entre 80 y 130. Menos es mejor.</small>
+    <p class="error-campo" th:if="${#fields.hasErrors('yieldFactor')}"
+       th:errors="*{yieldFactor}">Error</p>
+
+    <label for="note">Nota</label>
+    <textarea id="note" name="note" rows="2" maxlength="1000" th:text="*{note}"></textarea>
+    <p class="error-campo" th:if="${#fields.hasErrors('note')}" th:errors="*{note}">Error</p>
+
+    <button type="submit">Enviar postura</button>
+  </form>
+
+  <p><a th:href="@{/solicitudes}">← Volver al listado</a></p>
+
+</div>
+</body>
+</html>

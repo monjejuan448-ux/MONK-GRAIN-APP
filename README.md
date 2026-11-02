@@ -368,11 +368,14 @@ Las guías GA7-220501096 y GA8 piden 23 evidencias construidas sobre este proyec
 Los documentos se escriben en HTML —que se versiona y se revisa en un `diff`— y de ahí salen los PDF:
 
 ```bash
-./entregas/_plantilla/construir.sh                        # todos
+./entregas/_plantilla/construir.sh                        # todos los PDF
 ./entregas/_plantilla/construir.sh GA7/AA1_EV01_Plan_Trabajo   # uno
+
+# Las evidencias que piden «documento Word» salen del mismo HTML:
+./entregas/_plantilla/a-word.sh GA7/AA3_EV02_Pruebas_Modulo
 ```
 
-**Estado: 8 de 23 construidas.** GA7-AA1 y GA7-AA2 completas; AA3 a medias.
+**Estado: 9 de 23 construidas.** GA7-AA1, AA2 y AA3, completas.
 
 ### ⚠️ Pendientes que solo puede hacer el aprendiz
 
@@ -383,9 +386,11 @@ Estas cuatro cosas no las puede dejar hechas nadie más. Están sueltas en la co
 | **7 capturas de pantalla** | AA1-EV04 | Marcadas una a una en el PDF, con lo que debe verse en cada una |
 | **Grabar el video** (5–7 min) | AA1-EV05 | Guion completo en el PDF, bloque por bloque, con lo que decir en cada paso |
 | **Android Studio** | GA8 AA2-EV01 | Instalarlo, crear la primera app y capturar el proceso |
+| **11 capturas de pantalla** | AA3-EV02 | Listadas una a una en §8 del documento, con qué debe verse en cada una |
+| **Grabar el video** (8–10 min) | AA3-EV02 | Guion por bloques en §9 del documento |
 | **Grabar el video** (10 min) | GA8 AA2-EV04 | Sobre *machine learning*. El guion se escribirá al llegar a esa evidencia |
 
-Las demás evidencias con video o captura —AA3-EV02, AA5-EV02, AA5-EV04— se irán añadiendo aquí a medida que se construyan.
+Las demás evidencias con video o captura —AA5-EV02 y AA5-EV04— se irán añadiendo aquí a medida que se construyan.
 
 ### GA7 — AP7 Codificar los módulos del software
 
@@ -399,7 +404,7 @@ Las demás evidencias con video o captura —AA3-EV02, AA5-EV02, AA5-EV04— se 
 | AA2-EV01 Módulo JDBC | **`catalogo-pergamino`** (Java 17 + JDBC + PostgreSQL) | [`entregas/GA7/AA2_EV01_Modulo_JDBC/`](entregas/GA7/AA2_EV01_Modulo_JDBC/) | ✅ PDF 10 pág. · 13 pruebas · CRUD verificado contra PostgreSQL | — |
 | AA2-EV02 Servlets y JSP | **`catalogo-web`** (Jakarta Servlet 6 + JSP + JSTL, sobre `catalogo-pergamino`) | [`entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/`](entregas/GA7/AA2_EV02_Modulo_Servlets_JSP/) | ✅ PDF 8 pág. · WAR desplegado y probado por HTTP en Tomcat 10 | — |
 | AA3-EV01 Framework Java | **`negociacion-pergamino`** (Spring Boot 3.3 + JPA + Bean Validation) | [`entregas/GA7/AA3_EV01_Modulo_Framework/`](entregas/GA7/AA3_EV01_Modulo_Framework/) | ✅ PDF 8 pág. · 21 pruebas · 11 endpoints probados por HTTP | — |
-| AA3-EV02 Pruebas del módulo | lo de AA3-EV01 | `entregas/GA7/AA3_EV02_Pruebas_Modulo/` | ⬜ pendiente | Video y capturas |
+| AA3-EV02 Pruebas del módulo | **`negociacion-pergamino`** + pantallas Thymeleaf | [`entregas/GA7/AA3_EV02_Pruebas_Modulo/`](entregas/GA7/AA3_EV02_Pruebas_Modulo/) | ✅ Word y PDF, 10 pág. · 16 requisitos y 5 categorías de validación verificados | **11 capturas** (listadas en §8) y **el video** (guion en §9) |
 | AA4-EV01 Taller React | — (teórico) | `entregas/GA7/AA4_EV01_Taller_React/` | ⬜ pendiente | — |
 | AA4-EV02 Componentes front-end | las 9 *features* de `web/src/features/` | `entregas/GA7/AA4_EV02_Componentes_Front/` | ⬜ pendiente | — |
 | AA4-EV03 Componente del proyecto | módulo **`trading`** | `entregas/GA7/AA4_EV03_Componente_Proyecto/` | ⬜ pendiente | — |

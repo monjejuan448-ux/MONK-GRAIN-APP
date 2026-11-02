@@ -205,23 +205,23 @@ public class NegotiationService {
     /**
      * El comprador rechaza una postura.
      *
-     * <p>El motivo es obligatorio. Un «no» sin explicación no le dice al
-     * caficultor si el problema fue el precio, el factor o la cantidad, de modo
-     * que no puede corregir nada en la siguiente.
+     * <p><strong>El motivo no es obligatorio</strong>, y es una decisión tomada
+     * en el producto (ver {@code docs/15 §5}): exigirlo produce «no» a secas
+     * escrito para salir del paso, que no ayuda a nadie más que un campo vacío.
+     *
+     * <p>Lo que sí se impide es <em>simular</em> una explicación con espacios.
+     * Una nota en blanco no se guarda como explicación: se guarda nada, y así
+     * la interfaz puede distinguir «rechazó sin decir por qué» de «rechazó
+     * explicando», en lugar de mostrar un recuadro vacío que parece un fallo.
      */
     @Transactional
     public SellerOffer rejectOffer(Long offerId, String reason) {
         SellerOffer offer = findOffer(offerId);
         requireOpen(offer);
 
-        if (reason == null || reason.isBlank()) {
-            throw new BusinessRuleException(
-                    "Indica por qué rechazas la postura: sin un motivo, el vendedor no "
-                    + "sabe qué corregir en la siguiente.");
-        }
-
         offer.setStatus(OfferStatus.REJECTED);
-        offer.setResponseNote(reason.trim());
+        offer.setResponseNote(
+                reason == null || reason.isBlank() ? null : reason.trim());
         offer.setRespondedAt(LocalDateTime.now());
         return offerRepository.save(offer);
     }

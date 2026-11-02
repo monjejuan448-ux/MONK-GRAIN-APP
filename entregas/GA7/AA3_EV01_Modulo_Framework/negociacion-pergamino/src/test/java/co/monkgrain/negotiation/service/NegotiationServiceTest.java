@@ -204,14 +204,40 @@ class NegotiationServiceTest {
         }
 
         @Test
-        @DisplayName("rechazar sin motivo no se permite")
+        @DisplayName("se puede rechazar sin motivo: exigirlo produce «no» a secas")
         void rechazarSinMotivo() {
             SellerOffer oferta = service.makeOffer(
                     solicitud.getId(), postura("Finca", "L-5", 125, "24000"));
 
-            assertThatThrownBy(() -> service.rejectOffer(oferta.getId(), "  "))
-                    .isInstanceOf(BusinessRuleException.class)
-                    .hasMessageContaining("qué corregir");
+            SellerOffer rechazada = service.rejectOffer(oferta.getId(), null);
+
+            assertThat(rechazada.getStatus()).isEqualTo(OfferStatus.REJECTED);
+            assertThat(rechazada.getResponseNote()).isNull();
+        }
+
+        @Test
+        @DisplayName("una nota de espacios no se guarda como explicación")
+        void notaEnBlanco() {
+            // Se puede no explicar; lo que no se puede es simular que se
+            // explicó, que dejaría un recuadro vacío con aspecto de fallo.
+            SellerOffer oferta = service.makeOffer(
+                    solicitud.getId(), postura("Finca", "L-7", 125, "24000"));
+
+            SellerOffer rechazada = service.rejectOffer(oferta.getId(), "     ");
+
+            assertThat(rechazada.getResponseNote()).isNull();
+        }
+
+        @Test
+        @DisplayName("el motivo se guarda sin espacios sobrantes")
+        void motivoRecortado() {
+            SellerOffer oferta = service.makeOffer(
+                    solicitud.getId(), postura("Finca", "L-8", 125, "24000"));
+
+            SellerOffer rechazada = service.rejectOffer(
+                    oferta.getId(), "   El factor no cumple.   ");
+
+            assertThat(rechazada.getResponseNote()).isEqualTo("El factor no cumple.");
         }
 
         @Test

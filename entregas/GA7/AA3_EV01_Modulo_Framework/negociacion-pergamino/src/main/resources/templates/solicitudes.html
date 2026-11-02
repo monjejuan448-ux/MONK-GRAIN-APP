@@ -1,0 +1,56 @@
+<!-- Listado de solicitudes de compra. -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:replace="~{_base :: layout('Solicitudes de compra', ~{::contenido})}">
+<body>
+<div th:fragment="contenido" th:remove="tag">
+
+  <h1>Solicitudes de compra</h1>
+  <p class="guia">
+    Lo que los compradores están buscando. Un caficultor responde con su precio
+    y sus kilos; el comprador acepta, rechaza o deja pasar la vigencia.
+  </p>
+
+  <p class="aviso" th:if="${aviso}" th:text="${aviso}">Mensaje</p>
+
+  <p class="vacio" th:if="${#lists.isEmpty(solicitudes)}">
+    Todavía no hay solicitudes.
+    <a th:href="@{/solicitudes/nueva}">Publica la primera</a>.
+  </p>
+
+  <table class="tabla" th:unless="${#lists.isEmpty(solicitudes)}">
+    <thead>
+      <tr>
+        <th>Nº</th><th>Comprador</th><th>Qué busca</th>
+        <th class="num">Cantidad</th><th class="num">Factor máx.</th>
+        <th class="num">Avance</th><th>Estado</th><th>Vigente hasta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="s : ${solicitudes}">
+        <td><a th:href="@{/solicitudes/{id}(id=${s.id})}" th:text="${s.id}">1</a></td>
+        <td th:text="${s.buyerName}">Comprador</td>
+        <td th:text="${s.title}">Título</td>
+        <td class="num" th:text="${s.wantedAsCargas}">1250 kg</td>
+        <td class="num" th:text="${s.maxYieldFactor != null} ? ${s.maxYieldFactor} : '—'">92</td>
+        <td class="num">
+          <span th:text="${s.coveredPercentage} + ' %'">0 %</span>
+          <div class="barra-avance">
+            <div class="relleno" th:style="'width:' + ${s.coveredPercentage} + '%'"></div>
+          </div>
+        </td>
+        <td>
+          <span class="etiqueta"
+                th:classappend="${s.status.name() == 'FULFILLED'} ? ' ok'
+                              : (${s.status.name() == 'CANCELLED'} ? ' gris' : '')"
+                th:text="${s.status}">OPEN</span>
+          <span class="aviso-pequeno" th:if="${s.expired}">vencida</span>
+        </td>
+        <td th:text="${s.validUntil != null} ? ${s.validUntil} : 'Sin vigencia'">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

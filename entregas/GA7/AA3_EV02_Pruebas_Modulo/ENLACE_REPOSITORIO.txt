@@ -1,0 +1,28 @@
+GA7-220501096-AA3-EV02
+Módulos stand-alone, web y móvil codificados y probados
+
+Repositorio del proyecto:
+https://github.com/monjejuan448-ux/MONK-GRAIN-APP
+
+Aprendiz:  Eliana Chacon
+Programa:  Análisis y Desarrollo de Software (228118)
+Fecha:     1 de noviembre de 2026
+
+Módulo probado:  negociacion-pergamino  (evidencia AA3-EV01)
+Ruta en el repositorio:
+  entregas/GA7/AA3_EV01_Modulo_Framework/negociacion-pergamino/
+
+Contenido de esta evidencia:
+  Informe_Pruebas_Modulo_Negociacion.docx   documento Word que pide la guía
+  Informe_Pruebas_Modulo_Negociacion.pdf    el mismo documento en PDF
+  Informe_Pruebas_Modulo_Negociacion.html   fuente versionada de los dos
+
+Para reproducir las pruebas:
+  cd ../AA3_EV01_Modulo_Framework/negociacion-pergamino
+  mvn clean package          # 23 pruebas automáticas
+  java -jar target/negociacion-pergamino.jar
+  # luego abrir http://localhost:8081/solicitudes
+
+PENDIENTE DEL APRENDIZ:
+  - Las once capturas de pantalla (sección 8 del documento)
+  - El video de la funcionalidad (guion en la sección 9)

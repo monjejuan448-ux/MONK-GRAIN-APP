@@ -1,0 +1,71 @@
+<!--
+  Formulario de publicación de una solicitud.
+
+  Cada campo muestra su propio error debajo, no todos juntos arriba: así el
+  comprador ve qué corregir sin tener que buscarlo.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es"
+      th:replace="~{_base :: layout('Publicar solicitud', ~{::contenido})}">
+<body>
+<div th:fragment="contenido" th:remove="tag">
+
+  <h1>Publicar una solicitud de compra</h1>
+  <p class="guia">
+    Di qué buscas y los caficultores responderán con su precio. Los
+    <strong>techos</strong> de calidad son máximos aceptables, no valores exactos:
+    en el factor de rendimiento, menos es mejor.
+  </p>
+
+  <form class="formulario" method="post" th:action="@{/solicitudes}"
+        th:object="${solicitud}">
+
+    <label for="buyerName">Comprador</label>
+    <input type="text" id="buyerName" name="buyerName"
+           th:value="*{buyerName}" maxlength="150">
+    <p class="error-campo" th:if="${#fields.hasErrors('buyerName')}"
+       th:errors="*{buyerName}">Error</p>
+
+    <label for="title">Qué buscas</label>
+    <input type="text" id="title" name="title" th:value="*{title}" maxlength="200"
+           placeholder="Pergamino factor 92 o mejor, 10 cargas">
+    <p class="error-campo" th:if="${#fields.hasErrors('title')}"
+       th:errors="*{title}">Error</p>
+
+    <label for="description">Detalles</label>
+    <textarea id="description" name="description" rows="3" maxlength="2000"
+              th:text="*{description}"></textarea>
+    <p class="error-campo" th:if="${#fields.hasErrors('description')}"
+       th:errors="*{description}">Error</p>
+
+    <label for="wantedKg">Kilos que buscas</label>
+    <input type="number" id="wantedKg" name="wantedKg" th:value="*{wantedKg}" min="1">
+    <small>Una carga son 125 kg.</small>
+    <p class="error-campo" th:if="${#fields.hasErrors('wantedKg')}"
+       th:errors="*{wantedKg}">Error</p>
+
+    <label for="maxYieldFactor">Factor de rendimiento máximo</label>
+    <input type="number" id="maxYieldFactor" name="maxYieldFactor" step="0.01"
+           th:value="*{maxYieldFactor}" placeholder="92.00">
+    <small>Entre 80 y 130. Déjalo vacío si no te importa.</small>
+    <p class="error-campo" th:if="${#fields.hasErrors('maxYieldFactor')}"
+       th:errors="*{maxYieldFactor}">Error</p>
+
+    <label for="maxPricePerKg">Precio máximo por kilogramo</label>
+    <input type="number" id="maxPricePerKg" name="maxPricePerKg" step="0.01"
+           th:value="*{maxPricePerKg}" placeholder="26000">
+    <p class="error-campo" th:if="${#fields.hasErrors('maxPricePerKg')}"
+       th:errors="*{maxPricePerKg}">Error</p>
+
+    <label for="validUntil">Vigente hasta</label>
+    <input type="date" id="validUntil" name="validUntil" th:value="*{validUntil}">
+    <small>Debe ser una fecha futura.</small>
+    <p class="error-campo" th:if="${#fields.hasErrors('validUntil')}"
+       th:errors="*{validUntil}">Error</p>
+
+    <button type="submit">Publicar solicitud</button>
+  </form>
+
+</div>
+</body>
+</html>
