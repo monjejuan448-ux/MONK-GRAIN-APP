@@ -46,3 +46,11 @@ yarn-error.log*
 # Archivos subidos en desarrollo
 uploads/
 media/
+
+# Carpetas de trabajo local, ajenas al proyecto: se conservan en el equipo
+# y no se publican.
+/entregas/
+/GUIA N 1/
+/GUIA N 2/
+/GUIA N3/
+/GUIAS DE APRENDIZAJE/
